@@ -1,0 +1,12 @@
+{
+  "name": "Jerry Lockard",
+  "location": "Covington, Kentucky",
+  "coordinates": "39.0837° N, 84.5086° W",
+  "contactEmail": null,
+  "contactEmailNote": "Mockup uses a placeholder (you@example.com). Real public contact address not yet confirmed — ask Jerry before publishing one.",
+  "links": {
+    "github": "jerry-lockard",
+    "linkedin": "jerry-lockard"
+  },
+  "linksNote": "Both handles come from an older self-written README, not yet confirmed by Jerry. The mockup flagged the GitHub handle as unresolved (a record elsewhere says jerrylockard91). Confirm before publishing either link."
+}

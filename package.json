@@ -9,9 +9,16 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "mcp:start": "pnpm --filter mcp-gui start",
+    "mcp:stop": "pnpm --filter mcp-gui stop",
+    "mcp:status": "pnpm --filter mcp-gui status",
+    "mcp:logs": "pnpm --filter mcp-gui logs"
   },
   "dependencies": {
     "astro": "^7.2.2"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0"
   }
 }

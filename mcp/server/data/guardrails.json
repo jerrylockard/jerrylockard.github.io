@@ -1,0 +1,16 @@
+{
+  "excludedTopics": [
+    "GPA / grade point average",
+    "Individual course grades or withdrawals",
+    "Student ID number",
+    "Social Security Number, or any portion of it",
+    "Home address",
+    "Legal middle name",
+    "Stated ambition to run for public office"
+  ],
+  "supersededFacts": [
+    "Any GPA figure from an older README — excluded outright regardless of accuracy, see excludedTopics",
+    "\"Aspiring to join Meta or Twitter\" career framing from an older README — dropped, conflicts with the civic-first direction",
+    "Detailed programming stack lists (Flutter, Firebase, LangChain, OAuth apps, etc.) — collapse to the brief 'self-hosted infrastructure' framing in work.json instead"
+  ]
+}

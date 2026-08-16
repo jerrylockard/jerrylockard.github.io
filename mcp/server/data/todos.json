@@ -1,0 +1,33 @@
+[
+  {
+    "id": "portrait",
+    "text": "Replace the portrait placeholder with a real photograph.",
+    "status": "open"
+  },
+  {
+    "id": "writing-samples",
+    "text": "The three 'Recent writing' entries are sample content invented to show the layout. Replace with real posts, or delete the section until at least two exist. An empty writing section is worse than no writing section.",
+    "status": "open"
+  },
+  {
+    "id": "contact-email",
+    "text": "Contact email is a placeholder (you@example.com). Confirm the real public address before publishing.",
+    "status": "open"
+  },
+  {
+    "id": "github-handle",
+    "text": "Confirm GitHub handle before publishing the footer link.",
+    "status": "open",
+    "note": "An older README says jerry-lockard; other records say jerrylockard91."
+  },
+  {
+    "id": "theme-persistence",
+    "text": "Theme choice does not persist across reloads. Wire real localStorage read/write in setTheme() for the deployed site.",
+    "status": "open"
+  },
+  {
+    "id": "self-host-fonts",
+    "text": "Fonts currently load from the Google Fonts CDN. Self-host the WOFF2 files for the Pi deploy — removes a third-party dependency and a render-blocking request.",
+    "status": "open"
+  }
+]

@@ -17,6 +17,9 @@ pnpm-debug.log*
 .env
 .env.production
 
+# mcp gui runtime state (pid/log files)
+.data/
+
 # macOS-specific files
 .DS_Store
 

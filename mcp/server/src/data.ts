@@ -16,6 +16,12 @@ export interface Identity {
   contactEmailNote: string;
   links: Record<string, string>;
   linksNote: string;
+  domains: {
+    personal: string;
+    personalNote: string;
+    org: string;
+    orgNote: string;
+  };
 }
 
 export interface Education {

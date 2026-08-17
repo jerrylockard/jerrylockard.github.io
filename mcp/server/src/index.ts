@@ -7,11 +7,11 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 import { identity, education, work, todos, guardrails, designTokens } from "./data.js";
 import { checkContentSafety } from "./guardrails.js";
-import { readMemoryContext, appendMemoryNote } from "./memory.js";
+import { readMemoryContext, appendMemoryNote, postTeamUpdate, readTeamUpdates } from "./memory.js";
 
 const rulesPath = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "AGENTS.md");
 
-const server = new McpServer({ name: "personal-site", version: "0.1.0" });
+const server = new McpServer({ name: "jerry-lockard.github.io", version: "0.1.0" });
 
 function json(data: unknown) {
   return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
@@ -108,7 +108,7 @@ server.registerTool(
     title: "Append memory note",
     description: "Append a short session summary to the .remember/ buffer so future sessions and other agents have continuity. Call this at the end of a job.",
     inputSchema: {
-      agentName: z.string().describe("Which agent is writing this note (e.g. Truss, Folio, Plumb)"),
+      agentName: z.string().describe("Which agent is writing this note (e.g. Andrew, Desiree, Devon, Penelope, Ethan)"),
       summary: z.string().describe("What happened and what changed this session, in a few sentences"),
     },
   },
@@ -116,6 +116,29 @@ server.registerTool(
     appendMemoryNote(agentName, summary);
     return json({ ok: true });
   }
+);
+
+server.registerTool(
+  "get_team_updates",
+  {
+    title: "Get team updates",
+    description: "Read recent cross-agent status updates — what teammates have been doing and what might affect your work. Check this at the start of a session, alongside get_memory_context.",
+  },
+  async () => json(readTeamUpdates())
+);
+
+server.registerTool(
+  "post_team_update",
+  {
+    title: "Post team update",
+    description: "Let the team know what you did or found, when it might matter to someone else's work — not every routine action. Keep it to a sentence or two.",
+    inputSchema: {
+      agent: z.string().describe("Your name (e.g. Andrew, Desiree, Devon, Penelope, Ethan)"),
+      message: z.string().describe("What happened, in a sentence or two"),
+      affects: z.array(z.string()).optional().describe("Names of teammates this is especially relevant to, if any"),
+    },
+  },
+  async ({ agent, message, affects }) => json(postTeamUpdate(agent, message, affects))
 );
 
 const transport = new StdioServerTransport();

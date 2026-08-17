@@ -29,3 +29,24 @@ export function appendMemoryNote(agentName: string, summary: string): void {
   const block = `\n## [${stamp}] ${agentName} session\n${summary.trim()}\n`;
   appendFileSync(join(rememberDir, "now.md"), block, "utf-8");
 }
+
+export interface TeamUpdate {
+  agent: string;
+  message: string;
+  affects?: string[];
+  timestamp: string;
+}
+
+const teamLogPath = join(rememberDir, "team.jsonl");
+
+export function postTeamUpdate(agent: string, message: string, affects?: string[]): TeamUpdate {
+  const update: TeamUpdate = { agent, message: message.trim(), affects, timestamp: new Date().toISOString() };
+  appendFileSync(teamLogPath, JSON.stringify(update) + "\n", "utf-8");
+  return update;
+}
+
+export function readTeamUpdates(limit = 50): TeamUpdate[] {
+  if (!existsSync(teamLogPath)) return [];
+  const lines = readFileSync(teamLogPath, "utf-8").trim().split("\n").filter(Boolean);
+  return lines.slice(-limit).map((line) => JSON.parse(line) as TeamUpdate);
+}

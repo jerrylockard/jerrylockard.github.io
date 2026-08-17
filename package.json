@@ -1,5 +1,5 @@
 {
-  "name": "personal-site",
+  "name": "jerry-lockard.github.io",
   "type": "module",
   "version": "0.0.1",
   "engines": {
@@ -13,7 +13,9 @@
     "mcp:start": "pnpm --filter mcp-gui start",
     "mcp:stop": "pnpm --filter mcp-gui stop",
     "mcp:status": "pnpm --filter mcp-gui status",
-    "mcp:logs": "pnpm --filter mcp-gui logs"
+    "mcp:logs": "pnpm --filter mcp-gui logs",
+    "agent": "pnpm --filter mcp-agents run agent",
+    "mcp:doctor": "node mcp/gui/scripts/doctor.mjs"
   },
   "dependencies": {
     "astro": "^7.2.2"

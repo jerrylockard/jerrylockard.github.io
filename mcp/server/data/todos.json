@@ -11,19 +11,18 @@
   },
   {
     "id": "contact-email",
-    "text": "Contact email is a placeholder (you@example.com). Confirm the real public address before publishing.",
-    "status": "open"
+    "text": "Contact email confirmed: jerrylockard91@gmail.com. Jerry may switch to jerry@lockard.tech soon — check with him before the site ships in case that's live by then.",
+    "status": "done"
   },
   {
     "id": "github-handle",
-    "text": "Confirm GitHub handle before publishing the footer link.",
-    "status": "open",
-    "note": "An older README says jerry-lockard; other records say jerrylockard91."
+    "text": "GitHub handle confirmed: jerry-lockard. jerrylockard91 is an old unused account — never use it.",
+    "status": "done"
   },
   {
     "id": "theme-persistence",
-    "text": "Theme choice does not persist across reloads. Wire real localStorage read/write in setTheme() for the deployed site.",
-    "status": "open"
+    "text": "Theme choice persists across reloads — real localStorage read/write wired into layout.astro's setTheme().",
+    "status": "done"
   },
   {
     "id": "self-host-fonts",

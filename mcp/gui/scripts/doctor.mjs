@@ -1,0 +1,98 @@
+import { execSync, spawnSync } from "node:child_process";
+import { existsSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
+const checks = [];
+
+function check(name, fn) {
+  try {
+    const detail = fn();
+    checks.push({ name, ok: true, detail: detail || "" });
+  } catch (err) {
+    checks.push({ name, ok: false, detail: err.message.split("\n")[0].slice(0, 160) });
+  }
+}
+
+check("Node >= 22.12", () => {
+  const [major, minor] = process.versions.node.split(".").map(Number);
+  if (major < 22 || (major === 22 && minor < 12)) throw new Error(`found ${process.versions.node}`);
+  return process.versions.node;
+});
+
+check("pnpm available", () => `v${execSync("pnpm --version", { cwd: repoRoot }).toString().trim()}`);
+
+for (const pkg of ["", "mcp/server", "mcp/agents", "mcp/gui"]) {
+  check(`deps installed: ${pkg || "root"}`, () => {
+    if (!existsSync(join(repoRoot, pkg, "node_modules"))) throw new Error("run `pnpm install`");
+    return "ok";
+  });
+}
+
+for (const pkg of ["mcp-server", "mcp-agents", "mcp-gui"]) {
+  check(`typecheck: ${pkg}`, () => {
+    execSync(`pnpm --filter ${pkg} check`, { cwd: repoRoot, stdio: "pipe" });
+    return "ok";
+  });
+}
+
+check("MCP server starts cleanly", () => {
+  const serverPath = join(repoRoot, "mcp", "server", "src", "index.ts");
+  const result = spawnSync(process.execPath, ["--import", "tsx", serverPath], { cwd: repoRoot, timeout: 3000 });
+  if (result.signal) return "ok (ran, stopped after check)";
+  if (result.status !== 0) {
+    const stderr = result.stderr ? result.stderr.toString().slice(0, 200) : "";
+    throw new Error(`exited ${result.status}: ${stderr}`);
+  }
+  return "ok";
+});
+
+check("Astro scaffold present", () => {
+  if (!existsSync(join(repoRoot, "src", "pages", "index.astro"))) throw new Error("missing src/pages/index.astro");
+  return "still the starter scaffold — real site not built yet (expected)";
+});
+
+check("mockup.html present", () => {
+  if (!existsSync(join(repoRoot, "mockup.html"))) throw new Error("missing");
+  return "ok";
+});
+
+for (const f of ["AGENTS.md", "CLAUDE.md", "GEMINI.md", "mcp/AGENTS.md"]) {
+  check(`${f} present`, () => {
+    if (!existsSync(join(repoRoot, f))) throw new Error("missing");
+    return "ok";
+  });
+}
+
+check("GitHub CLI authenticated", () => {
+  execSync("gh auth status", { cwd: repoRoot, stdio: "pipe" });
+  return "ok";
+});
+
+check("git branch is main", () => {
+  const branch = execSync("git rev-parse --abbrev-ref HEAD", { cwd: repoRoot }).toString().trim();
+  if (branch !== "main") throw new Error(`on '${branch}', expected 'main'`);
+  return branch;
+});
+
+check(".remember/ present", () => {
+  if (!existsSync(join(repoRoot, ".remember"))) throw new Error("missing");
+  return "ok";
+});
+
+console.log("\nDoctor report");
+console.log("=".repeat(44));
+let failures = 0;
+for (const c of checks) {
+  console.log(`${c.ok ? "✓" : "✗"} ${c.name}${c.detail ? ` — ${c.detail}` : ""}`);
+  if (!c.ok) failures++;
+}
+console.log("=".repeat(44));
+
+if (failures === 0) {
+  console.log(`All ${checks.length} checks passed. The agent system is ready to work.\n`);
+} else {
+  console.log(`${failures}/${checks.length} checks failed — fix the above before starting agent work.\n`);
+  process.exitCode = 1;
+}

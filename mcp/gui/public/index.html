@@ -1,25 +1,74 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Site agents</title>
+<title>Site Agents — Jerry Lockard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Public+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/style.css">
 </head>
 <body>
 <div class="app">
-  <aside class="sidebar">
-    <h1>Site agents</h1>
-    <div id="personas" class="personas"></div>
-    <div id="approvals" class="approvals"></div>
-  </aside>
-  <main class="chat">
-    <div id="log" class="log"></div>
-    <form id="composer" class="composer">
-      <textarea id="input" placeholder="Ask the selected agent to do something…" rows="2"></textarea>
-      <button type="submit">Send</button>
-    </form>
-  </main>
+  <header class="topbar">
+    <span class="wordmark">Site&nbsp;Agents</span>
+    <div class="topbar-actions">
+      <button id="preview-toggle" class="theme-btn" type="button" aria-pressed="false">Preview</button>
+      <button id="theme-btn" class="theme-btn" type="button" aria-live="polite">Dark</button>
+    </div>
+  </header>
+
+  <svg class="cable-divider" viewBox="0 0 1200 24" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+    <path class="cable" d="M0,1 Q600,34 1200,1"/>
+  </svg>
+
+  <div class="body">
+    <aside class="sidebar">
+      <section class="panel">
+        <p class="eyebrow">Agents</p>
+        <div id="personas" class="personas"></div>
+      </section>
+      <section class="panel" id="approvals-panel" hidden>
+        <p class="eyebrow eyebrow-warn">Needs your OK</p>
+        <div id="approvals" class="approvals"></div>
+      </section>
+    </aside>
+
+    <main class="chat">
+      <div id="log" class="log">
+        <div class="empty-state" id="empty-state">
+          <p>Pick an agent on the left and say hello.</p>
+        </div>
+      </div>
+      <form id="composer" class="composer">
+        <div class="composer-inner">
+          <textarea id="input" placeholder="Message…" rows="1"></textarea>
+          <button type="submit" id="send-btn" aria-label="Send">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 8h11M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+      </form>
+    </main>
+
+    <aside class="preview-pane" id="preview-pane" hidden>
+      <div class="preview-header" id="preview-drag-handle">
+        <p class="eyebrow" style="margin:0">Live preview</p>
+        <div class="preview-controls">
+          <button type="button" id="preview-refresh" class="icon-btn" title="Refresh">⟳</button>
+          <a href="http://localhost:4321/" target="_blank" rel="noopener" class="icon-btn" title="Open in new tab">↗</a>
+          <button type="button" id="preview-close" class="icon-btn close-btn" title="Close">✕</button>
+        </div>
+      </div>
+      <div class="preview-body">
+        <div class="preview-offline" id="preview-offline">
+          <p>Preview server isn't running.</p>
+          <button type="button" id="preview-start-btn">Start preview</button>
+        </div>
+        <iframe id="preview-frame" class="preview-frame" title="Live site preview" hidden></iframe>
+      </div>
+    </aside>
+  </div>
 </div>
 <script type="module" src="/app.js"></script>
 </body>

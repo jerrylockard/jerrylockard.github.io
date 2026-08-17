@@ -4,6 +4,7 @@ import express, { type Request, type Response } from "express";
 import { PERSONAS } from "../../agents/src/personas.js";
 import { runPersonaTurn, type PersonaEvent } from "./run-persona.js";
 import { onApprovalRequested, resolveApproval, listPendingApprovals, type PendingApproval } from "./approvals.js";
+import { checkPreviewStatus, startPreviewServer, PREVIEW_URL } from "./preview.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const publicDir = join(__dirname, "..", "public");
@@ -68,6 +69,16 @@ app.post("/api/chat/:personaId", (req: Request, res: Response) => {
   runPersonaTurn(personaId, message, (event) => broadcast(event)).catch((err: unknown) => {
     broadcast({ type: "error", personaId, message: err instanceof Error ? err.message : String(err) });
   });
+});
+
+app.get("/api/preview/status", async (_req: Request, res: Response) => {
+  const running = await checkPreviewStatus();
+  res.json({ running, url: PREVIEW_URL });
+});
+
+app.post("/api/preview/start", async (_req: Request, res: Response) => {
+  const result = await startPreviewServer();
+  res.json(result);
 });
 
 const PORT = Number(process.env.PORT ?? 4405);

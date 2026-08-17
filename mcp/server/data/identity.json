@@ -2,11 +2,17 @@
   "name": "Jerry Lockard",
   "location": "Covington, Kentucky",
   "coordinates": "39.0837° N, 84.5086° W",
-  "contactEmail": null,
-  "contactEmailNote": "Mockup uses a placeholder (you@example.com). Real public contact address not yet confirmed — ask Jerry before publishing one.",
+  "contactEmail": "jerrylockard91@gmail.com",
+  "contactEmailNote": "Current real address, confirmed by Jerry. He'll move to jerry@lockard.tech once that's set up — check with him before the site ships in case that's already live.",
   "links": {
     "github": "jerry-lockard",
     "linkedin": "jerry-lockard"
   },
-  "linksNote": "Both handles come from an older self-written README, not yet confirmed by Jerry. The mockup flagged the GitHub handle as unresolved (a record elsewhere says jerrylockard91). Confirm before publishing either link."
+  "linksNote": "Confirmed by Jerry. \"jerrylockard91\" is an old, unused GitHub account — do not use it or treat it as a candidate; jerry-lockard is correct and final. (jerrylockard91@gmail.com is a separate, currently-real email address — that one's fine, it's just not a GitHub handle.)",
+  "domains": {
+    "personal": "jerry.lockard.tech",
+    "personalNote": "This site's domain — subdomain of the lockard-tech apex, points at the jerry-lockard personal GitHub account/repo.",
+    "org": "lockard.tech",
+    "orgNote": "Apex domain, belongs to the lockard-tech GitHub organization — not this site."
+  }
 }

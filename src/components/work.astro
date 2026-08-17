@@ -1,0 +1,25 @@
+---
+import { workGroups } from "../data/site";
+---
+
+<section class="wrap observe" id="work">
+  <p class="eyebrow">Work</p>
+
+  {
+    workGroups.map((group) => (
+      <div class="work-group">
+        <p class="group-label">{group.label}</p>
+
+        {group.items.map((item) => (
+          <div class="item">
+            <div>
+              <h3>{item.title}</h3>
+              <p>{item.body}</p>
+            </div>
+            <div class="item-meta" set:html={item.meta.join("<br />")} />
+          </div>
+        ))}
+      </div>
+    ))
+  }
+</section>

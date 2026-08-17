@@ -1,0 +1,120 @@
+---
+import "../styles/global.css";
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const {
+  title = "Jerry Lockard — Covington, Kentucky",
+  description = "Jerry Lockard lives in Covington, Kentucky. Political science, public service, and the systems that keep things running.",
+} = Astro.props;
+---
+
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="generator" content={Astro.generator} />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" href="/favicon.ico" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;1,6..72,300;1,6..72,400&family=Public+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <script is:inline>
+      document.documentElement.classList.add("js");
+      try {
+        var storedTheme = localStorage.getItem("theme");
+        if (storedTheme === "dark" || storedTheme === "light") {
+          document.documentElement.setAttribute("data-theme", storedTheme);
+        }
+      } catch (err) {
+        /* localStorage unavailable — fall back to the default light theme */
+      }
+    </script>
+  </head>
+  <body>
+    <slot />
+    <script>
+      const root = document.documentElement;
+      const btn = document.getElementById("theme-btn");
+
+      function labelFor(mode: string) {
+        return mode === "dark" ? "Light" : "Dark";
+      }
+
+      function applyLabel(mode: string) {
+        if (!btn) return;
+        btn.textContent = labelFor(mode);
+        btn.setAttribute("aria-label", `Switch to ${mode === "dark" ? "light" : "dark"} mode`);
+      }
+
+      function setTheme(mode: string) {
+        root.setAttribute("data-theme", mode);
+        try {
+          localStorage.setItem("theme", mode);
+        } catch (err) {
+          /* localStorage unavailable — theme just won't persist this session */
+        }
+        applyLabel(mode);
+      }
+
+      applyLabel(root.getAttribute("data-theme") === "dark" ? "dark" : "light");
+
+      btn?.addEventListener("click", () => {
+        setTheme(root.getAttribute("data-theme") === "dark" ? "light" : "dark");
+      });
+
+      const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+      if (!reduced && "IntersectionObserver" in window) {
+        const revealer = new IntersectionObserver(
+          (entries) => {
+            for (const entry of entries) {
+              if (entry.isIntersecting) {
+                entry.target.classList.add("in");
+                revealer.unobserve(entry.target);
+              }
+            }
+          },
+          { rootMargin: "0px 0px -12% 0px", threshold: 0.05 },
+        );
+
+        document.querySelectorAll(".observe").forEach((el) => revealer.observe(el));
+      } else {
+        document.querySelectorAll(".observe").forEach((el) => el.classList.add("in"));
+      }
+
+      const links = Array.from(document.querySelectorAll<HTMLAnchorElement>(".nav-links a"));
+      const sections = links
+        .map((a) => {
+          const href = a.getAttribute("href");
+          return href ? document.querySelector(href) : null;
+        })
+        .filter((el): el is Element => el !== null);
+
+      if ("IntersectionObserver" in window && sections.length) {
+        const spy = new IntersectionObserver(
+          (entries) => {
+            for (const entry of entries) {
+              if (!entry.isIntersecting) continue;
+              for (const a of links) {
+                a.classList.toggle("is-current", a.getAttribute("href") === `#${entry.target.id}`);
+              }
+            }
+          },
+          { rootMargin: "-45% 0px -50% 0px", threshold: 0 },
+        );
+
+        sections.forEach((s) => spy.observe(s));
+      }
+    </script>
+  </body>
+</html>

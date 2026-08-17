@@ -1,0 +1,33 @@
+---
+// The signature: a suspension cable rendered as a hairline SVG between
+// sections. `tight` selects the shorter, sparser variant used between
+// interior sections vs. the fuller one right under the hero.
+interface Props {
+  tight?: boolean;
+}
+
+const { tight = false } = Astro.props;
+
+const HANGERS_FULL = [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100].map((x, i) => ({
+  x,
+  y: [13, 21, 28, 33, 36, 37, 36, 33, 28, 21, 13][i],
+}));
+
+const HANGERS_TIGHT = [150, 350, 600, 850, 1050].map((x, i) => ({
+  x,
+  y: [17, 31, 37, 31, 17][i],
+}));
+
+const hangers = tight ? HANGERS_TIGHT : HANGERS_FULL;
+const svgClass = tight ? "span-rule span-rule--tight" : "span-rule";
+---
+
+<div class="wrap">
+  <svg class={svgClass} viewBox="0 0 1200 46" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+    <path class="cable" d="M0,2 Q600,72 1200,2"></path>
+    <line class="deck" x1="0" y1="42" x2="1200" y2="42"></line>
+    <line class="tower" x1="2" y1="2" x2="2" y2="42"></line>
+    <line class="tower" x1="1198" y1="2" x2="1198" y2="42"></line>
+    {hangers.map((h) => <line class="hanger" x1={h.x} y1={h.y} x2={h.x} y2="42" />)}
+  </svg>
+</div>

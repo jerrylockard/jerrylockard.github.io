@@ -1,0 +1,134 @@
+---
+// Scaffolded and ready, but not wired into the page yet — see list_todos
+// "writing-samples". Wire it into index.astro once at least two real posts
+// exist in src/data/site.ts (writingEntries). An empty writing section reads
+// worse than no writing section, so it stays unrendered until then.
+import type { WritingEntry } from "../data/site";
+
+interface Props {
+  entries: WritingEntry[];
+}
+
+const { entries } = Astro.props;
+---
+
+<section class="wrap observe" id="writing">
+  <p class="eyebrow">Recent writing</p>
+
+  {
+    entries.map((entry) => (
+      <a class="entry" href={entry.href}>
+        <span class="entry-date">{entry.date}</span>
+        <span class="entry-title">{entry.title}</span>
+        <span class="entry-tag">{entry.tag}</span>
+        <span class="entry-arrow" aria-hidden="true">
+          →
+        </span>
+      </a>
+    ))
+  }
+
+  <a class="more-link" href="/writing">All writing &nbsp;→</a>
+</section>
+
+<style>
+  .entry {
+    display: grid;
+    grid-template-columns: 108px minmax(0, 1fr) auto 22px;
+    gap: 24px;
+    align-items: baseline;
+    padding: 17px 12px 17px 0;
+    border-bottom: 1px solid var(--rule);
+    text-decoration: none;
+    transition: background-color 180ms ease, padding-left 180ms ease;
+  }
+
+  .entry:first-of-type {
+    border-top: 1px solid var(--rule);
+  }
+
+  .entry:hover {
+    background: var(--limestone);
+    padding-left: 12px;
+  }
+
+  .entry-date {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    letter-spacing: 0.04em;
+    color: var(--ink-faint);
+  }
+
+  .entry-title {
+    font-family: var(--display);
+    font-size: 1.18rem;
+    font-weight: 400;
+    line-height: 1.4;
+    letter-spacing: -0.008em;
+    transition: color 180ms ease;
+  }
+
+  .entry:hover .entry-title {
+    color: var(--accent-ink);
+  }
+
+  .entry-tag {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    white-space: nowrap;
+  }
+
+  .entry-arrow {
+    font-family: var(--mono);
+    color: var(--accent);
+    opacity: 0;
+    transform: translateX(-6px);
+    transition: opacity 180ms ease, transform 180ms ease;
+  }
+
+  .entry:hover .entry-arrow {
+    opacity: 1;
+    transform: none;
+  }
+
+  .more-link {
+    display: inline-block;
+    margin-top: 24px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    letter-spacing: 0.04em;
+    color: var(--accent-ink);
+    text-decoration: none;
+    border-bottom: 1px solid var(--rule);
+    padding-bottom: 3px;
+    transition: border-color 180ms ease;
+  }
+
+  .more-link:hover {
+    border-bottom-color: var(--accent);
+  }
+
+  @media (max-width: 860px) {
+    .entry {
+      grid-template-columns: 1fr auto;
+      gap: 4px 12px;
+    }
+    .entry-date {
+      grid-column: 1;
+    }
+    .entry-title {
+      grid-column: 1 / -1;
+      grid-row: 2;
+    }
+    .entry-tag {
+      grid-column: 2;
+      grid-row: 1;
+    }
+    .entry-arrow {
+      display: none;
+    }
+  }
+</style>

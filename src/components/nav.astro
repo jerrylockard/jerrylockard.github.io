@@ -1,0 +1,17 @@
+---
+import { identity } from "../data/site";
+---
+
+<nav class="nav">
+  <div class="wrap nav-inner">
+    <a class="nav-mark" href="#top">{identity.name}</a>
+    <div class="nav-right">
+      <div class="nav-links">
+        <a href="#work">Work</a>
+        <a href="#about">About</a>
+        <a href="#contact">Contact</a>
+      </div>
+      <button class="theme-btn" id="theme-btn" type="button" aria-live="polite">Dark</button>
+    </div>
+  </div>
+</nav>

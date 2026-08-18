@@ -21,8 +21,8 @@ const CHECKS: { label: string; pattern: RegExp }[] = [
   },
   { label: "Inserted middle name (Jerry ___ Lockard)", pattern: /\bJerry\s+\S+\s+Lockard\b/ },
   {
-    label: "Run-for-office ambition",
-    pattern: /\brun(ning)?\s+for\s+(public\s+)?office\b|\bpolitical\s+ambition\b|\bfuture\s+political\s+actor\b/i,
+    label: "Marriage, divorce, or ex-husband reference",
+    pattern: /\bex-?husband\b|\bdivorce[ds]?\b|\b(my|his)\s+(former\s+)?marriage\b|\bmarried\b/i,
   },
 ];
 

@@ -6,11 +6,12 @@
     "Social Security Number, or any portion of it",
     "Home address",
     "Legal middle name",
-    "Stated ambition to run for public office"
+    "Jerry's ex-husband, the marriage, or the divorce, in any form"
   ],
   "supersededFacts": [
     "Any GPA figure from an older README — excluded outright regardless of accuracy, see excludedTopics",
     "\"Aspiring to join Meta or Twitter\" career framing from an older README — dropped, conflicts with the civic-first direction",
-    "Detailed programming stack lists (Flutter, Firebase, LangChain, OAuth apps, etc.) — collapse to the brief 'self-hosted infrastructure' framing in work.json instead"
+    "Detailed programming stack lists (Flutter, Firebase, LangChain, OAuth apps, etc.) — collapse to the brief 'self-hosted infrastructure' framing in work.json instead",
+    "\"Stated ambition to run for public office\" was excluded until 2026-08-18. Jerry confirmed directly that running for office IS the point of this site — Mayor's Academy and jerry.lockard.tech are the on-ramp to a political career, not the destination. The ambition is fine to state. Keep it in his own values-first framing (everyone should be guaranteed shelter, food, medicine, safety) rather than naming a specific office/opponent unless he says otherwise — ask before getting more specific than 'elected public service.'"
   ]
 }

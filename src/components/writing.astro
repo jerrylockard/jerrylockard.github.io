@@ -1,26 +1,31 @@
 ---
-// Scaffolded and ready, but not wired into the page yet — see list_todos
-// "writing-samples". Wire it into index.astro once at least two real posts
-// exist in src/data/site.ts (writingEntries). An empty writing section reads
-// worse than no writing section, so it stays unrendered until then.
-import type { WritingEntry } from "../data/site";
+// Renders a list of writing-collection entries. Used both as the homepage
+// teaser (a slice of the most recent posts, with a "more" link to /writing)
+// and as the full index at /writing (all posts, no "more" link). Callers
+// are responsible for filtering drafts and deciding whether to render this
+// at all — an empty writing section reads worse than no writing section.
+import type { CollectionEntry } from "astro:content";
 
 interface Props {
-  entries: WritingEntry[];
+  entries: CollectionEntry<"writing">[];
+  heading?: string;
+  moreHref?: string;
 }
 
-const { entries } = Astro.props;
+const { entries, heading = "Recent writing", moreHref } = Astro.props;
 ---
 
 <section class="wrap observe" id="writing">
-  <p class="eyebrow">Recent writing</p>
+  <p class="eyebrow">{heading}</p>
 
   {
     entries.map((entry) => (
-      <a class="entry" href={entry.href}>
-        <span class="entry-date">{entry.date}</span>
-        <span class="entry-title">{entry.title}</span>
-        <span class="entry-tag">{entry.tag}</span>
+      <a class="entry" href={`/writing/${entry.id}`}>
+        <span class="entry-date">
+          {entry.data.date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+        </span>
+        <span class="entry-title">{entry.data.title}</span>
+        <span class="entry-tag">{entry.data.tag}</span>
         <span class="entry-arrow" aria-hidden="true">
           →
         </span>
@@ -28,7 +33,7 @@ const { entries } = Astro.props;
     ))
   }
 
-  <a class="more-link" href="/writing">All writing &nbsp;→</a>
+  {moreHref && <a class="more-link" href={moreHref}>All writing &nbsp;→</a>}
 </section>
 
 <style>

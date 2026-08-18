@@ -6,7 +6,7 @@
   },
   {
     "id": "writing-samples",
-    "text": "The three 'Recent writing' entries are sample content invented to show the layout. Replace with real posts, or delete the section until at least two exist. An empty writing section is worse than no writing section.",
+    "text": "Real writing pipeline is built (Astro content collection at src/content/writing/, /writing index page, /writing/[slug] post pages, homepage teaser and nav link both wired to appear automatically once posts exist). Still needs actual posts — nothing renders until at least one .md file lands in src/content/writing/.",
     "status": "open"
   },
   {

@@ -1,0 +1,135 @@
+---
+const pillars = [
+  {
+    num: "01",
+    title: "Shelter",
+    body: "A roof over your head shouldn't depend on luck.",
+  },
+  {
+    num: "02",
+    title: "Food",
+    body: "Nobody working hard should have to choose between rent and groceries.",
+  },
+  {
+    num: "03",
+    title: "Medicine",
+    body: "Basic healthcare shouldn't be something you have to earn.",
+  },
+  {
+    num: "04",
+    title: "Safety",
+    body: "Everyone deserves to know somebody has their back if something goes wrong.",
+  },
+];
+---
+
+<section class="wrap observe platform" id="platform">
+  <p class="eyebrow">Where I stand</p>
+  <p class="platform-lede">
+    Every one of us pays into this country. Every one of us should be able to count on the same
+    four things back — the rest is extra.
+  </p>
+  <div class="pillars">
+    {
+      pillars.map((p) => (
+        <div class="pillar">
+          <span class="pillar-num">{p.num}</span>
+          <h3>{p.title}</h3>
+          <p>{p.body}</p>
+        </div>
+      ))
+    }
+  </div>
+</section>
+
+<style>
+  .platform-lede {
+    font-family: var(--display);
+    font-weight: 300;
+    font-size: clamp(1.3rem, 2.6vw, 1.7rem);
+    line-height: 1.42;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+    max-width: 46ch;
+    margin: 0 0 40px;
+    text-wrap: balance;
+  }
+
+  .pillars {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    border-top: 1px solid var(--rule);
+  }
+
+  .pillar {
+    padding: 22px 24px 26px 0;
+    border-right: 1px solid var(--rule);
+  }
+
+  .pillar:last-child {
+    border-right: 0;
+    padding-right: 0;
+  }
+
+  .pillar:not(:first-child) {
+    padding-left: 24px;
+  }
+
+  .pillar-num {
+    display: block;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    color: var(--accent-ink);
+    margin-bottom: 12px;
+  }
+
+  .pillar h3 {
+    font-family: var(--display);
+    font-weight: 400;
+    font-size: 1.22rem;
+    letter-spacing: -0.01em;
+    margin: 0 0 8px;
+  }
+
+  .pillar p {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--ink-soft);
+  }
+
+  @media (max-width: 860px) {
+    .pillars {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .pillar:nth-child(2) {
+      border-right: 0;
+    }
+    .pillar:nth-child(3) {
+      padding-left: 0;
+      border-top: 1px solid var(--rule);
+      padding-top: 22px;
+    }
+    .pillar:nth-child(4) {
+      border-top: 1px solid var(--rule);
+      padding-top: 22px;
+    }
+  }
+
+  @media (max-width: 520px) {
+    .pillars {
+      grid-template-columns: 1fr;
+    }
+    .pillar {
+      border-right: 0 !important;
+      padding-left: 0 !important;
+      border-top: 1px solid var(--rule);
+      padding-top: 22px;
+    }
+    .pillar:first-child {
+      border-top: 0;
+      padding-top: 0;
+    }
+  }
+</style>

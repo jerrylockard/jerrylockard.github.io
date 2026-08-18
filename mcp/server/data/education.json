@@ -14,7 +14,9 @@
     "Capstone Course, Political Science",
     "Comparative Politics",
     "International Relations",
-    "Political Philosophy"
+    "Political Philosophy",
+    "Law (beyond Intro to Law)",
+    "Homeland Security"
   ],
   "note": "Grades, GPA, and withdrawals are intentionally excluded — see guardrails.json. additionalCourseworkAvailable is not currently on the site; ask Jerry before adding any of it."
 }

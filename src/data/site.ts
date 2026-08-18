@@ -60,13 +60,3 @@ export const workGroups: WorkGroup[] = [
     ],
   },
 ];
-
-export interface WritingEntry {
-  date: string;
-  title: string;
-  tag: string;
-  href: string;
-}
-
-// Empty on purpose — no real posts exist yet. See list_todos: "writing-samples".
-export const writingEntries: WritingEntry[] = [];

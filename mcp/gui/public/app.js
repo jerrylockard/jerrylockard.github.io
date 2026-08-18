@@ -50,6 +50,29 @@ function initial(name) {
   return (name || "?").trim().charAt(0).toUpperCase();
 }
 
+// One small line-icon per persona, reflecting their job — a compass for the
+// lead who sets direction, a wrench for DevOps, a quill for copy, and so on.
+// Personas without an entry (e.g. a new one someone adds later) fall back to
+// their initial letter, same as before this existed.
+const AGENT_ICONS = {
+  shepard: '<circle cx="12" cy="12" r="8"/><path d="M12 8l2.2 3.8-2.2 3.8-2.2-3.8z"/>',
+  desiree: '<rect x="7" y="7" width="10" height="10" rx="1.5" transform="rotate(45 12 12)"/>',
+  devon:
+    '<path d="M14.2 6.2a3.6 3.6 0 00-4.9 4.9L4 16.4 7.6 20l5.3-5.3a3.6 3.6 0 004.9-4.9l-2.1 2.1-2.6-2.6z"/>',
+  quill:
+    '<path d="M4.5 19.5l2.6-.9L16.4 9.3a1.9 1.9 0 00-2.7-2.7L4.4 16.9z"/><path d="M13 7.3l3.7 3.7"/>',
+  ace: '<circle cx="12" cy="12" r="8"/><path d="M8.3 12.4l2.5 2.5 5-5.2"/>',
+  ledger: '<rect x="4.5" y="3.5" width="15" height="17" rx="1.5"/><path d="M8 8h8M8 12h8M8 16h5"/>',
+  ryder:
+    '<rect x="9.3" y="3" width="5.4" height="10.5" rx="2.7"/><path d="M6.3 11a5.7 5.7 0 0011.4 0"/><path d="M12 16.5V20M9.3 20h5.4"/>',
+};
+
+function avatarInner(persona) {
+  const path = persona && AGENT_ICONS[persona.id];
+  if (!path) return escapeHtml(initial(persona?.name));
+  return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${path}</svg>`;
+}
+
 function formatTime(date) {
   return date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 }
@@ -268,7 +291,7 @@ function renderMentionPopover() {
     row.type = "button";
     row.className = "mention-row" + (i === popoverIndex ? " active" : "");
     row.innerHTML = `
-      <span class="avatar" style="background:${p.color}">${initial(p.name)}</span>
+      <span class="avatar" style="background:${p.color}">${avatarInner(p)}</span>
       <span class="mention-info">
         <span class="mention-name">${p.name}</span>
         <span class="mention-role">${p.role}</span>
@@ -348,11 +371,14 @@ function updateRecipientsPreview() {
 
 // ---------- chat log ----------
 
-function addMessage(kind, who, color) {
+function addMessage(kind, who, persona) {
+  const color = persona?.color;
+  const avatar = persona ? `<span class="msg-avatar" style="background:${color}">${avatarInner(persona)}</span>` : "";
   const div = document.createElement("div");
   div.className = `msg ${kind}`;
   div.innerHTML = `
     <div class="head">
+      ${avatar}
       <span class="who" style="${color ? `color:${color}` : ""}">${who}</span>
       <span class="time">${formatTime(new Date())}</span>
     </div>
@@ -441,7 +467,8 @@ function showHopIndicator(personaId) {
   const div = document.createElement("div");
   div.className = "msg hop-indicator";
   div.style.color = persona?.color ?? "";
-  div.textContent = `${persona?.name ?? personaId} is replying…`;
+  const avatar = persona ? `<span class="msg-avatar" style="background:${persona.color}">${avatarInner(persona)}</span>` : "";
+  div.innerHTML = `${avatar}${escapeHtml(persona?.name ?? personaId)} is replying…`;
   logEl.appendChild(div);
   logEl.scrollTop = logEl.scrollHeight;
   hopIndicators.set(personaId, div);
@@ -647,7 +674,7 @@ function handleEvent(event) {
     clearHopIndicator(event.personaId);
     let entry = streaming.get(event.personaId);
     if (!entry) {
-      const textEl = addMessage("agent", who, persona?.color);
+      const textEl = addMessage("agent", who, persona);
       textEl.classList.add("streaming-cursor");
       entry = { textEl, raw: "" };
       streaming.set(event.personaId, entry);

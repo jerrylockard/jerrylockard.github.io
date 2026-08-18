@@ -1,11 +1,16 @@
-const personasEl = document.getElementById("personas");
+const sidebar = document.getElementById("sidebar");
 const approvalsEl = document.getElementById("approvals");
 const approvalsPanel = document.getElementById("approvals-panel");
+const bodyLayout = document.getElementById("body-layout");
 const logEl = document.getElementById("log");
 const emptyState = document.getElementById("empty-state");
 const composer = document.getElementById("composer");
+const composerError = document.getElementById("composer-error");
+const recipientsPreview = document.getElementById("recipients-preview");
 const input = document.getElementById("input");
 const sendBtn = document.getElementById("send-btn");
+const mentionBtn = document.getElementById("mention-btn");
+const mentionPopover = document.getElementById("mention-popover");
 const themeBtn = document.getElementById("theme-btn");
 const previewToggle = document.getElementById("preview-toggle");
 const previewPane = document.getElementById("preview-pane");
@@ -15,9 +20,10 @@ const previewStartBtn = document.getElementById("preview-start-btn");
 const previewRefreshBtn = document.getElementById("preview-refresh");
 
 let personas = [];
-let activeId = null;
+let chatBusy = false;
+let hopsRemaining = 0;
 const streaming = new Map(); // personaId -> { textEl, raw }
-const inFlight = new Set(); // personaId currently mid-turn
+const hopIndicators = new Map(); // personaId -> "is replying…" element, live until that hop's first output
 const toolCards = new Map(); // tool_use id -> { resultEl }
 
 const TOOL_LABELS = {
@@ -223,30 +229,121 @@ document.getElementById("preview-close").addEventListener("click", () => setPrev
 restorePreviewGeometry();
 initPreviewDrag();
 
-// ---------- personas ----------
+// ---------- @mentions ----------
 
-function renderPersonas() {
-  personasEl.innerHTML = "";
-  for (const p of personas) {
-    const card = document.createElement("button");
-    card.type = "button";
-    card.className = "persona-card" + (p.id === activeId ? " active" : "");
-    card.innerHTML = `
+let popoverMatches = [];
+let popoverIndex = 0;
+let popoverAnchor = null; // {start, end} span of the composer text a selected match replaces
+
+function matchPersonas(query) {
+  const q = query.toLowerCase();
+  return personas.filter((p) => p.name.toLowerCase().startsWith(q) || p.id.startsWith(q));
+}
+
+function currentMentionQuery() {
+  const pos = input.selectionStart;
+  const upToCursor = input.value.slice(0, pos);
+  const at = upToCursor.lastIndexOf("@");
+  if (at === -1) return null;
+  const between = upToCursor.slice(at + 1);
+  if (/\s/.test(between)) return null;
+  return { start: at, end: pos, query: between };
+}
+
+function closeMentionPopover() {
+  popoverMatches = [];
+  popoverAnchor = null;
+  mentionPopover.hidden = true;
+  mentionPopover.innerHTML = "";
+}
+
+function renderMentionPopover() {
+  if (!popoverMatches.length) {
+    closeMentionPopover();
+    return;
+  }
+  mentionPopover.innerHTML = "";
+  popoverMatches.forEach((p, i) => {
+    const row = document.createElement("button");
+    row.type = "button";
+    row.className = "mention-row" + (i === popoverIndex ? " active" : "");
+    row.innerHTML = `
       <span class="avatar" style="background:${p.color}">${initial(p.name)}</span>
-      <span class="persona-info">
-        <span class="persona-name">${p.name}</span>
-        <div class="persona-role">${p.role}</div>
-        <div class="persona-tagline">${p.tagline}</div>
+      <span class="mention-info">
+        <span class="mention-name">${p.name}</span>
+        <span class="mention-role">${p.role}</span>
       </span>
     `;
-    card.addEventListener("click", () => {
-      activeId = p.id;
-      renderPersonas();
-      updateComposerState();
-      input.focus();
+    row.addEventListener("mousedown", (e) => {
+      e.preventDefault();
+      insertMention(p);
     });
-    personasEl.appendChild(card);
+    mentionPopover.appendChild(row);
+  });
+  mentionPopover.hidden = false;
+}
+
+function openMentionPopover(matches, anchor) {
+  popoverMatches = matches;
+  popoverIndex = 0;
+  popoverAnchor = anchor;
+  renderMentionPopover();
+}
+
+function insertMention(persona) {
+  const text = input.value;
+  const anchor = popoverAnchor ?? { start: input.selectionStart, end: input.selectionStart };
+  const before = text.slice(0, anchor.start);
+  const after = text.slice(anchor.end);
+  const insertText = `@${persona.name} `;
+  input.value = before + insertText + after;
+  const cursor = before.length + insertText.length;
+  input.setSelectionRange(cursor, cursor);
+  closeMentionPopover();
+  input.focus();
+  updateRecipientsPreview();
+}
+
+mentionBtn.addEventListener("click", () => {
+  if (!mentionPopover.hidden) {
+    closeMentionPopover();
+    return;
   }
+  const pos = input.selectionStart;
+  input.focus();
+  openMentionPopover(matchPersonas(""), { start: pos, end: pos });
+});
+
+function extractMentions(text) {
+  const found = [];
+  const seen = new Set();
+  const re = /@([a-zA-Z]+)/g;
+  let m;
+  while ((m = re.exec(text))) {
+    const persona = personaByToken(m[1]);
+    if (persona && !seen.has(persona.id)) {
+      seen.add(persona.id);
+      found.push(persona);
+    }
+  }
+  return found;
+}
+
+function personaByToken(token) {
+  const t = token.toLowerCase();
+  return personas.find((p) => p.id.toLowerCase() === t || p.name.toLowerCase() === t);
+}
+
+function updateRecipientsPreview() {
+  const chain = extractMentions(input.value);
+  if (!chain.length) {
+    recipientsPreview.hidden = true;
+    return;
+  }
+  recipientsPreview.hidden = false;
+  const arrow = ' <span class="chain-arrow">→</span> ';
+  recipientsPreview.innerHTML =
+    "To " + chain.map((p) => `<span class="recipient-pill" style="color:${p.color}">${escapeHtml(p.name)}</span>`).join(chain.length > 1 ? arrow : "");
 }
 
 // ---------- chat log ----------
@@ -326,6 +423,36 @@ function addTeamNote(event) {
   setEmptyState();
 }
 
+function addChainBanner(chain) {
+  const names = chain.map((id) => personaById(id)?.name ?? id);
+  const div = document.createElement("div");
+  div.className = "msg chain-banner";
+  div.innerHTML =
+    names.length > 1
+      ? `<span class="team-note-icon">◆</span> Tagged in order: ${names.map(escapeHtml).join(" → ")}`
+      : `<span class="team-note-icon">◆</span> Tagged ${escapeHtml(names[0] ?? "")}`;
+  logEl.appendChild(div);
+  logEl.scrollTop = logEl.scrollHeight;
+  setEmptyState();
+}
+
+function showHopIndicator(personaId) {
+  const persona = personaById(personaId);
+  const div = document.createElement("div");
+  div.className = "msg hop-indicator";
+  div.style.color = persona?.color ?? "";
+  div.textContent = `${persona?.name ?? personaId} is replying…`;
+  logEl.appendChild(div);
+  logEl.scrollTop = logEl.scrollHeight;
+  hopIndicators.set(personaId, div);
+}
+
+function clearHopIndicator(personaId) {
+  const el = hopIndicators.get(personaId);
+  if (el) el.remove();
+  hopIndicators.delete(personaId);
+}
+
 function fillToolResult(id, result) {
   const card = toolCards.get(id);
   if (!card) return;
@@ -334,16 +461,23 @@ function fillToolResult(id, result) {
 
 // ---------- approvals ----------
 
+function syncSidebarVisibility() {
+  sidebar.hidden = approvalsPanel.hidden;
+  bodyLayout.classList.toggle("no-sidebar", approvalsPanel.hidden);
+}
+
 function renderApprovals(list) {
   approvalsEl.innerHTML = "";
   for (const approval of list) approvalsEl.appendChild(approvalCard(approval));
   approvalsPanel.hidden = list.length === 0;
+  syncSidebarVisibility();
 }
 
 function approvalCard(approval) {
   const card = document.createElement("div");
   card.className = "approval-card";
   card.dataset.id = approval.id;
+  card.dataset.personaId = approval.personaId;
   const who = personaById(approval.personaId)?.name ?? approval.personaId;
   card.innerHTML = `
     <div class="reason">${escapeHtml(who)} wants to: ${escapeHtml(approval.reason)}</div>
@@ -368,43 +502,113 @@ async function respond(id, approve) {
 
 // ---------- composer ----------
 
+function setComposerError(message) {
+  if (!message) {
+    composerError.hidden = true;
+    composerError.textContent = "";
+    return;
+  }
+  composerError.hidden = false;
+  composerError.textContent = message;
+}
+
 function updateComposerState() {
-  const busy = activeId && inFlight.has(activeId);
-  input.disabled = !activeId || busy;
-  sendBtn.disabled = !activeId || busy;
-  input.placeholder = busy ? `${personaById(activeId)?.name ?? "Agent"} is working…` : "Message…";
+  input.disabled = chatBusy;
+  sendBtn.disabled = chatBusy;
+  input.placeholder = chatBusy ? "Team is replying…" : "Tag someone with @, then say hello…";
 }
 
 input.addEventListener("input", () => {
   input.style.height = "auto";
   input.style.height = Math.min(input.scrollHeight, 160) + "px";
+  setComposerError(null);
+  updateRecipientsPreview();
+
+  const mention = currentMentionQuery();
+  if (mention) {
+    openMentionPopover(matchPersonas(mention.query), { start: mention.start, end: mention.end });
+  } else {
+    closeMentionPopover();
+  }
 });
 
 input.addEventListener("keydown", (e) => {
+  if (!mentionPopover.hidden && popoverMatches.length) {
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      popoverIndex = (popoverIndex + 1) % popoverMatches.length;
+      renderMentionPopover();
+      return;
+    }
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      popoverIndex = (popoverIndex - 1 + popoverMatches.length) % popoverMatches.length;
+      renderMentionPopover();
+      return;
+    }
+    if (e.key === "Enter" || e.key === "Tab") {
+      e.preventDefault();
+      insertMention(popoverMatches[popoverIndex]);
+      return;
+    }
+    if (e.key === "Escape") {
+      e.preventDefault();
+      closeMentionPopover();
+      return;
+    }
+  }
+
   if (e.key === "Enter" && !e.shiftKey) {
     e.preventDefault();
     composer.requestSubmit();
   }
 });
 
+document.addEventListener("click", (e) => {
+  if (!mentionPopover.hidden && !mentionPopover.contains(e.target) && e.target !== input && e.target !== mentionBtn) {
+    closeMentionPopover();
+  }
+});
+
 composer.addEventListener("submit", async (e) => {
   e.preventDefault();
   const message = input.value.trim();
-  if (!message || !activeId) return;
-  input.value = "";
-  input.style.height = "auto";
+  if (!message || chatBusy) return;
+  closeMentionPopover();
+  setComposerError(null);
 
-  const persona = personaById(activeId);
-  addMessage("user", "You", null).textContent = message;
-
-  inFlight.add(activeId);
-  updateComposerState();
-
-  await fetch(`/api/chat/${activeId}`, {
+  const res = await fetch("/api/chat", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ message }),
   });
+  const data = await res.json();
+
+  if (!res.ok) {
+    setComposerError(data.error || "Couldn't send that.");
+    return;
+  }
+
+  input.value = "";
+  input.style.height = "auto";
+  recipientsPreview.hidden = true;
+
+  const chainPersonas = data.chain.map((id) => personaById(id)).filter(Boolean);
+  const userMsg = addMessage("user", "You", null);
+  userMsg.textContent =
+    message
+      .replace(/@([a-zA-Z]+)/g, (m, w) => (personaByToken(w) ? "" : m))
+      .replace(/[ \t]+/g, " ")
+      .replace(/\s+([.,!?])/g, "$1")
+      .trim() || message;
+  const recipientsLine = document.createElement("div");
+  recipientsLine.className = "affects";
+  recipientsLine.textContent = "→ " + chainPersonas.map((p) => p.name).join(" → ");
+  userMsg.parentElement.appendChild(recipientsLine);
+
+  chatBusy = true;
+  hopsRemaining = data.chain.length;
+  updateComposerState();
 });
 
 // ---------- data + events ----------
@@ -412,8 +616,6 @@ composer.addEventListener("submit", async (e) => {
 async function loadPersonas() {
   const res = await fetch("/api/personas");
   personas = await res.json();
-  if (!activeId && personas.length) activeId = personas[0].id;
-  renderPersonas();
   updateComposerState();
 }
 
@@ -427,11 +629,22 @@ function connectEvents() {
   source.onmessage = (evt) => handleEvent(JSON.parse(evt.data));
 }
 
+function endHop() {
+  hopsRemaining = Math.max(0, hopsRemaining - 1);
+  chatBusy = hopsRemaining > 0;
+  updateComposerState();
+}
+
 function handleEvent(event) {
   const persona = personaById(event.personaId);
   const who = persona?.name ?? event.personaId ?? "agent";
 
-  if (event.type === "text") {
+  if (event.type === "mention_chain") {
+    addChainBanner(event.chain);
+  } else if (event.type === "hop_start") {
+    showHopIndicator(event.personaId);
+  } else if (event.type === "text") {
+    clearHopIndicator(event.personaId);
     let entry = streaming.get(event.personaId);
     if (!entry) {
       const textEl = addMessage("agent", who, persona?.color);
@@ -443,34 +656,42 @@ function handleEvent(event) {
     entry.textEl.innerHTML = renderInline(entry.raw);
     logEl.scrollTop = logEl.scrollHeight;
   } else if (event.type === "tool_use") {
+    clearHopIndicator(event.personaId);
     addToolCard(event);
   } else if (event.type === "tool_result") {
     fillToolResult(event.id, event.result);
   } else if (event.type === "team_update") {
     addTeamNote(event);
   } else if (event.type === "done") {
+    clearHopIndicator(event.personaId);
     const entry = streaming.get(event.personaId);
     if (entry) {
       entry.textEl.classList.remove("streaming-cursor");
       attachReasoningToggle(entry.textEl.parentElement, event.reasoning);
     }
     streaming.delete(event.personaId);
-    inFlight.delete(event.personaId);
-    updateComposerState();
+    endHop();
   } else if (event.type === "error") {
+    clearHopIndicator(event.personaId);
     addMessage("error", who, null).textContent = event.message;
     const entry = streaming.get(event.personaId);
     if (entry) entry.textEl.classList.remove("streaming-cursor");
     streaming.delete(event.personaId);
-    inFlight.delete(event.personaId);
-    updateComposerState();
+    endHop();
   } else if (event.type === "approval_requested") {
     approvalsPanel.hidden = false;
     approvalsEl.appendChild(approvalCard(event.approval));
+    syncSidebarVisibility();
   } else if (event.type === "approval_resolved") {
     const card = approvalsEl.querySelector(`[data-id="${event.id}"]`);
+    if (event.timedOut) {
+      const personaId = card?.dataset.personaId;
+      const who = (personaId && personaById(personaId)?.name) ?? personaId ?? "An agent";
+      addMessage("error", who, null).textContent = `${who}'s request timed out waiting for a response and was denied automatically.`;
+    }
     if (card) card.remove();
     approvalsPanel.hidden = approvalsEl.children.length === 0;
+    syncSidebarVisibility();
   }
 }
 

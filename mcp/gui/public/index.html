@@ -23,12 +23,8 @@
     <path class="cable" d="M0,1 Q600,34 1200,1"/>
   </svg>
 
-  <div class="body">
-    <aside class="sidebar">
-      <section class="panel">
-        <p class="eyebrow">Agents</p>
-        <div id="personas" class="personas"></div>
-      </section>
+  <div class="body no-sidebar" id="body-layout">
+    <aside class="sidebar" id="sidebar" hidden>
       <section class="panel" id="approvals-panel" hidden>
         <p class="eyebrow eyebrow-warn">Needs your OK</p>
         <div id="approvals" class="approvals"></div>
@@ -38,12 +34,16 @@
     <main class="chat">
       <div id="log" class="log">
         <div class="empty-state" id="empty-state">
-          <p>Pick an agent on the left and say hello.</p>
+          <p>Tag someone to start — try <code>@andrew</code> or <code>@desiree</code>.</p>
         </div>
       </div>
       <form id="composer" class="composer">
+        <p class="composer-error" id="composer-error" hidden></p>
+        <p class="recipients-preview" id="recipients-preview" hidden></p>
         <div class="composer-inner">
-          <textarea id="input" placeholder="Message…" rows="1"></textarea>
+          <div class="mention-popover" id="mention-popover" hidden></div>
+          <button type="button" id="mention-btn" class="icon-btn mention-btn" aria-label="Tag an agent" title="Tag an agent">@</button>
+          <textarea id="input" placeholder="Tag someone with @, then say hello…" rows="1"></textarea>
           <button type="submit" id="send-btn" aria-label="Send">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 8h11M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </button>

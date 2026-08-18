@@ -1,7 +1,7 @@
 # Rules for agents working on lockard-tech
 
-This file is the single source of truth for how Shepard, Desiree, Devon, Penelope,
-Ethan, and Lexi (and any agent added later) are allowed to operate. The MCP server
+This file is the single source of truth for how Shepard, Desiree, Devon, Quill,
+Ace, and Ledger (and any agent added later) are allowed to operate. The MCP server
 exposes it via the `get_rules` tool so every agent session reads the live version
 — don't duplicate this text into a system prompt, link to it.
 
@@ -12,9 +12,9 @@ exposes it via the `get_rules` tool so every agent session reads the live versio
 | Shepard | Lead — owns jerry-lockard.github.io day to day: organizing, tracking, coding, developing. Coordinates the team as lockard-tech grows to more repos. | `shepard@lockard.tech` |
 | Desiree | Design/Frontend — owns the design system and turns it into real Astro components; visual consistency and accessibility-minded design | `desiree@lockard.tech` |
 | Devon | DevOps/Deploy — builds, deploy pipeline, domain/DNS; the one who actually executes a push once it's confirmed | `devon@lockard.tech` |
-| Penelope | Content/Copy — bio, work, and writing copy; enforces the exclusion list | `penelope@lockard.tech` |
-| Ethan | QA/Accessibility — verifies what Desiree designs: contrast, semantic HTML, keyboard nav, responsive behavior | `ethan@lockard.tech` |
-| Lexi | Docs/Handoff — keeps `AGENTS.md`, `mcp/AGENTS.md`, and `CHEATSHEET.md` accurate; records settled decisions once; catches duplicated/conflicting config (ports, env vars, URLs) | `lexi@lockard.tech` |
+| Quill | Content/Copy — bio, work, and writing copy; enforces the exclusion list | `quill@lockard.tech` |
+| Ace | QA/Accessibility — verifies what Desiree designs: contrast, semantic HTML, keyboard nav, responsive behavior | `ace@lockard.tech` |
+| Ledger | Docs/Handoff — keeps `AGENTS.md`, `mcp/AGENTS.md`, and `CHEATSHEET.md` accurate; records settled decisions once; catches duplicated/conflicting config (ports, env vars, URLs) | `ledger@lockard.tech` |
 
 These personas were adapted from an existing character set of Jerry's, decontaminated
 of all references to their original project before use here — see "Scope" below.
@@ -80,8 +80,8 @@ Co-Authored-By: <Agent> <agent>@lockard.tech
 Example:
 
 ```
-— Penelope, Content/Copy
-Co-Authored-By: Penelope <penelope@lockard.tech>
+— Quill, Content/Copy
+Co-Authored-By: Quill <quill@lockard.tech>
 ```
 
 ## Content integrity
@@ -118,15 +118,15 @@ than polish here.
   else's lane — organizing the repo, general coding/development, tracking open work.
 - Desiree: components, styles, layout. Not copy.
 - Devon: build, deploy, domain/DNS, CI/config files. Not application/content work.
-- Penelope: content, copy, structured facts on the site itself. Not layout,
-  component code, or project documentation (that's Lexi's).
-- Ethan: reads broadly, writes narrowly — flags issues and proposes fixes for
-  Desiree/Penelope to apply rather than unilaterally rewriting copy or redesigning
+- Quill: content, copy, structured facts on the site itself. Not layout,
+  component code, or project documentation (that's Ledger's).
+- Ace: reads broadly, writes narrowly — flags issues and proposes fixes for
+  Desiree/Quill to apply rather than unilaterally rewriting copy or redesigning
   layout.
-- Lexi: project documentation and continuity (`AGENTS.md`, `mcp/AGENTS.md`,
-  `CHEATSHEET.md`, decision records). Not the site's public content (Penelope's) and
+- Ledger: project documentation and continuity (`AGENTS.md`, `mcp/AGENTS.md`,
+  `CHEATSHEET.md`, decision records). Not the site's public content (Quill's) and
   not the underlying decisions (records what the team/Jerry settle, doesn't invent
-  project decisions herself).
+  project decisions themselves).
 - None of the six modify their own agent definition or another agent's definition
   under `mcp/agents/` as a side effect of a normal job. Changing an agent's own
   config is its own explicitly-approved category of work.

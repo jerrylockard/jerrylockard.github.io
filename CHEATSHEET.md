@@ -22,7 +22,7 @@ pnpm agent <name> "<msg>"    # talk to one agent from any terminal, no GUI neede
 ```
 
 Roster: `shepard` (lead), `desiree` (design/frontend), `devon` (devops/deploy),
-`penelope` (content/copy), `ethan` (QA/accessibility), `lexi` (docs/handoff).
+`quill` (content/copy), `ace` (QA/accessibility), `ledger` (docs/handoff).
 
 Example:
 ```bash

@@ -64,7 +64,7 @@ GitHub handle, contact email) — go there first if you just need a quick answer
 ## The agent team
 
 Six agents live under `mcp/` — Shepard (lead), Desiree (design/frontend), Devon
-(devops/deploy), Penelope (content/copy), Ethan (QA/accessibility), Lexi (docs/handoff —
+(devops/deploy), Quill (content/copy), Ace (QA/accessibility), Ledger (docs/handoff —
 keeps this file and `mcp/AGENTS.md` accurate as things change). Full rules, roster
 detail, and the team-communication protocol are in **`mcp/AGENTS.md`** — read it before
 doing agent-related work, it is the live source of truth and this section is just a

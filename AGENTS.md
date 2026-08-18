@@ -63,9 +63,11 @@ GitHub handle, contact email) — go there first if you just need a quick answer
 
 ## The agent team
 
-Six agents live under `mcp/` — Shepard (lead), Desiree (design/frontend), Devon
+Seven agents live under `mcp/` — Shepard (lead), Desiree (design/frontend), Devon
 (devops/deploy), Quill (content/copy), Ace (QA/accessibility), Ledger (docs/handoff —
-keeps this file and `mcp/AGENTS.md` accurate as things change). Full rules, roster
+keeps this file and `mcp/AGENTS.md` accurate as things change), and Ryder (narrative/
+press — interviews Jerry directly, watches the whole team, shapes the public story
+toward an eventual campaign announcement). Full rules, roster
 detail, and the team-communication protocol are in **`mcp/AGENTS.md`** — read it before
 doing agent-related work, it is the live source of truth and this section is just a
 summary.

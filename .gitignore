@@ -28,3 +28,6 @@ pnpm-debug.log*
 
 # local Claude Code settings (per-machine, not shared)
 .claude/
+
+# Playwright MCP tool scratch output (screenshots, page snapshots)
+.playwright-mcp/

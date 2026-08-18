@@ -9,7 +9,7 @@ export interface ParsedMentions {
 
 /**
  * Pulls @mentions out of a composer message. Matches both persona id
- * (@andrew) and display name (@Andrew) case-insensitively; unrecognized
+ * (@shepard) and display name (@Shepard) case-insensitively; unrecognized
  * @tokens (typos, unrelated @-strings) are left in the text untouched.
  */
 export function parseMentions(text: string, personas: Persona[]): ParsedMentions {

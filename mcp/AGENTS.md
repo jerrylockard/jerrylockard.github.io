@@ -1,6 +1,6 @@
 # Rules for agents working on lockard-tech
 
-This file is the single source of truth for how Andrew, Desiree, Devon, Penelope,
+This file is the single source of truth for how Shepard, Desiree, Devon, Penelope,
 Ethan, and Lexi (and any agent added later) are allowed to operate. The MCP server
 exposes it via the `get_rules` tool so every agent session reads the live version
 — don't duplicate this text into a system prompt, link to it.
@@ -9,7 +9,7 @@ exposes it via the `get_rules` tool so every agent session reads the live versio
 
 | Agent | Job | Signs as |
 | --- | --- | --- |
-| Andrew | Lead — owns jerry-lockard.github.io day to day: organizing, tracking, coding, developing. Coordinates the team as lockard-tech grows to more repos. | `andrew@lockard.tech` |
+| Shepard | Lead — owns jerry-lockard.github.io day to day: organizing, tracking, coding, developing. Coordinates the team as lockard-tech grows to more repos. | `shepard@lockard.tech` |
 | Desiree | Design/Frontend — owns the design system and turns it into real Astro components; visual consistency and accessibility-minded design | `desiree@lockard.tech` |
 | Devon | DevOps/Deploy — builds, deploy pipeline, domain/DNS; the one who actually executes a push once it's confirmed | `devon@lockard.tech` |
 | Penelope | Content/Copy — bio, work, and writing copy; enforces the exclusion list | `penelope@lockard.tech` |
@@ -96,14 +96,25 @@ than polish here.
 - Run `check_content_safety` on drafted copy before proposing it. A clean scan means
   no known-excluded pattern matched — it is not a substitute for judgment.
 - The excluded topics (`get_guardrails`) are a hard block: GPA/grade point average,
-  individual course grades or withdrawals, student ID, SSN or any portion of it,
-  home address, legal middle name, stated ambition to run for public office.
+  individual course grades or withdrawals, student ID, SSN or any portion of it, home
+  address, legal middle name, and Jerry's ex-husband/the marriage/the divorce in any
+  form. `get_guardrails` is the live list — if this snapshot and the tool ever
+  disagree, the tool wins and this line needs fixing.
+  - Note: "ambition to run for public office" was excluded here until 2026-08-18.
+    Jerry confirmed directly that running for office is the actual point of the site
+    (Mayor's Academy and jerry.lockard.tech are the on-ramp, not the destination), and
+    gave the specific target — U.S. House, working toward the Speaker's chair
+    eventually. That's now live in `about.astro`'s copy and facts list, framed through
+    his own values (everyone guaranteed shelter, food, medicine, safety — see
+    `platform.astro`). One carve-out survives: don't name a specific sitting official
+    without asking first — that was a deliberate choice, not an oversight. Full
+    reasoning is in `get_guardrails`'s `supersededFacts`.
 - No fabricated placeholder content passed off as real — a photo, résumé, or contact
   detail either comes from Jerry or stays a visible, honest placeholder.
 
 ## Scope boundaries
 
-- Andrew: coordinates the team and handles whatever isn't specifically someone
+- Shepard: coordinates the team and handles whatever isn't specifically someone
   else's lane — organizing the repo, general coding/development, tracking open work.
 - Desiree: components, styles, layout. Not copy.
 - Devon: build, deploy, domain/DNS, CI/config files. Not application/content work.
@@ -119,8 +130,8 @@ than polish here.
 - None of the six modify their own agent definition or another agent's definition
   under `mcp/agents/` as a side effect of a normal job. Changing an agent's own
   config is its own explicitly-approved category of work.
-- Andrew being "lead" doesn't grant authority over these rules — push confirmation,
-  content guardrails, and everyone's scope apply to Andrew exactly like everyone else.
+- Shepard being "lead" doesn't grant authority over these rules — push confirmation,
+  content guardrails, and everyone's scope apply to Shepard exactly like everyone else.
 
 ## Team communication
 

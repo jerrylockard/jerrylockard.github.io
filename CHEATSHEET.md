@@ -21,12 +21,12 @@ pnpm agent list              # see the roster
 pnpm agent <name> "<msg>"    # talk to one agent from any terminal, no GUI needed
 ```
 
-Roster: `andrew` (lead), `desiree` (design/frontend), `devon` (devops/deploy),
+Roster: `shepard` (lead), `desiree` (design/frontend), `devon` (devops/deploy),
 `penelope` (content/copy), `ethan` (QA/accessibility), `lexi` (docs/handoff).
 
 Example:
 ```bash
-pnpm agent andrew "let's build the real site from the mockup"
+pnpm agent shepard "what's still open on the site?"
 ```
 
 ## Building the site itself
@@ -42,6 +42,13 @@ pnpm preview           # preview the production build
 site currently is. Run it alongside the GUI to watch the live-preview panel update as
 an agent works.
 
+## Deploy
+
+Automatic — no manual deploy command. A push to `main` triggers
+`.github/workflows/deploy.yml` (`pnpm build` → GitHub Pages) and it's live at
+`jerry.lockard.tech` within a few minutes. Custom-domain HTTPS is auto-issued by
+GitHub and can lag behind a DNS/CNAME change — that's normal, not a bug.
+
 ## Git — the rules, not just the commands
 
 - Stay on `main`. No feature branches.
@@ -53,8 +60,8 @@ an agent works.
 
 | Thing | Path |
 | --- | --- |
-| Approved design comp | `mockup.html` |
-| The actual site | `src/pages/*.astro` (still the starter scaffold) |
+| Original design comp | `mockup.html` (historical reference — already built out) |
+| The actual site | `src/pages/*.astro` + `src/components/*.astro` (built, live) |
 | Cross-tool project hub (read this first, any AI tool) | `AGENTS.md` |
 | Agent rules, roster, commit-signature format | `mcp/AGENTS.md` |
 | Agent personas/system prompts | `mcp/agents/src/personas.ts` |

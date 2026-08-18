@@ -108,7 +108,7 @@ server.registerTool(
     title: "Append memory note",
     description: "Append a short session summary to the .remember/ buffer so future sessions and other agents have continuity. Call this at the end of a job.",
     inputSchema: {
-      agentName: z.string().describe("Which agent is writing this note (e.g. Andrew, Desiree, Devon, Penelope, Ethan)"),
+      agentName: z.string().describe("Which agent is writing this note (e.g. Shepard, Desiree, Devon, Penelope, Ethan)"),
       summary: z.string().describe("What happened and what changed this session, in a few sentences"),
     },
   },
@@ -133,7 +133,7 @@ server.registerTool(
     title: "Post team update",
     description: "Let the team know what you did or found, when it might matter to someone else's work — not every routine action. Keep it to a sentence or two.",
     inputSchema: {
-      agent: z.string().describe("Your name (e.g. Andrew, Desiree, Devon, Penelope, Ethan)"),
+      agent: z.string().describe("Your name (e.g. Shepard, Desiree, Devon, Penelope, Ethan)"),
       message: z.string().describe("What happened, in a sentence or two"),
       affects: z.array(z.string()).optional().describe("Names of teammates this is especially relevant to, if any"),
     },

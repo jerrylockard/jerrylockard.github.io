@@ -1,8 +1,9 @@
 # jerry-lockard.github.io
 
 Jerry Lockard's personal site. Read this file first, no matter which AI tool you are —
-`CLAUDE.md` and `GEMINI.md` in this same directory are symlinks to this file, and Codex
-CLI / opencode read `AGENTS.md` natively, so this is the one place every tool lands.
+`CLAUDE.md` in this same directory is a real symlink to this file, `GEMINI.md` points
+here via Gemini CLI's `@./AGENTS.md` import syntax, and Codex CLI / opencode read
+`AGENTS.md` natively — so this is the one place every tool actually lands.
 
 ## What this is
 
@@ -10,17 +11,31 @@ A civic-first personal site for Covington, Kentucky — Jerry is using it for re
 job-seeking in city/public-sector work via the Mayor's Academy, not as a developer
 portfolio. Community, government, and public service lead; technical work stays in
 the background. Repo lives at `github.com/jerry-lockard/jerry-lockard.github.io`
-(personal account, not the `lockard-tech` org) and will be served at
+(personal account, not the `lockard-tech` org) and is served live at
 `jerry.lockard.tech`. `lockard.tech` is the bare apex domain and belongs to the
 `lockard-tech` GitHub org — a different, separate thing from this site.
 
 ## Current state — read before assuming anything is built
 
-- `src/pages/index.astro` is still the **unmodified Astro starter scaffold**. The real
-  site has not been built yet.
-- `mockup.html` at the repo root is the **approved design comp** — palette, type system,
-  component patterns, the catenary-divider signature motif. It's a static reference, not
-  wired into Astro. Building the real site from it is the next phase of work, not done.
+- **The real site is built and live.** `src/pages/index.astro` composes the actual page
+  from `src/components/` (Nav, Hero, Catenary, Strands, Work, About, Platform, Writing,
+  Footer) inside `src/layouts/layout.astro` — this is no longer the starter scaffold.
+- `mockup.html` at the repo root is the **original design comp** Desiree built the real
+  components from — palette, type system, component patterns, the catenary-divider
+  signature motif. Keep it as historical reference; the live source of truth for what's
+  actually on the site is `src/components/`, not the mockup.
+- Deploys automatically: a push to `main` triggers `.github/workflows/deploy.yml`, which
+  builds with `pnpm build` and publishes to GitHub Pages at `jerry.lockard.tech` (custom
+  domain via `public/CNAME`). No manual deploy step. GitHub Pages auto-issues HTTPS for
+  custom domains, which can take a while to provision after DNS/CNAME changes — a cert
+  mismatch on `jerry.lockard.tech` shortly after a domain change is normal transient
+  provisioning, not a bug.
+- The writing feature (`src/content/writing/`, `/writing` index, `/writing/[slug]`,
+  homepage teaser, nav link) is fully wired but has **zero posts** — nothing renders
+  until a `.md` file lands in `src/content/writing/`.
+- A few open items live in the MCP `list_todos` tool (portrait photo still a placeholder,
+  fonts still loading from Google's CDN instead of self-hosted) — check there for the
+  current list rather than trusting a copy in this file.
 - A full agent system already exists under `mcp/` (see below) and is ready to use.
 
 ## Stack — this trips people up, so it's explicit
@@ -48,7 +63,7 @@ GitHub handle, contact email) — go there first if you just need a quick answer
 
 ## The agent team
 
-Six agents live under `mcp/` — Andrew (lead), Desiree (design/frontend), Devon
+Six agents live under `mcp/` — Shepard (lead), Desiree (design/frontend), Devon
 (devops/deploy), Penelope (content/copy), Ethan (QA/accessibility), Lexi (docs/handoff —
 keeps this file and `mcp/AGENTS.md` accurate as things change). Full rules, roster
 detail, and the team-communication protocol are in **`mcp/AGENTS.md`** — read it before
@@ -68,9 +83,14 @@ These are load-bearing; `mcp/AGENTS.md` has the full detail, but the short versi
 - **Scope: lockard-tech only.** No knowledge of, or reference to, any other
   organization or platform Jerry works on. This repo's history represents him
   professionally for city-government hiring — nothing unrelated gets mixed in.
-- **Content integrity.** Never invent biographical facts. Hard-excluded topics: GPA,
-  individual grades/withdrawals, student ID, SSN, home address, legal middle name,
-  stated ambition to run for public office.
+- **Content integrity.** Never invent biographical facts. Hard-excluded topics (see
+  `get_guardrails` for the live list): GPA, individual grades/withdrawals, student ID,
+  SSN, home address, legal middle name, Jerry's ex-husband/the marriage/the divorce in
+  any form. Note: "ambition to run for public office" was excluded here until
+  2026-08-18 — Jerry confirmed it's the actual point of the site, so it's now stated
+  explicitly (U.S. House, working toward Speaker) in `about.astro`/`platform.astro`;
+  see `get_guardrails`'s superseded-facts for the full reasoning and the one carve-out
+  (don't name a specific sitting official without asking).
 - **Git: stay on `main`.** No feature branches. New commits only — never `--amend`,
   `--force`, or `git reset --hard`.
 - **Every push stops for Jerry's explicit confirmation**, regardless of how small.

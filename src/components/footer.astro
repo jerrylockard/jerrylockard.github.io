@@ -3,10 +3,13 @@
 // file there (repo root: public/resume.pdf) and it appears automatically on
 // the next build, same pattern nav.astro uses for hasWriting/hasCivicNotes.
 import { existsSync } from "node:fs";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 import { identity } from "../data/site";
 
-const hasResume = existsSync(fileURLToPath(new URL("../../public/resume.pdf", import.meta.url)));
+// process.cwd()-based, not import.meta.url-based: Astro/Vite doesn't resolve
+// import.meta.url to this file's real source path once it's bundled, but the
+// build always runs from the project root, so this is the reliable check.
+const hasResume = existsSync(join(process.cwd(), "public", "resume.pdf"));
 ---
 
 <footer class="footer" id="contact">

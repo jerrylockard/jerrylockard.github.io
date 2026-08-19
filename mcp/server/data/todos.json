@@ -26,8 +26,8 @@
   },
   {
     "id": "resume",
-    "text": "Footer has a conditional résumé link (src/components/footer.astro) that only renders once public/resume.pdf exists on disk. Self-hosted by design — no Google Docs/Drive. Jerry needs to drop the actual PDF at public/resume.pdf and commit it; link appears automatically on next build once it's there.",
-    "status": "open"
+    "text": "Résumé live: public/resume.pdf, linked from the footer. Self-hosted, no Google Docs/Drive. Went through two content-safety rounds first — GPA, individual course grades, and the legal middle name in the header all had to come out before it could ship; check_content_safety came back clean on the final version.",
+    "status": "done"
   },
   {
     "id": "theme-persistence",

@@ -6,12 +6,11 @@ updatedDate: 2026-08-18
 meetingType: "Board of Commissioners Caucus"
 location: "Covington City Hall, 20 W. Pike St., Covington, Kentucky"
 attendance: "partial"
-recordingCoverage: "Partial — my recording covers the later portion of the meeting. The formal, public part of it ends around 14:31; after that it's informal conversation I'm not publishing."
+recordingCoverage: "Partial — I arrived after the meeting began. Official video not yet published; see Sources and recording below."
 status: "advanced-from-caucus"
 nextActionDate: 2026-08-25
 topics: ["public-safety technology", "ALPR", "artificial intelligence", "city vehicles", "storm response"]
 summary: "Commissioners discussed vehicle purchases, the Southbank Partners contribution, a proposed 10-year Axon technology package, and the City's storm response."
-recordingUrl: "https://recorder.google.com/696694b8-902b-4411-a0f5-ae6a6117e37b"
 officialAgendaUrl: "https://www.covingtonky.gov/Portals/covingtonky/Documents/News/20260818%20Caucus%20Agenda.pdf"
 officialPacketUrl: "https://www.covingtonky.gov/Portals/covingtonky/Documents/News/20260818%20AIRs%20%26%20Backup%20Documents.pdf"
 ---
@@ -177,7 +176,7 @@ drone deployment.
 
 ## Sources and recording
 
-- [My recording of the meeting](https://recorder.google.com/696694b8-902b-4411-a0f5-ae6a6117e37b) — the formal, public portion ends around 14:31; everything after that in the raw file is informal conversation I have not published any account of.
+- **Official video** — not yet published as of this writing. Covington posts meeting video through [TBNK](https://tbnk.org/tbnk/), the regional government-access channel, and its own [YouTube channel](https://www.youtube.com/@covingtonkentucky1807); I'll link the specific recording here once it's up, likely within a few days.
 - [City event page](https://www.covingtonky.gov/events/event/moduleid/418/itemid/21156/mctl/eventdetails)
 - [Official August 18 caucus agenda](https://www.covingtonky.gov/Portals/covingtonky/Documents/News/20260818%20Caucus%20Agenda.pdf)
 - [Official agenda-item requests and backup packet](https://www.covingtonky.gov/Portals/covingtonky/Documents/News/20260818%20AIRs%20%26%20Backup%20Documents.pdf)

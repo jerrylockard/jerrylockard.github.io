@@ -5,7 +5,7 @@ import { dirname, join } from "node:path";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import { identity, education, work, todos, guardrails, designTokens } from "./data.js";
+import { identity, education, work, todos, guardrails, designTokens, civicVoiceGuide } from "./data.js";
 import { checkContentSafety } from "./guardrails.js";
 import { readMemoryContext, appendMemoryNote, postTeamUpdate, readTeamUpdates } from "./memory.js";
 
@@ -51,6 +51,16 @@ server.registerTool(
     description: "Palette, type, layout tokens, component patterns, and the design rationale extracted from the approved mockup.",
   },
   async () => json(designTokens)
+);
+
+server.registerTool(
+  "get_civic_voice_guide",
+  {
+    title: "Get civic voice guide",
+    description:
+      "Editorial rules for the Covington Civic Field Notes series (/civic-notes) — voice, the required article structure, the fact/attribution/opinion table, and hard rules (status language, no informal-conversation publishing, no untrimmed recordings). Call this before drafting or editing any civic-notes entry.",
+  },
+  async () => ({ content: [{ type: "text" as const, text: civicVoiceGuide }] })
 );
 
 server.registerTool(

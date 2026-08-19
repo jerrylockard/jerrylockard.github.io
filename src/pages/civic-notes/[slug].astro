@@ -1,0 +1,279 @@
+---
+import { getCollection, render } from "astro:content";
+import Layout from "../../layouts/layout.astro";
+import Nav from "../../components/nav.astro";
+import Footer from "../../components/footer.astro";
+import { STATUS_LABELS, formatMeetingDate } from "../../data/civicNotes";
+
+export async function getStaticPaths() {
+  const entries = await getCollection("civicNotes", ({ data }) => !data.draft);
+  return entries.map((entry) => ({
+    params: { slug: entry.id },
+    props: { entry },
+  }));
+}
+
+const { entry } = Astro.props;
+const { Content } = await render(entry);
+const {
+  title,
+  meetingDate,
+  updatedDate,
+  meetingType,
+  location,
+  attendance,
+  recordingCoverage,
+  status,
+  nextActionDate,
+  topics,
+  summary,
+} = entry.data;
+---
+
+<Layout title={`${title} — Jerry Lockard`} description={summary}>
+  <Nav />
+  <main id="top">
+    <article class="wrap note observe">
+      <a class="back-link" href="/civic-notes">← All civic notes</a>
+      <p class="note-eyebrow">Covington Civic Field Notes</p>
+      <h1 class="note-title">{title}</h1>
+
+      <div class="snapshot">
+        <p class="snapshot-heading">Meeting snapshot</p>
+        <dl class="snapshot-facts">
+          <dt>Status</dt>
+          <dd>{STATUS_LABELS[status]}</dd>
+          <dt>Meeting</dt>
+          <dd>{meetingType} · {formatMeetingDate(meetingDate)}</dd>
+          <dt>Location</dt>
+          <dd>{location}</dd>
+          <dt>Attendance</dt>
+          <dd>{attendance === "full" ? "Attended in full" : "Attended in part"}</dd>
+          {recordingCoverage && (
+            <>
+              <dt>Recording</dt>
+              <dd>{recordingCoverage}</dd>
+            </>
+          )}
+          {nextActionDate && (
+            <>
+              <dt>Next action</dt>
+              <dd>{formatMeetingDate(nextActionDate)}</dd>
+            </>
+          )}
+          <dt>Last updated</dt>
+          <dd>{formatMeetingDate(updatedDate)}</dd>
+        </dl>
+        {
+          topics.length > 0 && (
+            <ul class="snapshot-topics">
+              {topics.map((t) => (
+                <li>{t}</li>
+              ))}
+            </ul>
+          )
+        }
+      </div>
+
+      <div class="prose">
+        <Content />
+      </div>
+    </article>
+  </main>
+  <Footer />
+</Layout>
+
+<style>
+  .note {
+    padding: 48px 0 80px;
+    max-width: calc(var(--measure) + 64px);
+  }
+
+  .back-link {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    letter-spacing: 0.04em;
+    color: var(--ink-faint);
+    text-decoration: none;
+    margin-bottom: 28px;
+    transition: color 160ms ease;
+  }
+
+  .back-link:hover {
+    color: var(--accent-ink);
+  }
+
+  .note-eyebrow {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    font-weight: 500;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--accent-ink);
+    margin: 0 0 10px;
+  }
+
+  .note-title {
+    font-family: var(--display);
+    font-weight: 400;
+    font-size: clamp(2rem, 4.6vw, 2.9rem);
+    line-height: 1.14;
+    letter-spacing: -0.02em;
+    margin: 0 0 32px;
+    max-width: 24ch;
+  }
+
+  .snapshot {
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin-bottom: 44px;
+    background: var(--limestone);
+  }
+
+  .snapshot-heading {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin: 0 0 14px;
+  }
+
+  .snapshot-facts {
+    margin: 0;
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 6px 16px;
+    font-size: 14px;
+  }
+
+  .snapshot-facts dt {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+
+  .snapshot-facts dd {
+    margin: 0;
+    color: var(--ink);
+  }
+
+  .snapshot-topics {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 16px 0 0;
+    padding: 14px 0 0;
+    border-top: 1px solid var(--rule);
+  }
+
+  .snapshot-topics li {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.03em;
+    color: var(--ink-soft);
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: 3px 8px;
+  }
+
+  .prose {
+    max-width: var(--measure);
+    color: var(--ink-soft);
+  }
+
+  .prose :global(p) {
+    margin: 0 0 22px;
+    font-size: 17px;
+    line-height: 1.75;
+  }
+
+  .prose :global(h2) {
+    font-family: var(--display);
+    font-weight: 400;
+    font-size: 1.55rem;
+    letter-spacing: -0.012em;
+    color: var(--ink);
+    margin: 44px 0 16px;
+  }
+
+  .prose :global(h3) {
+    font-family: var(--display);
+    font-weight: 400;
+    font-size: 1.2rem;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+    margin: 30px 0 12px;
+  }
+
+  .prose :global(a) {
+    color: var(--accent-ink);
+    text-decoration: underline;
+    text-decoration-color: var(--rule);
+    text-underline-offset: 3px;
+    transition: text-decoration-color 160ms ease;
+  }
+
+  .prose :global(a:hover) {
+    text-decoration-color: var(--accent);
+  }
+
+  .prose :global(ul),
+  .prose :global(ol) {
+    margin: 0 0 22px;
+    padding-left: 22px;
+    line-height: 1.7;
+  }
+
+  .prose :global(li) {
+    margin-bottom: 6px;
+  }
+
+  .prose :global(table) {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0 0 26px;
+    font-size: 14.5px;
+  }
+
+  .prose :global(th),
+  .prose :global(td) {
+    text-align: left;
+    padding: 8px 12px 8px 0;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .prose :global(th) {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    font-weight: 500;
+  }
+
+  .prose :global(strong) {
+    color: var(--ink);
+  }
+
+  .prose :global(blockquote) {
+    margin: 28px 0;
+    padding-left: 18px;
+    border-left: 2px solid var(--accent);
+    color: var(--ink-soft);
+    font-style: italic;
+  }
+
+  .prose :global(hr) {
+    border: none;
+    border-top: 1px solid var(--rule);
+    margin: 40px 0;
+  }
+</style>

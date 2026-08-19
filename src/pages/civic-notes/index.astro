@@ -1,0 +1,70 @@
+---
+import { getCollection } from "astro:content";
+import Layout from "../../layouts/layout.astro";
+import Nav from "../../components/nav.astro";
+import Catenary from "../../components/catenary.astro";
+import CivicNoteCard from "../../components/civic-note-card.astro";
+import Footer from "../../components/footer.astro";
+
+const entries = (await getCollection("civicNotes", ({ data }) => !data.draft)).sort(
+  (a, b) => b.data.meetingDate.valueOf() - a.data.meetingDate.valueOf(),
+);
+---
+
+<Layout
+  title="Covington Civic Field Notes — Jerry Lockard"
+  description="Jerry's first-person notes from Covington public meetings — what he heard, what the official documents show, and what he's still asking."
+>
+  <Nav />
+  <main id="top">
+    <div class="wrap page-header">
+      <p class="eyebrow">Covington Civic Field Notes</p>
+      <p class="page-lede">
+        I'm documenting what I learn attending Covington public meetings, reading the official
+        record, and following decisions over time. These aren't official minutes or complete
+        news reports — they're my first-person notes, separated from what the documents confirm,
+        updated as proposals become decisions.
+      </p>
+    </div>
+    <Catenary tight />
+    {
+      entries.length > 0 ? (
+        <div class="wrap observe">
+          {entries.map((entry) => (
+            <CivicNoteCard entry={entry} />
+          ))}
+        </div>
+      ) : (
+        <div class="wrap observe">
+          <p class="empty-note">Nothing published yet — check back after the next meeting.</p>
+        </div>
+      )
+    }
+  </main>
+  <Footer />
+</Layout>
+
+<style>
+  .page-header {
+    padding-top: 56px;
+  }
+
+  .page-header .eyebrow {
+    margin-bottom: 8px;
+  }
+
+  .page-lede {
+    font-family: var(--display);
+    font-size: 1.22rem;
+    font-weight: 400;
+    line-height: 1.5;
+    color: var(--ink-soft);
+    max-width: var(--measure);
+    margin: 0 0 8px;
+  }
+
+  .empty-note {
+    color: var(--ink-faint);
+    padding: 24px 0 64px;
+  }
+</style>

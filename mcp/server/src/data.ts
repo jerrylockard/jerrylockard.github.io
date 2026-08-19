@@ -8,6 +8,10 @@ function loadJson<T>(file: string): T {
   return JSON.parse(readFileSync(join(dataDir, file), "utf-8")) as T;
 }
 
+function loadText(file: string): string {
+  return readFileSync(join(dataDir, file), "utf-8");
+}
+
 export interface Identity {
   name: string;
   location: string;
@@ -66,3 +70,4 @@ export const work = loadJson<WorkGroup[]>("work.json");
 export const todos = loadJson<Todo[]>("todos.json");
 export const guardrails = loadJson<Guardrails>("guardrails.json");
 export const designTokens = loadJson<DesignTokens>("design-tokens.json");
+export const civicVoiceGuide = loadText("civic-voice-guide.md");

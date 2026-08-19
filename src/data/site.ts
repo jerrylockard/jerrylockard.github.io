@@ -5,6 +5,9 @@ export const identity = {
   name: "Jerry Lockard",
   location: "Covington, Kentucky",
   coordinates: "39.0837° N, 84.5086° W",
+  email: "jerry@lockard.tech",
+  linkedin: "https://www.linkedin.com/in/jerrylockard/",
+  github: "https://github.com/jerry-lockard",
 };
 
 export interface WorkItem {

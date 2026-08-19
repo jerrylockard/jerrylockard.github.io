@@ -2,13 +2,13 @@
   "name": "Jerry Lockard",
   "location": "Covington, Kentucky",
   "coordinates": "39.0837° N, 84.5086° W",
-  "contactEmail": "jerrylockard91@gmail.com",
-  "contactEmailNote": "Current real address, confirmed by Jerry. He'll move to jerry@lockard.tech once that's set up — check with him before the site ships in case that's already live.",
+  "contactEmail": "jerry@lockard.tech",
+  "contactEmailNote": "Confirmed live by Jerry directly on 2026-08-19 — jerry@lockard.tech is now the published public contact address, live in footer.astro. jerrylockard91@gmail.com was the address before this switch; keep it on file but don't publish it going forward unless Jerry says otherwise.",
   "links": {
     "github": "jerry-lockard",
-    "linkedin": "jerry-lockard"
+    "linkedin": "jerrylockard"
   },
-  "linksNote": "Confirmed by Jerry. \"jerrylockard91\" is an old, unused GitHub account — do not use it or treat it as a candidate; jerry-lockard is correct and final. (jerrylockard91@gmail.com is a separate, currently-real email address — that one's fine, it's just not a GitHub handle.)",
+  "linksNote": "Confirmed by Jerry. GitHub: jerry-lockard (with hyphen) — \"jerrylockard91\" is an old, unused GitHub account, never use it. LinkedIn: jerrylockard (no hyphen, https://www.linkedin.com/in/jerrylockard/) — this field previously and incorrectly matched the GitHub handle's hyphenation; corrected 2026-08-19 against the URL Jerry actually gave.",
   "domains": {
     "personal": "jerry.lockard.tech",
     "personalNote": "This site's domain — subdomain of the lockard-tech apex, points at the jerry-lockard personal GitHub account/repo.",

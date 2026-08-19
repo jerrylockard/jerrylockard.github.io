@@ -1,7 +1,12 @@
 ---
-// Contact email, LinkedIn, GitHub, and résumé are unconfirmed placeholders —
-// see list_todos "contact-email" and "github-handle". Do not resolve these
-// without Jerry confirming the real values first.
+// Résumé link only renders once public/resume.pdf actually exists — drop the
+// file there (repo root: public/resume.pdf) and it appears automatically on
+// the next build, same pattern nav.astro uses for hasWriting/hasCivicNotes.
+import { existsSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { identity } from "../data/site";
+
+const hasResume = existsSync(fileURLToPath(new URL("../../public/resume.pdf", import.meta.url)));
 ---
 
 <footer class="footer" id="contact">
@@ -15,10 +20,10 @@
         </p>
       </div>
       <div class="footer-links">
-        <a href="mailto:you@example.com">you@example.com</a>
-        <a href="#">LinkedIn</a>
-        <a href="#">GitHub</a>
-        <a href="#">Résumé (PDF)</a>
+        <a href={`mailto:${identity.email}`}>{identity.email}</a>
+        <a href={identity.linkedin}>LinkedIn</a>
+        <a href={identity.github}>GitHub</a>
+        {hasResume && <a href="/resume.pdf">Résumé (PDF)</a>}
       </div>
     </div>
     <div class="colophon">

@@ -8,6 +8,7 @@ import { z } from "zod";
 import { identity, education, work, todos, guardrails, designTokens, civicVoiceGuide } from "./data.js";
 import { checkContentSafety } from "./guardrails.js";
 import { readMemoryContext, appendMemoryNote, postTeamUpdate, readTeamUpdates } from "./memory.js";
+import { appendJournalEntry, readRecentJournal } from "./journal.js";
 
 const rulesPath = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "AGENTS.md");
 
@@ -149,6 +150,33 @@ server.registerTool(
     },
   },
   async ({ agent, message, affects }) => json(postTeamUpdate(agent, message, affects))
+);
+
+server.registerTool(
+  "get_journal_context",
+  {
+    title: "Get journal context",
+    description:
+      "Ryder-only. Read past daily check-in journal entries with Jerry, for continuity between sessions (following up on something from yesterday, noticing a pattern). No other persona should call this — it's Jerry's personal reflection, not team-shared context.",
+  },
+  async () => ({ content: [{ type: "text" as const, text: readRecentJournal() || "(no entries yet)" }] })
+);
+
+server.registerTool(
+  "append_journal_entry",
+  {
+    title: "Append journal entry",
+    description:
+      "Ryder-only. Save a daily check-in with Jerry — what was discussed, how he's doing, anything worth following up on. This is private and never becomes site content on its own; content ideas surfaced during the conversation go in a separate list for Jerry to review and approve later, not auto-published.",
+    inputSchema: {
+      summary: z.string().describe("What was actually discussed — Jerry's day, his own words where it matters, not a generic recap"),
+      contentIdeas: z.array(z.string()).optional().describe("Specific ideas that could become site content, for Jerry to review — not pre-approved for publishing"),
+    },
+  },
+  async ({ summary, contentIdeas }) => {
+    appendJournalEntry(summary, contentIdeas);
+    return json({ ok: true });
+  }
 );
 
 const transport = new StdioServerTransport();

@@ -4,7 +4,6 @@ import Layout from "../layouts/layout.astro";
 import Nav from "../components/nav.astro";
 import Hero from "../components/hero.astro";
 import Catenary from "../components/catenary.astro";
-import Strands from "../components/strands.astro";
 import Work from "../components/work.astro";
 import About from "../components/about.astro";
 import Platform from "../components/platform.astro";
@@ -21,8 +20,6 @@ const recentWriting = (await getCollection("writing", ({ data }) => !data.draft)
   <main id="top">
     <Hero />
     <Catenary />
-    <Strands />
-    <Catenary tight />
     <Work />
     <Catenary tight />
     <About />

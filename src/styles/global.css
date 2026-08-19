@@ -356,52 +356,6 @@ a {
   margin: 0 0 26px;
 }
 
-.strands {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  border-top: 1px solid var(--rule);
-}
-
-.strand {
-  padding: 26px 30px 30px 0;
-  border-right: 1px solid var(--rule);
-}
-
-.strand:last-child {
-  border-right: 0;
-  padding-right: 0;
-}
-
-.strand:not(:first-child) {
-  padding-left: 30px;
-}
-
-.strand h3 {
-  font-family: var(--display);
-  font-weight: 400;
-  font-size: 1.28rem;
-  letter-spacing: -0.01em;
-  margin: 0 0 10px;
-}
-
-.strand p {
-  margin: 0 0 18px;
-  font-size: 15.5px;
-  line-height: 1.65;
-  color: var(--ink-soft);
-}
-
-.strand ul {
-  list-style: none;
-  margin: 0;
-  padding: 0 0 0 14px;
-  border-left: 1px solid var(--rule);
-  font-family: var(--mono);
-  font-size: 12.5px;
-  line-height: 2;
-  color: var(--ink-faint);
-}
-
 /* ---------- work ---------- */
 
 .work-group + .work-group {
@@ -696,20 +650,6 @@ a {
   .portrait {
     max-width: 190px;
     aspect-ratio: 1 / 1;
-  }
-  .strands {
-    grid-template-columns: 1fr;
-  }
-  .strand {
-    border-right: 0;
-    border-bottom: 1px solid var(--rule);
-    padding: 24px 0;
-  }
-  .strand:not(:first-child) {
-    padding-left: 0;
-  }
-  .strand:last-child {
-    border-bottom: 0;
   }
   .item,
   .about-grid {

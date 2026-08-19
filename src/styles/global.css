@@ -248,7 +248,8 @@ a {
 .portrait {
   aspect-ratio: 4 / 5;
   background: var(--limestone);
-  border: 1px solid var(--rule);
+  border: 0.25px solid var(--rule);
+  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -259,6 +260,13 @@ a {
   letter-spacing: 0.05em;
   color: var(--ink-faint);
   padding: 16px;
+}
+
+.portrait img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .actions {
@@ -691,8 +699,8 @@ a {
     --nav-h: auto;
   }
   .nav-inner {
-    flex-direction: column;
-    align-items: stretch;
+    flex-direction: row;
+    align-items: center;
     gap: 0;
     padding: 12px 0 0;
   }

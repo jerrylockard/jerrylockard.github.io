@@ -1,8 +1,8 @@
 [
   {
     "id": "portrait",
-    "text": "Replace the portrait placeholder with a real photograph.",
-    "status": "open"
+    "text": "Real photograph wired into hero.astro (public/PORTRAIT.jpg), replacing the text placeholder.",
+    "status": "done"
   },
   {
     "id": "writing-samples",

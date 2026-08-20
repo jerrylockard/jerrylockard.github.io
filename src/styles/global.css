@@ -667,17 +667,25 @@ a {
   }
   .nav-inner {
     flex-direction: row;
-    align-items: center;
+    align-items: flex-start;
     gap: 0;
-    padding: 12px 0 0;
+    padding-top: 12px;
+  }
+  .nav-mark {
+    padding: 10px 0;
   }
   .nav-right {
     justify-content: space-between;
     padding: 10px 0;
   }
   .nav-links {
-    gap: 18px;
+    gap: 14px;
+    row-gap: 8px;
     font-size: 12px;
+    flex-wrap: wrap;
+  }
+  .nav-links a {
+    white-space: nowrap;
   }
   html {
     scroll-padding-top: 110px;

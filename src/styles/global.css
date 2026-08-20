@@ -666,8 +666,8 @@ a {
     --nav-h: auto;
   }
   .nav-inner {
-    flex-direction: row;
-    align-items: flex-start;
+    flex-direction: column;
+    align-items: stretch;
     gap: 0;
     padding-top: 12px;
   }

@@ -31,11 +31,6 @@ export const workGroups: WorkGroup[] = [
         meta: ["City of Covington", "Current cohort"],
       },
       {
-        title: "Volunteer, Hope Center",
-        body: "Served meals and helped out at a shelter in Lexington. The people there were having the worst year of their lives and mostly wanted to be treated like people. It's the clearest thing I've learned about why public services matter.",
-        meta: ["Lexington, KY", "Meals & resident support"],
-      },
-      {
         title: "Substitute teacher",
         body: "Fayette County Public Schools, mostly elementary classrooms. You walk into a room you didn't plan for, with kids who didn't ask for a stranger, and you make the day work anyway. Good training for public work generally.",
         meta: ["Fayette County Schools", "Kentucky certified"],

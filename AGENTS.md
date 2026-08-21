@@ -12,8 +12,10 @@ job-seeking in city/public-sector work via the Mayor's Academy, not as a develop
 portfolio. Community, government, and public service lead; technical work stays in
 the background. Repo lives at `github.com/jerry-lockard/jerry-lockard.github.io`
 (personal account, not the `lockard-tech` org) and is served live at
-`jerry.lockard.tech`. `lockard.tech` is the bare apex domain and belongs to the
-`lockard-tech` GitHub org — a different, separate thing from this site.
+`jerry.lockard.me`. Jerry bought `lockard.me` himself and moved the site here from
+`jerry.lockard.tech` on 2026-08-20; `lockard.tech` remains the bare apex domain
+belonging to the separate `lockard-tech` GitHub org — unrelated to this site, then
+and now.
 
 ## Current state — read before assuming anything is built
 
@@ -25,10 +27,10 @@ the background. Repo lives at `github.com/jerry-lockard/jerry-lockard.github.io`
   signature motif. Keep it as historical reference; the live source of truth for what's
   actually on the site is `src/components/`, not the mockup.
 - Deploys automatically: a push to `main` triggers `.github/workflows/deploy.yml`, which
-  builds with `pnpm build` and publishes to GitHub Pages at `jerry.lockard.tech` (custom
+  builds with `pnpm build` and publishes to GitHub Pages at `jerry.lockard.me` (custom
   domain via `public/CNAME`). No manual deploy step. GitHub Pages auto-issues HTTPS for
   custom domains, which can take a while to provision after DNS/CNAME changes — a cert
-  mismatch on `jerry.lockard.tech` shortly after a domain change is normal transient
+  mismatch on `jerry.lockard.me` shortly after a domain change is normal transient
   provisioning, not a bug.
 - The writing feature (`src/content/writing/`, `/writing` index, `/writing/[slug]`,
   homepage teaser, nav link) is fully wired but has **zero posts** — nothing renders

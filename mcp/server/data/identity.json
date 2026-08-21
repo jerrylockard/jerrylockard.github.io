@@ -10,9 +10,9 @@
   },
   "linksNote": "Confirmed by Jerry. GitHub: jerry-lockard (with hyphen) — \"jerrylockard91\" is an old, unused GitHub account, never use it. LinkedIn: jerrylockard (no hyphen, https://www.linkedin.com/in/jerrylockard/) — this field previously and incorrectly matched the GitHub handle's hyphenation; corrected 2026-08-19 against the URL Jerry actually gave.",
   "domains": {
-    "personal": "jerry.lockard.tech",
-    "personalNote": "This site's domain — subdomain of the lockard-tech apex, points at the jerry-lockard personal GitHub account/repo.",
+    "personal": "jerry.lockard.me",
+    "personalNote": "This site's domain — a subdomain of lockard.me, which Jerry bought and owns personally, points at the jerry-lockard personal GitHub account/repo. Switched from jerry.lockard.tech on 2026-08-20.",
     "org": "lockard.tech",
-    "orgNote": "Apex domain, belongs to the lockard-tech GitHub organization — not this site."
+    "orgNote": "Apex domain, belongs to the lockard-tech GitHub organization — not this site, and not the same as lockard.me."
   }
 }

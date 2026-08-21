@@ -103,7 +103,7 @@ than polish here.
   disagree, the tool wins and this line needs fixing.
   - Note: "ambition to run for public office" was excluded here until 2026-08-18.
     Jerry confirmed directly that running for office is the actual point of the site
-    (Mayor's Academy and jerry.lockard.tech are the on-ramp, not the destination), and
+    (Mayor's Academy and jerry.lockard.me are the on-ramp, not the destination), and
     gave the specific target — U.S. House, working toward the Speaker's chair
     eventually. That's now live in `about.astro`'s copy and facts list, framed through
     his own values (everyone guaranteed shelter, food, medicine, safety — see

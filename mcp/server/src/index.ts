@@ -9,6 +9,7 @@ import { identity, education, work, todos, guardrails, designTokens, civicVoiceG
 import { checkContentSafety } from "./guardrails.js";
 import { readMemoryContext, appendMemoryNote, postTeamUpdate, readTeamUpdates } from "./memory.js";
 import { appendJournalEntry, readRecentJournal } from "./journal.js";
+import { readProfile, noteObservation } from "./profile.js";
 
 const rulesPath = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "AGENTS.md");
 
@@ -150,6 +151,35 @@ server.registerTool(
     },
   },
   async ({ agent, message, affects }) => json(postTeamUpdate(agent, message, affects))
+);
+
+server.registerTool(
+  "get_profile",
+  {
+    title: "Get Jerry's learned profile",
+    description:
+      "Behavioral patterns the team has learned about how Jerry works — communication style, decision patterns, priorities, technical preferences, working style — sorted by how well-established each one is. Read this alongside get_memory_context at the start of a session so you don't ask him things the team should already know. This is NOT biographical/personal content (that's Ryder's private journal, get_journal_context) — it's how he works, not who he is.",
+  },
+  async () => json(readProfile())
+);
+
+server.registerTool(
+  "note_about_jerry",
+  {
+    title: "Note a learned pattern about Jerry",
+    description:
+      'Record — or reinforce, if it already exists — a genuine, recurring pattern in how Jerry communicates, decides, or prioritizes. Not a one-off. Use a stable, short kebab-case id so repeated observations strengthen the same entry instead of duplicating it (e.g. "prefers-terse-replies", reused every time you notice it again — not a fresh id per observation). Never record anything from the excluded-topics list (get_guardrails) or anything biographical/personal — this is a behavioral-pattern store the whole team reads, not a private journal.',
+    inputSchema: {
+      agent: z.string().describe("Your name (e.g. Shepard, Desiree, Devon, Quill, Ace, Ledger, Ryder)"),
+      id: z.string().describe('Stable kebab-case slug identifying this observation, e.g. "prefers-terse-replies"'),
+      text: z.string().describe("The observation itself, one clear sentence"),
+      category: z
+        .enum(["communication-style", "decision-patterns", "priorities", "technical-preferences", "working-style"])
+        .describe("Which kind of pattern this is"),
+      evidence: z.string().optional().describe("Optional short quote or context supporting this observation"),
+    },
+  },
+  async ({ agent, id, text, category, evidence }) => json(noteObservation(agent, id, text, category, evidence))
 );
 
 server.registerTool(

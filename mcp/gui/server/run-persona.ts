@@ -6,7 +6,7 @@ export type { PersonaEvent };
 
 export type ChainEvent =
   | PersonaEvent
-  | { type: "mention_chain"; chain: string[]; message: string }
+  | { type: "mention_chain"; chain: string[]; message: string; routed?: boolean }
   | { type: "hop_start"; personaId: string; index: number; total: number };
 
 export async function runPersonaTurn(personaId: string, message: string, emit: (event: PersonaEvent) => void): Promise<void> {
@@ -24,8 +24,13 @@ function buildHandoffPrompt(originalMessage: string, fromPersonaId: string, from
  * agent's reply, so they're not answering blind — but each still runs in
  * their own resumed SDK session, so this is a relay, not a shared thread.
  */
-export async function runMentionChain(chain: string[], originalMessage: string, emit: (event: ChainEvent) => void): Promise<void> {
-  emit({ type: "mention_chain", chain, message: originalMessage });
+export async function runMentionChain(
+  chain: string[],
+  originalMessage: string,
+  emit: (event: ChainEvent) => void,
+  routed = false,
+): Promise<void> {
+  emit({ type: "mention_chain", chain, message: originalMessage, routed });
 
   let previous: { personaId: string; reply: string } | null = null;
 

@@ -1,9 +1,13 @@
 const sidebar = document.getElementById("sidebar");
+const channelListEl = document.getElementById("channel-list");
 const approvalsEl = document.getElementById("approvals");
 const approvalsPanel = document.getElementById("approvals-panel");
+const agentAlertsPanel = document.getElementById("agent-alerts-panel");
+const agentAlertsEl = document.getElementById("agent-alerts");
 const bodyLayout = document.getElementById("body-layout");
 const logEl = document.getElementById("log");
 const emptyState = document.getElementById("empty-state");
+const quickRepliesEl = document.getElementById("quick-replies");
 const composer = document.getElementById("composer");
 const composerError = document.getElementById("composer-error");
 const recipientsPreview = document.getElementById("recipients-preview");
@@ -18,13 +22,98 @@ const previewFrame = document.getElementById("preview-frame");
 const previewOffline = document.getElementById("preview-offline");
 const previewStartBtn = document.getElementById("preview-start-btn");
 const previewRefreshBtn = document.getElementById("preview-refresh");
+const profileToggle = document.getElementById("profile-toggle");
+const profileOverlay = document.getElementById("profile-overlay");
+const profileClose = document.getElementById("profile-close");
+const profileEmpty = document.getElementById("profile-empty");
+const profileListEl = document.getElementById("profile-list");
+const agentCountEl = document.getElementById("agent-count");
+const activeCountEl = document.getElementById("active-count");
+const approvalCountEl = document.getElementById("approval-count");
+const signalCountEl = document.getElementById("signal-count");
+const studioStatusEl = document.getElementById("studio-status");
+const clearChatBtn = document.getElementById("clear-chat");
+const reconcileChatBtn = document.getElementById("reconcile-chat");
+let reconcilePollTimer = null;
+
+const TEAM_CHANNEL = "team";
+const QUICK_REPLIES = ["Yes, go ahead", "Looks good", "Not yet — hold off", "What's the status?", "Can you explain more?", "No, stop."];
 
 let personas = [];
-let chatBusy = false;
-let hopsRemaining = 0;
-const streaming = new Map(); // personaId -> { textEl, raw }
+let activeChannel = localStorage.getItem("gui-active-channel") || TEAM_CHANNEL;
+const unreadChannels = new Set();
+const agentStatuses = new Map();
+const agentStatusMessages = new Map();
+const agentAlerts = new Map();
+const hopsRemainingByChannel = new Map(); // channel -> number of chain hops still in flight
+const streaming = new Map(); // personaId -> { textEl, raw } — scoped to whichever channel is currently on screen
 const hopIndicators = new Map(); // personaId -> "is replying…" element, live until that hop's first output
 const toolCards = new Map(); // tool_use id -> { resultEl }
+
+function isBusy(channel) {
+  return (hopsRemainingByChannel.get(channel) || 0) > 0;
+}
+
+function channelEntries() {
+  return [{ id: TEAM_CHANNEL, name: "Team", role: "Group channel", color: "var(--accent)" }, ...personas];
+}
+
+function statusFor(id) {
+  return agentStatuses.get(id) || "available";
+}
+
+function statusLabel(status) {
+  return { available: "Available", working: "Working", attention: "Needs attention", question: "Has a question", "hand-raised": "Hand raised", help: "Immediate help" }[status] || "Available";
+}
+
+function updatePulse() {
+  const activeCount = [...agentStatuses.values()].filter((status) => status === "working").length;
+  const approvalCount = approvalsEl.children.length;
+  const signalCount = agentAlerts.size;
+  agentCountEl.textContent = String(personas.length);
+  activeCountEl.textContent = String(activeCount);
+  approvalCountEl.textContent = String(approvalCount);
+  signalCountEl.textContent = String(signalCount);
+  const urgent = [...agentStatuses.values()].some((status) => status === "help");
+  const hasQuestion = [...agentStatuses.values()].some((status) => status === "question");
+  const handRaised = [...agentStatuses.values()].some((status) => status === "hand-raised");
+  studioStatusEl.textContent = urgent ? "An agent needs immediate help" : handRaised ? "An agent has raised a hand" : hasQuestion ? "An agent has a question" : approvalCount ? "Your approval is needed" : activeCount ? `${activeCount} agent${activeCount === 1 ? " is" : "s are"} working` : "Ready for direction";
+}
+
+function setAgentStatus(id, status, message = "") {
+  if (!id) return;
+  agentStatuses.set(id, status);
+  if (message) agentStatusMessages.set(id, message);
+  renderChannelList();
+  renderAgentAlerts();
+  updatePulse();
+}
+
+function setAgentAlert(id, status, message) {
+  agentAlerts.set(id, { id, status, message });
+  setAgentStatus(id, status, message);
+}
+
+function clearAgentAlert(id) {
+  agentAlerts.delete(id);
+  agentStatusMessages.delete(id);
+  renderAgentAlerts();
+  updatePulse();
+}
+
+function renderAgentAlerts() {
+  agentAlertsEl.innerHTML = "";
+  agentAlertsPanel.hidden = agentAlerts.size === 0;
+  for (const alert of agentAlerts.values()) {
+    const persona = personaById(alert.id);
+    if (!persona) continue;
+    const card = document.createElement("div");
+    card.className = `agent-alert alert-${alert.status}`;
+    card.innerHTML = `<div class="agent-alert-head"><span class="status-dot"></span><strong>${escapeHtml(persona.name)}</strong><span>${escapeHtml(statusLabel(alert.status))}</span></div><p>${escapeHtml(alert.message)}</p><button type="button">Open channel</button>`;
+    card.querySelector("button").addEventListener("click", () => switchChannel(alert.id));
+    agentAlertsEl.appendChild(card);
+  }
+}
 
 const TOOL_LABELS = {
   Bash: "ran a command",
@@ -55,6 +144,7 @@ function initial(name) {
 // Personas without an entry (e.g. a new one someone adds later) fall back to
 // their initial letter, same as before this existed.
 const AGENT_ICONS = {
+  team: '<circle cx="8.5" cy="11" r="3"/><circle cx="15.5" cy="11" r="3"/><path d="M3.5 19c.5-2.7 2.3-4.3 5-4.3s4.5 1.6 5 4.3M10.5 19c.5-2.7 2.3-4.3 5-4.3s4.5 1.6 5 4.3"/>',
   shepard: '<circle cx="12" cy="12" r="8"/><path d="M12 8l2.2 3.8-2.2 3.8-2.2-3.8z"/>',
   desiree: '<rect x="7" y="7" width="10" height="10" rx="1.5" transform="rotate(45 12 12)"/>',
   devon:
@@ -252,6 +342,74 @@ document.getElementById("preview-close").addEventListener("click", () => setPrev
 restorePreviewGeometry();
 initPreviewDrag();
 
+// ---------- profile ----------
+
+const CATEGORY_LABELS = {
+  "communication-style": "Communication style",
+  "decision-patterns": "Decision patterns",
+  priorities: "Priorities",
+  "technical-preferences": "Technical preferences",
+  "working-style": "Working style",
+};
+
+function categoryLabel(category) {
+  return CATEGORY_LABELS[category] || category;
+}
+
+function renderProfile(observations) {
+  profileListEl.innerHTML = "";
+  profileEmpty.style.display = observations.length ? "none" : "block";
+
+  for (const obs of observations) {
+    const row = document.createElement("div");
+    row.className = "profile-row";
+    const evidence = obs.evidence ? `<p class="profile-evidence">“${escapeHtml(obs.evidence)}”</p>` : "";
+    row.innerHTML = `
+      <div class="profile-row-head">
+        <span class="profile-category">${escapeHtml(categoryLabel(obs.category))}</span>
+        <span class="profile-count">confirmed ×${obs.timesConfirmed}</span>
+      </div>
+      <p class="profile-text">${escapeHtml(obs.text)}</p>
+      ${evidence}
+      <p class="profile-meta">Noted by ${escapeHtml(obs.notedBy.join(", "))}</p>
+    `;
+    profileListEl.appendChild(row);
+  }
+}
+
+async function openProfile() {
+  profileOverlay.hidden = false;
+  try {
+    const res = await fetch("/api/profile");
+    renderProfile(await res.json());
+  } catch {
+    profileEmpty.textContent = "Couldn't load the profile — server hiccup.";
+    profileEmpty.style.display = "block";
+  }
+}
+
+function closeProfile() {
+  profileOverlay.hidden = true;
+}
+
+profileToggle.addEventListener("click", () => {
+  profileToggle.setAttribute("aria-pressed", String(profileOverlay.hidden));
+  if (profileOverlay.hidden) openProfile();
+  else closeProfile();
+});
+
+profileClose.addEventListener("click", () => {
+  profileToggle.setAttribute("aria-pressed", "false");
+  closeProfile();
+});
+
+profileOverlay.addEventListener("click", (e) => {
+  if (e.target === profileOverlay) {
+    profileToggle.setAttribute("aria-pressed", "false");
+    closeProfile();
+  }
+});
+
 // ---------- @mentions ----------
 
 let popoverMatches = [];
@@ -371,7 +529,7 @@ function updateRecipientsPreview() {
 
 // ---------- chat log ----------
 
-function addMessage(kind, who, persona) {
+function addMessage(kind, who, persona, when) {
   const color = persona?.color;
   const avatar = persona ? `<span class="msg-avatar" style="background:${color}">${avatarInner(persona)}</span>` : "";
   const div = document.createElement("div");
@@ -380,7 +538,7 @@ function addMessage(kind, who, persona) {
     <div class="head">
       ${avatar}
       <span class="who" style="${color ? `color:${color}` : ""}">${who}</span>
-      <span class="time">${formatTime(new Date())}</span>
+      <span class="time">${formatTime(when ?? new Date())}</span>
     </div>
     <div class="text"></div>
   `;
@@ -449,14 +607,15 @@ function addTeamNote(event) {
   setEmptyState();
 }
 
-function addChainBanner(chain) {
+function addChainBanner(chain, routed) {
   const names = chain.map((id) => personaById(id)?.name ?? id);
   const div = document.createElement("div");
   div.className = "msg chain-banner";
+  const verb = routed ? "Routed to" : "Tagged";
   div.innerHTML =
     names.length > 1
-      ? `<span class="team-note-icon">◆</span> Tagged in order: ${names.map(escapeHtml).join(" → ")}`
-      : `<span class="team-note-icon">◆</span> Tagged ${escapeHtml(names[0] ?? "")}`;
+      ? `<span class="team-note-icon">◆</span> ${verb} in order: ${names.map(escapeHtml).join(" → ")}`
+      : `<span class="team-note-icon">◆</span> ${verb} ${escapeHtml(names[0] ?? "")}`;
   logEl.appendChild(div);
   logEl.scrollTop = logEl.scrollHeight;
   setEmptyState();
@@ -486,18 +645,169 @@ function fillToolResult(id, result) {
   card.resultEl.textContent = result && result.trim() ? result : "(empty)";
 }
 
-// ---------- approvals ----------
+// ---------- channels ----------
 
-function syncSidebarVisibility() {
-  sidebar.hidden = approvalsPanel.hidden;
-  bodyLayout.classList.toggle("no-sidebar", approvalsPanel.hidden);
+function renderChannelList() {
+  channelListEl.innerHTML = "";
+  for (const entry of channelEntries()) {
+    const status = statusFor(entry.id);
+    const row = document.createElement("button");
+    row.type = "button";
+    row.className = "channel-row" + (entry.id === activeChannel ? " active" : "");
+    row.dataset.channel = entry.id;
+    row.innerHTML = `
+      <span class="avatar" style="background:${entry.color}">${avatarInner(entry)}</span>
+      <span class="channel-copy"><span class="channel-name">${escapeHtml(entry.name)}</span><span class="channel-role">${escapeHtml(entry.role)}</span></span>
+      <span class="agent-status status-${status}" title="${escapeHtml(agentStatusMessages.get(entry.id) || statusLabel(status))}"><span class="status-dot"></span>${statusLabel(status)}</span>
+      ${unreadChannels.has(entry.id) ? '<span class="unread-dot" aria-label="Unread"></span>' : ""}
+    `;
+    row.addEventListener("click", () => switchChannel(entry.id));
+    channelListEl.appendChild(row);
+  }
 }
+
+function clearLog() {
+  logEl.innerHTML = "";
+  logEl.appendChild(emptyState);
+  setEmptyState();
+}
+
+function historyActionLabel() {
+  return activeChannel === TEAM_CHANNEL ? "team chat" : `${personaById(activeChannel)?.name ?? activeChannel} chat`;
+}
+
+async function clearChat() {
+  if (!window.confirm(`Clear ${historyActionLabel()} history? This cannot be undone.`)) return;
+  clearChatBtn.disabled = true;
+  reconcileChatBtn.disabled = true;
+  try {
+    const res = await fetch("/api/transcript/clear", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ channel: activeChannel }) });
+    if (!res.ok) throw new Error("The chat history could not be cleared.");
+    clearLog();
+  } catch (err) {
+    setComposerError(err instanceof Error ? err.message : "The chat history could not be cleared.");
+  } finally {
+    clearChatBtn.disabled = false;
+    reconcileChatBtn.disabled = false;
+  }
+}
+
+async function reconcileAndClearChat() {
+  if (!window.confirm(`Ask Ledger to reconcile ${historyActionLabel()} against the current repository, then clear the history?`)) return;
+  clearChatBtn.disabled = true;
+  reconcileChatBtn.disabled = true;
+  studioStatusEl.textContent = "Ledger is reconciling history";
+  reconcileChatBtn.textContent = "Starting…";
+  try {
+    const res = await fetch("/api/transcript/reconcile", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ channel: activeChannel }) });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Ledger could not reconcile this history.");
+    await watchReconcile(data.job.id);
+  } catch (err) {
+    setComposerError(err instanceof Error ? err.message : "Ledger could not reconcile this history.");
+    studioStatusEl.textContent = "Reconciliation needs attention";
+    reconcileChatBtn.textContent = "Reconcile & clear";
+  } finally {
+    clearChatBtn.disabled = false;
+    if (!reconcilePollTimer) reconcileChatBtn.disabled = false;
+    updatePulse();
+  }
+}
+
+async function watchReconcile(jobId) {
+  const started = Date.now();
+  const finish = (success, message) => {
+    reconcilePollTimer = null;
+    clearChatBtn.disabled = false;
+    reconcileChatBtn.disabled = false;
+    reconcileChatBtn.textContent = "Reconcile & clear";
+    studioStatusEl.textContent = message;
+    if (success) clearLog();
+    else setComposerError(message);
+  };
+  const poll = async () => {
+    try {
+      const res = await fetch(`/api/transcript/reconcile/${encodeURIComponent(jobId)}`);
+      const job = await res.json();
+      const elapsed = Math.max(1, Math.round((Date.now() - started) / 1000));
+      reconcileChatBtn.textContent = `${job.state === "waiting" ? "Waiting" : "Working"}… ${elapsed}s`;
+      studioStatusEl.textContent = job.message;
+      if (job.state === "complete") return finish(true, job.message);
+      if (job.state === "error") return finish(false, job.message);
+      reconcilePollTimer = setTimeout(poll, 1000);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Could not read reconciliation status.";
+      finish(false, message);
+    }
+  };
+  await poll();
+}
+
+clearChatBtn.addEventListener("click", clearChat);
+reconcileChatBtn.addEventListener("click", reconcileAndClearChat);
+
+function applyHistoryEvent(channel, event, ts) {
+  const when = ts ? new Date(ts) : new Date();
+  if (event.type === "user_message") {
+    addMessage("user", "You", null, when).textContent = event.text;
+    return;
+  }
+  handleEvent({ ...event, channel }, when);
+}
+
+function applyChannelAccent(id) {
+  const color = id === TEAM_CHANNEL ? null : personaById(id)?.color;
+  if (color) document.documentElement.style.setProperty("--channel-accent", color);
+  else document.documentElement.style.removeProperty("--channel-accent");
+}
+
+async function switchChannel(id) {
+  if (id !== activeChannel) {
+    activeChannel = id;
+    localStorage.setItem("gui-active-channel", id);
+  }
+  unreadChannels.delete(id);
+  streaming.clear();
+  hopIndicators.clear();
+  toolCards.clear();
+  closeMentionPopover();
+  clearLog();
+  applyChannelAccent(id);
+  updateComposerState();
+  renderChannelList();
+
+  try {
+    const res = await fetch(`/api/transcript?channel=${encodeURIComponent(id)}`);
+    const lines = await res.json();
+    for (const line of lines) applyHistoryEvent(line.channel, line.event, line.ts);
+  } catch {
+    // server hiccup; channel just opens empty
+  }
+}
+
+function renderQuickReplies() {
+  quickRepliesEl.innerHTML = "";
+  for (const text of QUICK_REPLIES) {
+    const chip = document.createElement("button");
+    chip.type = "button";
+    chip.className = "quick-reply-chip";
+    chip.textContent = text;
+    chip.addEventListener("click", () => {
+      input.value = text;
+      input.dispatchEvent(new Event("input"));
+      input.focus();
+    });
+    quickRepliesEl.appendChild(chip);
+  }
+}
+
+// ---------- approvals ----------
 
 function renderApprovals(list) {
   approvalsEl.innerHTML = "";
   for (const approval of list) approvalsEl.appendChild(approvalCard(approval));
   approvalsPanel.hidden = list.length === 0;
-  syncSidebarVisibility();
+  updatePulse();
 }
 
 function approvalCard(approval) {
@@ -540,15 +850,25 @@ function setComposerError(message) {
 }
 
 function updateComposerState() {
-  input.disabled = chatBusy;
-  sendBtn.disabled = chatBusy;
-  input.placeholder = chatBusy ? "Team is replying…" : "Tag someone with @, then say hello…";
+  const busy = isBusy(activeChannel);
+  input.disabled = busy;
+  sendBtn.disabled = busy;
+  mentionBtn.style.display = activeChannel === TEAM_CHANNEL ? "" : "none";
+  if (busy) {
+    input.placeholder = "Replying…";
+  } else if (activeChannel === TEAM_CHANNEL) {
+    input.placeholder = "Tag someone with @, or just ask…";
+  } else {
+    input.placeholder = `Message ${personaById(activeChannel)?.name ?? "agent"}…`;
+  }
 }
 
 input.addEventListener("input", () => {
   input.style.height = "auto";
   input.style.height = Math.min(input.scrollHeight, 160) + "px";
   setComposerError(null);
+  if (activeChannel !== TEAM_CHANNEL) return;
+
   updateRecipientsPreview();
 
   const mention = currentMentionQuery();
@@ -600,19 +920,27 @@ document.addEventListener("click", (e) => {
 composer.addEventListener("submit", async (e) => {
   e.preventDefault();
   const message = input.value.trim();
-  if (!message || chatBusy) return;
+  const channel = activeChannel;
+  if (!message || isBusy(channel)) return;
   closeMentionPopover();
   setComposerError(null);
+
+  input.disabled = true;
+  sendBtn.disabled = true;
+  if (channel === TEAM_CHANNEL && extractMentions(message).length === 0) {
+    input.placeholder = "Finding the right person to answer…";
+  }
 
   const res = await fetch("/api/chat", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message }),
+    body: JSON.stringify({ message, channel }),
   });
   const data = await res.json();
 
   if (!res.ok) {
     setComposerError(data.error || "Couldn't send that.");
+    updateComposerState();
     return;
   }
 
@@ -620,21 +948,24 @@ composer.addEventListener("submit", async (e) => {
   input.style.height = "auto";
   recipientsPreview.hidden = true;
 
-  const chainPersonas = data.chain.map((id) => personaById(id)).filter(Boolean);
   const userMsg = addMessage("user", "You", null);
-  userMsg.textContent =
-    message
-      .replace(/@([a-zA-Z]+)/g, (m, w) => (personaByToken(w) ? "" : m))
-      .replace(/[ \t]+/g, " ")
-      .replace(/\s+([.,!?])/g, "$1")
-      .trim() || message;
-  const recipientsLine = document.createElement("div");
-  recipientsLine.className = "affects";
-  recipientsLine.textContent = "→ " + chainPersonas.map((p) => p.name).join(" → ");
-  userMsg.parentElement.appendChild(recipientsLine);
+  if (channel === TEAM_CHANNEL) {
+    userMsg.textContent =
+      message
+        .replace(/@([a-zA-Z]+)/g, (m, w) => (personaByToken(w) ? "" : m))
+        .replace(/[ \t]+/g, " ")
+        .replace(/\s+([.,!?])/g, "$1")
+        .trim() || message;
+    const chainPersonas = data.chain.map((id) => personaById(id)).filter(Boolean);
+    const recipientsLine = document.createElement("div");
+    recipientsLine.className = "affects";
+    recipientsLine.textContent = "→ " + chainPersonas.map((p) => p.name).join(" → ");
+    userMsg.parentElement.appendChild(recipientsLine);
+  } else {
+    userMsg.textContent = message;
+  }
 
-  chatBusy = true;
-  hopsRemaining = data.chain.length;
+  hopsRemainingByChannel.set(channel, data.chain.length);
   updateComposerState();
 });
 
@@ -643,6 +974,7 @@ composer.addEventListener("submit", async (e) => {
 async function loadPersonas() {
   const res = await fetch("/api/personas");
   personas = await res.json();
+  renderChannelList();
   updateComposerState();
 }
 
@@ -656,25 +988,74 @@ function connectEvents() {
   source.onmessage = (evt) => handleEvent(JSON.parse(evt.data));
 }
 
-function endHop() {
-  hopsRemaining = Math.max(0, hopsRemaining - 1);
-  chatBusy = hopsRemaining > 0;
-  updateComposerState();
+function endHop(channel) {
+  const remaining = Math.max(0, (hopsRemainingByChannel.get(channel) || 0) - 1);
+  hopsRemainingByChannel.set(channel, remaining);
+  if (channel === activeChannel) updateComposerState();
 }
 
-function handleEvent(event) {
+function handleEvent(event, when) {
+  if (event.type === "approval_requested") {
+    approvalsPanel.hidden = false;
+    approvalsEl.appendChild(approvalCard(event.approval));
+    setAgentAlert(event.approval.personaId, "hand-raised", `${event.approval.reason}. Your approval is needed.`);
+    return;
+  }
+  if (event.type === "approval_resolved") {
+    const card = approvalsEl.querySelector(`[data-id="${event.id}"]`);
+    if (event.timedOut) {
+      const personaId = card?.dataset.personaId;
+      const who = (personaId && personaById(personaId)?.name) ?? personaId ?? "An agent";
+      addMessage("error", who, null).textContent = `${who}'s request timed out waiting for a response and was denied automatically.`;
+    }
+    if (card) card.remove();
+    approvalsPanel.hidden = approvalsEl.children.length === 0;
+    const personaId = card?.dataset.personaId;
+    if (personaId) {
+      clearAgentAlert(personaId);
+      setAgentStatus(personaId, event.approved ? "working" : "attention", event.approved ? "Approval received; continuing." : "Approval was denied.");
+    }
+    return;
+  }
+
+  // Team is the union view (everything, not just multi-agent chains), so any
+  // channel's events are visible there — only a persona channel is exclusive
+  // to its own events.
+  const ch = event.channel;
+  const visible = activeChannel === TEAM_CHANNEL || ch === activeChannel;
+  if (ch && !visible) {
+    // Off-screen from here — keep busy-state bookkeeping honest, but don't render.
+    if (event.type === "done" || event.type === "error") endHop(ch);
+    if (event.type !== "hop_start" && event.type !== "mention_chain") {
+      unreadChannels.add(ch);
+      renderChannelList();
+    }
+    return;
+  }
+
   const persona = personaById(event.personaId);
   const who = persona?.name ?? event.personaId ?? "agent";
 
+  if (event.personaId) {
+    if (event.type === "hop_start" || event.type === "text") setAgentStatus(event.personaId, "working", "Working on your request.");
+    if (event.type === "tool_use" && event.tool === "AskUserQuestion") setAgentAlert(event.personaId, "question", "Ledger needs an answer before continuing.");
+    else if (event.type === "tool_use") setAgentStatus(event.personaId, "working", `Using ${toolLabel(event.tool)}.`);
+    if (event.type === "done") {
+      clearAgentAlert(event.personaId);
+      setAgentStatus(event.personaId, "available", "Ready for another request.");
+    }
+    if (event.type === "error") setAgentAlert(event.personaId, "help", event.message || "The agent encountered an error.");
+  }
+
   if (event.type === "mention_chain") {
-    addChainBanner(event.chain);
+    addChainBanner(event.chain, event.routed);
   } else if (event.type === "hop_start") {
     showHopIndicator(event.personaId);
   } else if (event.type === "text") {
     clearHopIndicator(event.personaId);
     let entry = streaming.get(event.personaId);
     if (!entry) {
-      const textEl = addMessage("agent", who, persona);
+      const textEl = addMessage("agent", who, persona, when);
       textEl.classList.add("streaming-cursor");
       entry = { textEl, raw: "" };
       streaming.set(event.personaId, entry);
@@ -697,32 +1078,23 @@ function handleEvent(event) {
       attachReasoningToggle(entry.textEl.parentElement, event.reasoning);
     }
     streaming.delete(event.personaId);
-    endHop();
+    endHop(ch);
   } else if (event.type === "error") {
     clearHopIndicator(event.personaId);
-    addMessage("error", who, null).textContent = event.message;
+    addMessage("error", who, null, when).textContent = event.message;
     const entry = streaming.get(event.personaId);
     if (entry) entry.textEl.classList.remove("streaming-cursor");
     streaming.delete(event.personaId);
-    endHop();
-  } else if (event.type === "approval_requested") {
-    approvalsPanel.hidden = false;
-    approvalsEl.appendChild(approvalCard(event.approval));
-    syncSidebarVisibility();
-  } else if (event.type === "approval_resolved") {
-    const card = approvalsEl.querySelector(`[data-id="${event.id}"]`);
-    if (event.timedOut) {
-      const personaId = card?.dataset.personaId;
-      const who = (personaId && personaById(personaId)?.name) ?? personaId ?? "An agent";
-      addMessage("error", who, null).textContent = `${who}'s request timed out waiting for a response and was denied automatically.`;
-    }
-    if (card) card.remove();
-    approvalsPanel.hidden = approvalsEl.children.length === 0;
-    syncSidebarVisibility();
+    endHop(ch);
   }
 }
 
-loadPersonas();
-loadApprovals();
-connectEvents();
-setEmptyState();
+async function bootstrap() {
+  await loadPersonas();
+  renderQuickReplies();
+  await switchChannel(activeChannel);
+  loadApprovals();
+  connectEvents();
+}
+
+bootstrap();

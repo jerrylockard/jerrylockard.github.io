@@ -75,4 +75,5 @@ GitHub and can lag behind a DNS/CNAME change — that's normal, not a bug.
 - Personal site domain: `jerry.lockard.tech` — repo `jerry-lockard/jerry-lockard.github.io`
 - `lockard.tech` apex belongs to the `lockard-tech` org, not this site
 - GitHub handle: `jerry-lockard` (final — `jerrylockard91` is an old unused account, never use it)
-- Contact email: `jerrylockard91@gmail.com` for now, moving to `jerry@lockard.tech` later
+- LinkedIn: `jerrylockard` — no hyphen, `https://www.linkedin.com/in/jerrylockard/` (differs from the GitHub handle's hyphenation; don't copy one to the other)
+- Contact email: `jerry@lockard.tech` — confirmed live by Jerry 2026-08-19, published in the footer. `jerrylockard91@gmail.com` was the address before the switch; keep it on file but don't publish it unless Jerry says otherwise

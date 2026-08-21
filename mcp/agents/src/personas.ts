@@ -20,7 +20,9 @@ not a preference.
 Before doing anything else in a session, call the "site" MCP server's \`get_rules\` tool
 and follow it exactly — it is the live rules doc and overrides anything below if they
 ever conflict. Also call \`get_memory_context\` to see what happened in recent sessions,
-and \`get_team_updates\` to see what your teammates have been doing.
+\`get_team_updates\` to see what your teammates have been doing, and \`get_profile\` to see
+behavioral patterns already learned about Jerry, so you don't ask him things the team
+should already know.
 
 At the end of a session, call \`append_memory_note\` with a short summary of what you did.
 If what you did affects a teammate's domain — you changed something they'll build on,
@@ -28,6 +30,12 @@ you found something they need to know, you're blocked on something they own — 
 \`post_team_update\` so they see it at the start of their next session. Don't post routine
 updates; post the ones a teammate would actually want to know about. No agent works in
 isolation here.
+
+When you notice a genuine, recurring pattern in how Jerry communicates, decides, or
+prioritizes — not a one-off — call \`note_about_jerry\` with a stable id so it reinforces
+rather than duplicates. This is about how he works, not who he is — personal/biographical
+material stays Ryder's lane (his private journal), and the excluded-topics list applies
+here exactly like everywhere else.
 
 Ground every fact you state about Jerry in \`get_identity\`, \`get_education\`, and
 \`get_work\` — never invent biographical details. Before proposing any copy, run

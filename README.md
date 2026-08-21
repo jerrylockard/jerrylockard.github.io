@@ -1,43 +1,68 @@
-# Astro Starter Kit: Minimal
+# jerry-lockard.github.io
 
-```sh
-pnpm create astro@latest -- --template minimal
-```
+Jerry Lockard's personal site — civic-first, built for real job-seeking in
+Covington, Kentucky city/public-sector work via the Mayor's Academy. Community,
+government, and public service lead; the technical work stays in the background.
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+Live at [jerry.lockard.tech](https://jerry.lockard.tech). Read **`AGENTS.md`** first
+for the full picture (also symlinked as `CLAUDE.md`, imported by `GEMINI.md`) — this
+file is just the quick-start.
 
-## 🚀 Project Structure
-
-Inside of your Astro project, you'll see the following folders and files:
+## Project structure
 
 ```text
 /
-├── public/
+├── public/                # static assets — CNAME, favicon, portrait photos
 ├── src/
-│   └── pages/
-│       └── index.astro
+│   ├── pages/              # routes: index, /writing, /writing/[slug],
+│   │                       #         /civic-notes, /civic-notes/[slug]
+│   ├── components/         # nav, hero, catenary, work, about, platform,
+│   │                       # writing, civic-note-card, footer
+│   ├── content/             # writing + civic-notes markdown collections
+│   └── layouts/             # layout.astro
+├── mockup.html             # original design comp (historical reference)
+├── mcp/                    # agent team — server, agents, gui (see below)
 └── package.json
 ```
 
-Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page is exposed as a route based on its file name.
+Astro looks for `.astro` files in `src/pages/` and exposes each as a route based on
+its file name (or folder, for dynamic `[slug]` routes).
 
-There's nothing special about `src/components/`, but that's where we like to put any Astro/React/Vue/Svelte/Preact components.
+## Commands
 
-Any static assets, like images, can be placed in the `public/` directory.
+All commands run from the repo root:
 
-## 🧞 Commands
+| Command | Action |
+| :--- | :--- |
+| `pnpm install` | Install dependencies — this is a pnpm workspace, installs all 4 packages |
+| `pnpm dev` | Astro dev server at `localhost:4321` |
+| `pnpm build` | Production build to `./dist/` |
+| `pnpm preview` | Preview the production build locally |
+| `pnpm astro ...` | Run Astro CLI commands (`astro add`, `astro check`, etc.) |
+| `pnpm mcp:doctor` | Verify the whole system — deps, typecheck, MCP server, GitHub auth — is ready |
+| `pnpm mcp:start` / `mcp:stop` / `mcp:status` / `mcp:logs` | Agent dashboard GUI at `http://127.0.0.1:4405` |
+| `pnpm agent <name> "<message>"` | Drive one agent turn from any terminal, no GUI needed |
+| `pnpm agent list` | See the agent roster |
 
-All commands are run from the root of the project, from a terminal:
+See **`CHEATSHEET.md`** for the full command reference and the settled facts (domain,
+GitHub handle, contact email).
 
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `pnpm install`             | Installs dependencies                            |
-| `pnpm dev`             | Starts local dev server at `localhost:4321`      |
-| `pnpm build`           | Build your production site to `./dist/`          |
-| `pnpm preview`         | Preview your build locally, before deploying     |
-| `pnpm astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `pnpm astro -- --help` | Get help using the Astro CLI                     |
+## Deploy
 
-## 👀 Want to learn more?
+Automatic — no manual deploy step. A push to `main` triggers
+`.github/workflows/deploy.yml`, which builds with `pnpm build` and publishes to
+GitHub Pages at `jerry.lockard.tech` (custom domain via `public/CNAME`).
 
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+## The agent team
+
+Seven agents work this repo: Shepard (lead), Desiree (design/frontend), Devon
+(devops/deploy), Quill (content/copy), Ace (QA/accessibility), Ledger
+(docs/handoff), and Ryder (narrative/press). Full rules, roster detail, and the
+team-communication protocol live in **`mcp/AGENTS.md`**. If your tool supports MCP
+directly, the site's server (`mcp/server/`) exposes identity/education/work/
+design-token/guardrail/memory/team tools; otherwise `pnpm agent <name> "<message>"`
+reaches the same agents from a plain terminal.
+
+## Learn more
+
+Full Astro documentation: https://docs.astro.build

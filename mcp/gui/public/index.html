@@ -14,6 +14,7 @@
   <header class="topbar">
     <span class="wordmark">Site&nbsp;Agents</span>
     <div class="topbar-actions">
+      <button id="profile-toggle" class="theme-btn" type="button" aria-pressed="false">Profile</button>
       <button id="preview-toggle" class="theme-btn" type="button" aria-pressed="false">Preview</button>
       <button id="theme-btn" class="theme-btn" type="button" aria-live="polite">Dark</button>
     </div>
@@ -23,20 +24,47 @@
     <path class="cable" d="M0,1 Q600,34 1200,1"/>
   </svg>
 
-  <div class="body no-sidebar" id="body-layout">
-    <aside class="sidebar" id="sidebar" hidden>
+  <div class="body" id="body-layout">
+    <aside class="sidebar" id="sidebar">
+      <section class="panel" id="channel-panel">
+        <p class="eyebrow">Channels</p>
+        <div id="channel-list" class="channel-list"></div>
+      </section>
       <section class="panel" id="approvals-panel" hidden>
         <p class="eyebrow eyebrow-warn">Needs your OK</p>
         <div id="approvals" class="approvals"></div>
       </section>
+      <section class="panel" id="agent-alerts-panel" hidden>
+        <p class="eyebrow eyebrow-alert">Agent signals</p>
+        <div id="agent-alerts" class="agent-alerts"></div>
+      </section>
     </aside>
 
     <main class="chat">
+      <section class="command-deck" aria-label="Project pulse">
+        <div class="command-deck-heading">
+          <p class="eyebrow">Private site studio</p>
+          <h1>jerry.lockard.tech</h1>
+          <p class="deck-status"><span class="status-light"></span><span id="studio-status">Ready for direction</span></p>
+        </div>
+        <div class="deck-actions" aria-label="Chat history actions">
+          <button id="reconcile-chat" class="deck-action primary" type="button" title="Ask Ledger to reconcile this history, then clear it">Reconcile &amp; clear</button>
+          <button id="clear-chat" class="deck-action" type="button" title="Clear this channel's chat history">Clear chat</button>
+        </div>
+        <div class="pulse-stats" aria-label="Project status">
+          <div class="pulse-stat"><span class="pulse-value" id="agent-count">0</span><span class="pulse-label">agents</span></div>
+          <div class="pulse-stat"><span class="pulse-value" id="active-count">0</span><span class="pulse-label">working</span></div>
+          <div class="pulse-stat"><span class="pulse-value" id="approval-count">0</span><span class="pulse-label">approvals</span></div>
+          <div class="pulse-stat"><span class="pulse-value" id="signal-count">0</span><span class="pulse-label">signals</span></div>
+          <div class="pulse-stat"><span class="pulse-value">main</span><span class="pulse-label">branch</span></div>
+        </div>
+      </section>
       <div id="log" class="log">
         <div class="empty-state" id="empty-state">
-          <p>Tag someone to start — try <code>@shepard</code> or <code>@desiree</code>.</p>
+          <p>Pick a channel on the left, or say hello to Team.</p>
         </div>
       </div>
+      <div class="quick-replies" id="quick-replies"></div>
       <form id="composer" class="composer">
         <p class="composer-error" id="composer-error" hidden></p>
         <p class="recipients-preview" id="recipients-preview" hidden></p>
@@ -68,6 +96,19 @@
         <iframe id="preview-frame" class="preview-frame" title="Live site preview" hidden></iframe>
       </div>
     </aside>
+  </div>
+
+  <div class="profile-overlay" id="profile-overlay" hidden>
+    <div class="profile-panel">
+      <div class="profile-header">
+        <p class="eyebrow" style="margin:0">What the team has learned</p>
+        <button type="button" id="profile-close" class="icon-btn close-btn" title="Close">✕</button>
+      </div>
+      <div class="profile-body" id="profile-body">
+        <p class="profile-empty" id="profile-empty">Nothing learned yet — this fills in as the team notices real, recurring patterns.</p>
+        <div id="profile-list" class="profile-list"></div>
+      </div>
+    </div>
   </div>
 </div>
 <script type="module" src="/app.js"></script>

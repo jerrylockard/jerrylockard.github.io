@@ -176,3 +176,19 @@ than polish here.
 - At the end of a job, call `append_memory_note` with a short summary of what
   happened — this is how the next session (any agent, or Jerry in plain Claude
   Code) picks up context.
+
+## Profile
+
+- `get_profile`/`note_about_jerry` are a structured, cross-agent store of
+  *behavioral* patterns — how Jerry communicates, decides, and prioritizes —
+  distinct from both the memory files above (project/session continuity) and
+  Ryder's private journal (biographical, Ryder-only, never team-shared).
+- Call `get_profile` at the start of a job, alongside `get_memory_context`,
+  so you don't ask Jerry things the team should already know.
+- When you notice a genuine, recurring pattern — not a one-off — call
+  `note_about_jerry` with a stable kebab-case id (e.g.
+  `prefers-terse-replies`). Reusing the same id on a repeat observation
+  reinforces that entry instead of creating a duplicate.
+- Guardrails apply exactly like everywhere else: never record anything from
+  the excluded-topics list, and keep entries behavioral, not biographical or
+  personal — that content belongs in Ryder's journal, not here.

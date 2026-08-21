@@ -73,7 +73,7 @@ GitHub and can lag behind a DNS/CNAME change — that's normal, not a bug.
 ## Settled facts (so nobody has to re-ask)
 
 - Personal site domain: `jerrylockard.me` (moved from `jerry.lockard.me` on 2026-08-21,
-  same day as the GitHub/LinkedIn handle consolidation)
+  same day as the GitHub/LinkedIn handle consolidation) — repo `jerrylockard/jerrylockard.github.io`
 - `lockard.tech` apex belongs to the `lockard-tech` org, not this site — unrelated to
   `lockard.me`/`jerrylockard.me`, which Jerry owns separately
 - GitHub handle: `jerrylockard` (changed 2026-08-21 from `jerry-lockard` — now matches

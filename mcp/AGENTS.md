@@ -9,7 +9,7 @@ exposes it via the `get_rules` tool so every agent session reads the live versio
 
 | Agent | Job | Signs as |
 | --- | --- | --- |
-| Shepard | Lead — owns jerry-lockard.github.io day to day: organizing, tracking, coding, developing. Coordinates the team as lockard-tech grows to more repos. | `shepard@lockard.tech` |
+| Shepard | Lead — owns jerrylockard.github.io day to day: organizing, tracking, coding, developing. Coordinates the team as lockard-tech grows to more repos. | `shepard@lockard.tech` |
 | Desiree | Design/Frontend — owns the design system and turns it into real Astro components; visual consistency and accessibility-minded design | `desiree@lockard.tech` |
 | Devon | DevOps/Deploy — builds, deploy pipeline, domain/DNS; the one who actually executes a push once it's confirmed | `devon@lockard.tech` |
 | Quill | Content/Copy — bio, work, and writing copy; enforces the exclusion list | `quill@lockard.tech` |

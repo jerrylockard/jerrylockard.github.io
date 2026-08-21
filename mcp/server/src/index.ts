@@ -13,7 +13,7 @@ import { readProfile, noteObservation } from "./profile.js";
 
 const rulesPath = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "AGENTS.md");
 
-const server = new McpServer({ name: "jerry-lockard.github.io", version: "0.1.0" });
+const server = new McpServer({ name: "jerrylockard.github.io", version: "0.1.0" });
 
 function json(data: unknown) {
   return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };

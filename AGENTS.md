@@ -1,4 +1,4 @@
-# jerry-lockard.github.io
+# jerrylockard.github.io
 
 Jerry Lockard's personal site. Read this file first, no matter which AI tool you are —
 `CLAUDE.md` in this same directory is a real symlink to this file, `GEMINI.md` points
@@ -10,7 +10,7 @@ here via Gemini CLI's `@./AGENTS.md` import syntax, and Codex CLI / opencode rea
 A civic-first personal site for Covington, Kentucky — Jerry is using it for real
 job-seeking in city/public-sector work via the Mayor's Academy, not as a developer
 portfolio. Community, government, and public service lead; technical work stays in
-the background. Repo lives at `github.com/jerry-lockard/jerry-lockard.github.io`
+the background. Repo lives at `github.com/jerrylockard/jerrylockard.github.io`
 (personal account, not the `lockard-tech` org) and is served live at
 `jerrylockard.me`. Jerry bought that domain himself; the site moved from
 `jerry.lockard.tech` to `jerry.lockard.me` on 2026-08-20, then to the apex

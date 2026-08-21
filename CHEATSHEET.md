@@ -47,7 +47,7 @@ an agent works.
 
 Automatic — no manual deploy command. A push to `main` triggers
 `.github/workflows/deploy.yml` (`pnpm build` → GitHub Pages) and it's live at
-`jerry.lockard.me` within a few minutes. Custom-domain HTTPS is auto-issued by
+`jerrylockard.me` within a few minutes. Custom-domain HTTPS is auto-issued by
 GitHub and can lag behind a DNS/CNAME change — that's normal, not a bug.
 
 ## Git — the rules, not just the commands
@@ -72,10 +72,12 @@ GitHub and can lag behind a DNS/CNAME change — that's normal, not a bug.
 
 ## Settled facts (so nobody has to re-ask)
 
-- Personal site domain: `jerry.lockard.me` — repo `jerry-lockard/jerry-lockard.github.io`
-  (moved from `jerry.lockard.tech` on 2026-08-20; Jerry bought `lockard.me` himself)
+- Personal site domain: `jerrylockard.me` (moved from `jerry.lockard.me` on 2026-08-21,
+  same day as the GitHub/LinkedIn handle consolidation)
 - `lockard.tech` apex belongs to the `lockard-tech` org, not this site — unrelated to
-  `lockard.me`, which Jerry owns separately
-- GitHub handle: `jerry-lockard` (final — `jerrylockard91` is an old unused account, never use it)
-- LinkedIn: `jerrylockard` — no hyphen, `https://www.linkedin.com/in/jerrylockard/` (differs from the GitHub handle's hyphenation; don't copy one to the other)
+  `lockard.me`/`jerrylockard.me`, which Jerry owns separately
+- GitHub handle: `jerrylockard` (changed 2026-08-21 from `jerry-lockard` — now matches
+  LinkedIn exactly. Don't use `jerry-lockard` or the older `jerrylockard91` going forward)
+- LinkedIn: `jerrylockard` — no hyphen, `https://www.linkedin.com/in/jerrylockard/`,
+  now matches the GitHub handle exactly
 - Contact email: `jerry@lockard.tech` — confirmed live by Jerry 2026-08-19, published in the footer. `jerrylockard91@gmail.com` was the address before the switch; keep it on file but don't publish it unless Jerry says otherwise

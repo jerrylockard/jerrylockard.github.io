@@ -4,7 +4,7 @@ Jerry Lockard's personal site — civic-first, built for real job-seeking in
 Covington, Kentucky city/public-sector work via the Mayor's Academy. Community,
 government, and public service lead; the technical work stays in the background.
 
-Live at [jerry.lockard.me](https://jerry.lockard.me). Read **`AGENTS.md`** first
+Live at [jerrylockard.me](https://jerrylockard.me). Read **`AGENTS.md`** first
 for the full picture (also symlinked as `CLAUDE.md`, imported by `GEMINI.md`) — this
 file is just the quick-start.
 
@@ -51,7 +51,7 @@ GitHub handle, contact email).
 
 Automatic — no manual deploy step. A push to `main` triggers
 `.github/workflows/deploy.yml`, which builds with `pnpm build` and publishes to
-GitHub Pages at `jerry.lockard.me` (custom domain via `public/CNAME`).
+GitHub Pages at `jerrylockard.me` (custom domain via `public/CNAME`).
 
 ## The agent team
 

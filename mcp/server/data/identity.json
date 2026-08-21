@@ -5,14 +5,14 @@
   "contactEmail": "jerry@lockard.tech",
   "contactEmailNote": "Confirmed live by Jerry directly on 2026-08-19 — jerry@lockard.tech is now the published public contact address, live in footer.astro. jerrylockard91@gmail.com was the address before this switch; keep it on file but don't publish it going forward unless Jerry says otherwise.",
   "links": {
-    "github": "jerry-lockard",
+    "github": "jerrylockard",
     "linkedin": "jerrylockard"
   },
-  "linksNote": "Confirmed by Jerry. GitHub: jerry-lockard (with hyphen) — \"jerrylockard91\" is an old, unused GitHub account, never use it. LinkedIn: jerrylockard (no hyphen, https://www.linkedin.com/in/jerrylockard/) — this field previously and incorrectly matched the GitHub handle's hyphenation; corrected 2026-08-19 against the URL Jerry actually gave.",
+  "linksNote": "Confirmed by Jerry. GitHub handle changed 2026-08-21 from jerry-lockard to jerrylockard (no hyphen) — now matches LinkedIn exactly. \"jerrylockard91\" is a separate, older unused GitHub account; never use it or jerry-lockard going forward. LinkedIn: jerrylockard, https://www.linkedin.com/in/jerrylockard/.",
   "domains": {
-    "personal": "jerry.lockard.me",
-    "personalNote": "This site's domain — a subdomain of lockard.me, which Jerry bought and owns personally, points at the jerry-lockard personal GitHub account/repo. Switched from jerry.lockard.tech on 2026-08-20.",
+    "personal": "jerrylockard.me",
+    "personalNote": "This site's domain — an apex domain Jerry bought and owns personally, points at the jerrylockard GitHub account. Switched from jerry.lockard.me (a lockard.me subdomain) on 2026-08-21, matching the same-day GitHub/LinkedIn handle consolidation onto \"jerrylockard\" everywhere.",
     "org": "lockard.tech",
-    "orgNote": "Apex domain, belongs to the lockard-tech GitHub organization — not this site, and not the same as lockard.me."
+    "orgNote": "Apex domain, belongs to the lockard-tech GitHub organization — not this site, and not the same as lockard.me or jerrylockard.me."
   }
 }

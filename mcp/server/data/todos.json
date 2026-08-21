@@ -16,12 +16,12 @@
   },
   {
     "id": "github-handle",
-    "text": "GitHub handle confirmed: jerry-lockard. jerrylockard91 is an old unused account — never use it. Wired into footer.astro.",
+    "text": "GitHub handle changed 2026-08-21 to jerrylockard (no hyphen) — now matches LinkedIn exactly. jerry-lockard was the handle before that; jerrylockard91 is a separate, older unused account. Don't use either old one. Wired into footer.astro.",
     "status": "done"
   },
   {
     "id": "linkedin",
-    "text": "LinkedIn wired into footer.astro: https://www.linkedin.com/in/jerrylockard/ (slug is jerrylockard, no hyphen — differs from the GitHub handle's hyphenation, identity.json corrected to match).",
+    "text": "LinkedIn wired into footer.astro: https://www.linkedin.com/in/jerrylockard/ (slug is jerrylockard, no hyphen — matches the GitHub handle exactly as of 2026-08-21, identity.json updated to match).",
     "status": "done"
   },
   {

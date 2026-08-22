@@ -195,8 +195,8 @@ a {
 
 .hero-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 208px;
-  gap: 56px;
+  grid-template-columns: minmax(0, 1fr) 232px;
+  gap: 48px;
   align-items: start;
 }
 
@@ -645,11 +645,14 @@ a {
   }
   .hero-grid {
     grid-template-columns: 1fr;
-    gap: 32px;
+    gap: 40px;
   }
   .portrait {
-    max-width: 190px;
-    aspect-ratio: 1 / 1;
+    width: min(72vw, 260px);
+    max-width: none;
+    aspect-ratio: 4 / 5;
+    margin-inline: auto;
+    padding: 12px;
   }
   .item,
   .about-grid {

@@ -106,12 +106,5 @@ These are load-bearing; `mcp/AGENTS.md` has the full detail, but the short versi
 
 Full Astro documentation: https://docs.astro.build
 
-- [Adding pages, dynamic routes, or middleware](https://docs.astro.build/en/guides/routing/)
-- [Working with Astro components](https://docs.astro.build/en/basics/astro-components/)
-- [Using React, Vue, Svelte, or other framework components](https://docs.astro.build/en/guides/framework-components/)
-- [Adding or managing content](https://docs.astro.build/en/guides/content-collections/)
-- [Adding styles or using Tailwind](https://docs.astro.build/en/guides/styling/)
-- [Supporting multiple languages](https://docs.astro.build/en/guides/internationalization/)
-
 Astro dev server background-mode commands (built into this project's Astro setup):
 `astro dev --background`, `astro dev stop`, `astro dev status`, `astro dev logs`.

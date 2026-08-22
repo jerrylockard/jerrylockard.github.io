@@ -1,0 +1,9 @@
+{
+  "servers": {
+    "site-agents": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["--import", "tsx", "mcp/server/src/index.ts"]
+    }
+  }
+}

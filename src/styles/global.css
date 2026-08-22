@@ -197,7 +197,7 @@ a {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 232px;
   gap: 48px;
-  align-items: start;
+  align-items: end;
 }
 
 .name {
@@ -248,7 +248,7 @@ a {
 .portrait {
   aspect-ratio: 4 / 5;
   background: var(--limestone);
-  border: 0.25px solid var(--rule);
+  border: 1px solid var(--rule-soft);
   overflow: hidden;
   display: flex;
   align-items: center;

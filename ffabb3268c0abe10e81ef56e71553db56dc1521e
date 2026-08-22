@@ -1,0 +1,18 @@
+Correction (2026-08-22): this commit's trailer misattributed the change.
+
+It was signed:
+  — Desiree, Design System Architect
+  Co-Authored-By: Desiree <desiree@onlymen.org>
+
+Neither is accurate. Desiree's actual role is Design / Frontend, and her correct
+address is desiree@lockard.tech per mcp/AGENTS.md's commit-signature convention.
+onlymen.org is an unrelated, out-of-scope organization with no connection to this
+project — referencing it here violated the repo's lockard-tech-only scope rule.
+
+Correct attribution should have read:
+  — Desiree, Design / Frontend
+  Co-Authored-By: Desiree <desiree@lockard.tech>
+
+Per this repo's hard rule against rewriting history (no --amend/--force/reset --hard),
+the original commit is left untouched. This note documents the correct attribution
+for the record. Originally flagged by Ledger on 2026-08-20.

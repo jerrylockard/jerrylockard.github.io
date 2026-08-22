@@ -92,11 +92,20 @@ const {
         document.querySelectorAll(".observe").forEach((el) => el.classList.add("in"));
       }
 
+      // Nav links point at in-page sections that only exist on the homepage
+      // (e.g. "/#work"), so on other pages they carry a leading path. Match
+      // on the hash portion only, wherever it falls in the href.
+      function hashOf(href: string | null) {
+        if (!href) return null;
+        const i = href.indexOf("#");
+        return i === -1 ? null : href.slice(i);
+      }
+
       const links = Array.from(document.querySelectorAll<HTMLAnchorElement>(".nav-links a"));
       const sections = links
         .map((a) => {
-          const href = a.getAttribute("href");
-          return href && href.startsWith("#") ? document.querySelector(href) : null;
+          const hash = hashOf(a.getAttribute("href"));
+          return hash ? document.querySelector(hash) : null;
         })
         .filter((el): el is Element => el !== null);
 
@@ -106,7 +115,7 @@ const {
             for (const entry of entries) {
               if (!entry.isIntersecting) continue;
               for (const a of links) {
-                a.classList.toggle("is-current", a.getAttribute("href") === `#${entry.target.id}`);
+                a.classList.toggle("is-current", hashOf(a.getAttribute("href")) === `#${entry.target.id}`);
               }
             }
           },

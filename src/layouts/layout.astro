@@ -43,6 +43,10 @@ const {
   <body>
     <slot />
     <script>
+      import { inject } from '@vercel/analytics';
+      inject();
+    </script>
+    <script>
       const root = document.documentElement;
       const btn = document.getElementById("theme-btn");
 

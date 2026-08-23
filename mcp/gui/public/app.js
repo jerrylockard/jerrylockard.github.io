@@ -34,13 +34,65 @@ const signalCountEl = document.getElementById("signal-count");
 const studioStatusEl = document.getElementById("studio-status");
 const clearChatBtn = document.getElementById("clear-chat");
 const reconcileChatBtn = document.getElementById("reconcile-chat");
+const tabbar = document.getElementById("tabbar");
+const tabButtons = [...document.querySelectorAll(".tab-btn")];
+const views = [...document.querySelectorAll(".view")];
+const rosterGridEl = document.getElementById("roster-grid");
+const boardFiltersEl = document.getElementById("board-filters");
+const boardNoticeEl = document.getElementById("board-notice");
+const boardProgressCountEl = document.getElementById("board-progress-count");
+const boardBacklogCountEl = document.getElementById("board-backlog-count");
+const boardColumnEls = {
+  backlog: document.getElementById("col-backlog"),
+  "in-progress": document.getElementById("col-in-progress"),
+  done: document.getElementById("col-done"),
+};
+const boardColumnCountEls = {
+  backlog: document.getElementById("count-backlog"),
+  "in-progress": document.getElementById("count-in-progress"),
+  done: document.getElementById("count-done"),
+};
+const calendarCompletedEl = document.getElementById("calendar-completed");
+const calendarUpcomingEl = document.getElementById("calendar-upcoming");
+const newTaskBtn = document.getElementById("new-task-btn");
+const taskOverlay = document.getElementById("task-overlay");
+const taskPanel = document.getElementById("task-panel");
+const taskPanelEyebrow = document.getElementById("task-panel-eyebrow");
+const taskPanelBody = document.getElementById("task-panel-body");
+const taskPanelClose = document.getElementById("task-panel-close");
+const chatChannelEyebrow = document.getElementById("chat-channel-eyebrow");
+const chatChannelTitle = document.getElementById("chat-channel-title");
 let reconcilePollTimer = null;
 
 const TEAM_CHANNEL = "team";
 const QUICK_REPLIES = ["Yes, go ahead", "Looks good", "Not yet — hold off", "What's the status?", "Can you explain more?", "No, stop."];
+const TAB_IDS = ["team", "board", "calendar", "chat"];
+const STATUS_ORDER = ["backlog", "in-progress", "done"];
+const STATUS_LABELS = { backlog: "Backlog", "in-progress": "In progress", done: "Done" };
+const NEXT_STATUS = { backlog: "in-progress", "in-progress": "done" };
+const NEXT_STATUS_LABEL = { backlog: "Start task", "in-progress": "Mark done" };
 
 let personas = [];
 let activeChannel = localStorage.getItem("gui-active-channel") || TEAM_CHANNEL;
+const savedTab = localStorage.getItem("gui-active-tab");
+let activeTab = TAB_IDS.includes(savedTab) ? savedTab : "team";
+let roster = [];
+let boardState = { backlog: [], "in-progress": [], done: [], categories: [] };
+let selectedCategory = "all";
+let workRefreshTimer = null;
+let taskPanelReturnFocus = null;
+let taskPanelTaskId = null;
+let taskPanelLoadGeneration = 0;
+let taskPanelRefreshTimer = null;
+let taskPanelRefreshSuppressedUntil = 0;
+let rosterLoadGeneration = 0;
+let boardLoadGeneration = 0;
+let calendarLoadGeneration = 0;
+let approvalsStateVersion = 0;
+let approvalsRefreshTimer = null;
+let approvalsLoadInFlight = false;
+let approvalsLoadQueued = false;
+let boardNoticeTimer = null;
 const unreadChannels = new Set();
 const agentStatuses = new Map();
 const agentStatusMessages = new Map();
@@ -72,6 +124,8 @@ function updatePulse() {
   const signalCount = agentAlerts.size;
   agentCountEl.textContent = String(personas.length);
   activeCountEl.textContent = String(activeCount);
+  boardProgressCountEl.textContent = String(boardState["in-progress"].length);
+  boardBacklogCountEl.textContent = String(boardState.backlog.length);
   approvalCountEl.textContent = String(approvalCount);
   signalCountEl.textContent = String(signalCount);
   const urgent = [...agentStatuses.values()].some((status) => status === "help");
@@ -85,18 +139,24 @@ function setAgentStatus(id, status, message = "") {
   agentStatuses.set(id, status);
   if (message) agentStatusMessages.set(id, message);
   renderChannelList();
+  if (roster.length) renderRoster();
   renderAgentAlerts();
   updatePulse();
 }
 
-function setAgentAlert(id, status, message) {
-  agentAlerts.set(id, { id, status, message });
+function setAgentAlert(id, status, message, source = "agent") {
+  agentAlerts.set(id, { id, status, message, source });
   setAgentStatus(id, status, message);
 }
 
-function clearAgentAlert(id) {
+function clearAgentAlert(id, source) {
+  const alert = agentAlerts.get(id);
+  if (source && alert?.source !== source) return;
   agentAlerts.delete(id);
+  if (alert && agentStatuses.get(id) === alert.status) agentStatuses.delete(id);
   agentStatusMessages.delete(id);
+  renderChannelList();
+  if (roster.length) renderRoster();
   renderAgentAlerts();
   updatePulse();
 }
@@ -168,7 +228,12 @@ function formatTime(date) {
 }
 
 function escapeHtml(str) {
-  return str.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  return String(str ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+function safePersonaColor(value) {
+  const color = String(value ?? "").trim();
+  return /^#[0-9a-f]{6}$/i.test(color) ? color : "#1e4c59";
 }
 
 function renderInline(text) {
@@ -210,6 +275,852 @@ function attachReasoningToggle(msgEl, reasoning) {
   msgEl.appendChild(toggle);
   msgEl.appendChild(detail);
 }
+
+// ---------- dashboard views ----------
+
+async function requestJson(url, options) {
+  let response;
+  try {
+    response = await fetch(url, options);
+  } catch {
+    throw new Error("The dashboard server could not be reached.");
+  }
+
+  let data = null;
+  try {
+    data = await response.json();
+  } catch {
+    // A useful HTTP error is better than exposing a JSON parse failure.
+  }
+  if (!response.ok) throw new Error(data?.error || `Request failed (${response.status}).`);
+  return data;
+}
+
+function renderRegionState(container, message, kind = "empty", retry) {
+  container.innerHTML = "";
+  const state = document.createElement("div");
+  state.className = `view-state view-state-${kind}`;
+  if (kind === "error") state.setAttribute("role", "alert");
+  const copy = document.createElement("p");
+  copy.textContent = message;
+  state.appendChild(copy);
+  if (retry) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "state-retry";
+    button.textContent = "Try again";
+    button.addEventListener("click", retry);
+    state.appendChild(button);
+  }
+  container.appendChild(state);
+}
+
+function validDate(value) {
+  if (!value) return null;
+  const dateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(value));
+  const date = dateOnly
+    ? new Date(Number(dateOnly[1]), Number(dateOnly[2]) - 1, Number(dateOnly[3]))
+    : new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function formatDate(value, includeTime = false) {
+  const date = validDate(value);
+  if (!date) return "Date unavailable";
+  return date.toLocaleString([], includeTime
+    ? { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }
+    : { month: "short", day: "numeric", year: "numeric" });
+}
+
+function personaForActor(actor) {
+  const token = String(actor ?? "").trim().toLowerCase();
+  return personas.find((persona) => persona.id.toLowerCase() === token || persona.name.toLowerCase() === token);
+}
+
+function actorName(actor, emptyLabel = "Unknown teammate") {
+  const persona = personaForActor(actor);
+  if (persona) return persona.name;
+  const fallback = String(actor ?? "").trim();
+  if (fallback.toLowerCase() === "jerry") return "Jerry";
+  return fallback || emptyLabel;
+}
+
+function taskAssigneeName(task) {
+  return task.assignee ? actorName(task.assignee) : "Unassigned";
+}
+
+function taskCompletionActor(task) {
+  if (!task.completedAt || !Array.isArray(task.activity)) return null;
+  const entry = [...task.activity].reverse().find((item) => item.at === task.completedAt);
+  return entry ? actorName(entry.by) : null;
+}
+
+function initialiseTabs() {
+  const boardHelp = document.querySelector("#view-board .view-sub");
+  if (boardHelp) boardHelp.textContent = "Backlog, in progress, done. Assign work or use a card's action to move it forward.";
+  tabbar.setAttribute("role", "tablist");
+  tabButtons.forEach((button, index) => {
+    const tab = button.dataset.tab;
+    if (!TAB_IDS.includes(tab)) return;
+    button.id = `tab-${tab}`;
+    button.setAttribute("role", "tab");
+    button.setAttribute("aria-controls", `view-${tab}`);
+    button.addEventListener("click", () => void setActiveTab(tab));
+    button.addEventListener("keydown", (event) => {
+      if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+      event.preventDefault();
+      let nextIndex = index;
+      if (event.key === "ArrowLeft") nextIndex = (index - 1 + tabButtons.length) % tabButtons.length;
+      if (event.key === "ArrowRight") nextIndex = (index + 1) % tabButtons.length;
+      if (event.key === "Home") nextIndex = 0;
+      if (event.key === "End") nextIndex = tabButtons.length - 1;
+      tabButtons[nextIndex].focus();
+      tabButtons[nextIndex].click();
+    });
+  });
+  views.forEach((view) => {
+    const tab = view.id.replace(/^view-/, "");
+    view.setAttribute("role", "tabpanel");
+    view.setAttribute("aria-labelledby", `tab-${tab}`);
+  });
+}
+
+async function setActiveTab(tab, { refresh = true } = {}) {
+  if (!TAB_IDS.includes(tab)) tab = "team";
+  activeTab = tab;
+  localStorage.setItem("gui-active-tab", tab);
+  for (const button of tabButtons) {
+    const selected = button.dataset.tab === tab;
+    button.setAttribute("aria-pressed", String(selected));
+    button.setAttribute("aria-selected", String(selected));
+    button.tabIndex = selected ? 0 : -1;
+  }
+  for (const view of views) view.hidden = view.id !== `view-${tab}`;
+  if (tab === "chat") applyChannelAccent(activeChannel);
+  else document.documentElement.style.removeProperty("--channel-accent");
+
+  if (!refresh) return;
+  if (tab === "team") await loadRoster({ silent: roster.length > 0 });
+  if (tab === "board") await loadBoard({ silent: allBoardTasks().length > 0 });
+  if (tab === "calendar") await loadCalendar({ silent: true });
+}
+
+// ---------- team roster ----------
+
+function renderRoster() {
+  rosterGridEl.innerHTML = "";
+  if (!roster.length) {
+    renderRegionState(rosterGridEl, "No teammates are available yet.");
+    return;
+  }
+
+  for (const member of roster) {
+    const persona = personaById(member.id) || member;
+    const tasks = Array.isArray(member.activeTasks) ? member.activeTasks : [];
+    const status = statusFor(member.id);
+    const memberColor = safePersonaColor(member.color);
+    const card = document.createElement("article");
+    card.className = "roster-card";
+    card.style.setProperty("--member-color", memberColor);
+    card.innerHTML = `
+      <div class="roster-card-head">
+        <span class="avatar roster-avatar" style="background:${memberColor}">${avatarInner(persona)}</span>
+        <div class="roster-identity">
+          <h2>${escapeHtml(member.name)}</h2>
+          <p class="roster-role">${escapeHtml(member.role)}</p>
+        </div>
+        <span class="roster-status status-${escapeHtml(status)}"><span class="status-dot"></span>${escapeHtml(statusLabel(status))}</span>
+      </div>
+      <p class="roster-department">${escapeHtml(member.department || member.role)}</p>
+      <p class="roster-tagline">${escapeHtml(member.tagline || "")}</p>
+      <div class="roster-work">
+        <p class="roster-work-label">Assigned work <span>${tasks.length}</span></p>
+        <div class="roster-task-list"></div>
+      </div>
+      <div class="roster-actions">
+        <button type="button" class="roster-chat">Open chat</button>
+        <button type="button" class="roster-board">View board</button>
+      </div>`;
+
+    const taskList = card.querySelector(".roster-task-list");
+    if (!tasks.length) {
+      const empty = document.createElement("p");
+      empty.className = "roster-no-work";
+      empty.textContent = "No active work assigned.";
+      taskList.appendChild(empty);
+    } else {
+      for (const task of tasks) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "roster-task";
+        button.innerHTML = `<span>${escapeHtml(task.title)}</span><small>${escapeHtml(STATUS_LABELS[task.status] || task.status)}</small>`;
+        button.addEventListener("click", () => void openTaskDetail(task.id));
+        taskList.appendChild(button);
+      }
+    }
+    card.querySelector(".roster-chat").addEventListener("click", async () => {
+      await setActiveTab("chat", { refresh: false });
+      await switchChannel(member.id);
+    });
+    card.querySelector(".roster-board").addEventListener("click", () => void setActiveTab("board"));
+    rosterGridEl.appendChild(card);
+  }
+}
+
+async function loadRoster({ silent = false } = {}) {
+  const loadGeneration = ++rosterLoadGeneration;
+  if (!silent) renderRegionState(rosterGridEl, "Loading the team…", "loading");
+  try {
+    const data = await requestJson("/api/roster");
+    if (loadGeneration !== rosterLoadGeneration) return;
+    roster = Array.isArray(data) ? data : [];
+    renderRoster();
+  } catch (error) {
+    if (loadGeneration !== rosterLoadGeneration) return;
+    renderRegionState(rosterGridEl, error instanceof Error ? error.message : "The roster could not be loaded.", "error", () => void loadRoster());
+  }
+}
+
+// ---------- task board ----------
+
+function allBoardTasks() {
+  return STATUS_ORDER.flatMap((status) => Array.isArray(boardState[status]) ? boardState[status] : []);
+}
+
+function boardCategories() {
+  const categories = [...(Array.isArray(boardState.categories) ? boardState.categories : [])];
+  for (const task of allBoardTasks()) {
+    if (task.category && !categories.includes(task.category)) categories.push(task.category);
+  }
+  return categories.filter((category, index) => category && categories.indexOf(category) === index);
+}
+
+function filteredTasks(status) {
+  const tasks = Array.isArray(boardState[status]) ? boardState[status] : [];
+  return selectedCategory === "all" ? tasks : tasks.filter((task) => task.category === selectedCategory);
+}
+
+function showBoardNotice(message, kind = "error") {
+  clearTimeout(boardNoticeTimer);
+  boardNoticeEl.className = `board-notice board-notice-${kind}`;
+  boardNoticeEl.setAttribute("role", kind === "error" ? "alert" : "status");
+  boardNoticeEl.textContent = message;
+  boardNoticeEl.hidden = false;
+  boardNoticeTimer = setTimeout(() => {
+    boardNoticeEl.hidden = true;
+    boardNoticeEl.textContent = "";
+  }, 5000);
+}
+
+function focusBoardTask(taskId, selector) {
+  if (activeTab !== "board" || !taskOverlay.hidden) return;
+  const card = [...document.querySelectorAll(".task-card")].find((candidate) => candidate.dataset.taskId === taskId);
+  requestAnimationFrame(() => (card?.querySelector(selector) || card?.querySelector(".task-title-button"))?.focus());
+}
+
+function captureBoardFocus() {
+  if (activeTab !== "board" || !taskOverlay.hidden || !(document.activeElement instanceof HTMLElement)) return null;
+  const card = document.activeElement.closest(".task-card");
+  if (!card?.dataset.taskId) return null;
+  let selector = ".task-title-button";
+  if (document.activeElement.matches(".task-assignee")) selector = ".task-assignee";
+  if (document.activeElement.matches(".task-advance")) selector = ".task-advance";
+  return { taskId: card.dataset.taskId, selector };
+}
+
+function mergeBoardTask(task) {
+  if (!task || !STATUS_ORDER.includes(task.status)) return;
+  for (const status of STATUS_ORDER) {
+    boardState[status] = (Array.isArray(boardState[status]) ? boardState[status] : []).filter((candidate) => candidate.id !== task.id);
+  }
+  boardState[task.status].unshift(task);
+  if (task.category && !boardState.categories.includes(task.category)) boardState.categories.push(task.category);
+  renderBoard();
+}
+
+function renderBoardFilters() {
+  boardFiltersEl.innerHTML = "";
+  const tasks = allBoardTasks();
+  const categories = boardCategories();
+  if (selectedCategory !== "all" && !categories.includes(selectedCategory)) selectedCategory = "all";
+  const filterValues = ["all", ...categories];
+  for (const category of filterValues) {
+    const count = category === "all" ? tasks.length : tasks.filter((task) => task.category === category).length;
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "board-filter";
+    button.setAttribute("aria-pressed", String(selectedCategory === category));
+    button.innerHTML = `<span>${escapeHtml(category === "all" ? "All work" : category)}</span><small>${count}</small>`;
+    button.addEventListener("click", () => {
+      selectedCategory = category;
+      renderBoard();
+    });
+    boardFiltersEl.appendChild(button);
+  }
+}
+
+function makeAssigneeSelect(task, className = "task-assignee") {
+  const select = document.createElement("select");
+  select.className = className;
+  select.setAttribute("aria-label", `Assign ${task.title}`);
+  const empty = document.createElement("option");
+  empty.value = "";
+  empty.textContent = "Unassigned";
+  select.appendChild(empty);
+  for (const persona of personas) {
+    const option = document.createElement("option");
+    option.value = persona.id;
+    option.textContent = persona.name;
+    select.appendChild(option);
+  }
+  if (task.assignee && !personaById(task.assignee)) {
+    const unknown = document.createElement("option");
+    unknown.value = task.assignee;
+    unknown.textContent = actorName(task.assignee);
+    select.appendChild(unknown);
+  }
+  select.value = task.assignee || "";
+  return select;
+}
+
+function taskDateLine(task) {
+  if (task.status === "done") return `Completed ${formatDate(task.completedAt || task.updatedAt)}`;
+  if (task.dueDate) return `Due ${formatDate(task.dueDate)}`;
+  return `Updated ${formatDate(task.updatedAt)}`;
+}
+
+function renderTaskCard(task) {
+  const card = document.createElement("article");
+  card.className = `task-card priority-${["low", "normal", "high"].includes(task.priority) ? task.priority : "normal"}`;
+  card.dataset.taskId = task.id;
+  const head = document.createElement("div");
+  head.className = "task-card-head";
+  const category = document.createElement("button");
+  category.type = "button";
+  category.className = "task-category";
+  category.textContent = task.category || "general";
+  category.title = `Show ${category.textContent} tasks`;
+  category.addEventListener("click", () => {
+    selectedCategory = task.category || "general";
+    renderBoard();
+  });
+  const priority = document.createElement("span");
+  priority.className = "task-priority";
+  priority.textContent = task.priority === "normal" ? "" : task.priority;
+  head.append(category, priority);
+  card.appendChild(head);
+
+  const title = document.createElement("button");
+  title.type = "button";
+  title.className = "task-title-button";
+  title.textContent = task.title;
+  title.addEventListener("click", () => void openTaskDetail(task.id));
+  card.appendChild(title);
+  if (task.detail) {
+    const detail = document.createElement("p");
+    detail.className = "task-card-detail";
+    detail.textContent = task.detail;
+    card.appendChild(detail);
+  }
+  const meta = document.createElement("p");
+  meta.className = "task-meta";
+  meta.textContent = taskDateLine(task);
+  card.appendChild(meta);
+
+  const controls = document.createElement("div");
+  controls.className = "task-controls";
+  const assignment = makeAssigneeSelect(task);
+  assignment.title = `Assigned to ${taskAssigneeName(task)}. Click to reassign.`;
+  assignment.addEventListener("change", async () => {
+    try {
+      const updated = await assignBoardTask(task.id, assignment.value || null, assignment);
+      showBoardNotice(`${updated.title} assigned to ${taskAssigneeName(updated)}.`, "success");
+      focusBoardTask(task.id, ".task-assignee");
+    } catch (error) {
+      await loadBoard({ silent: true });
+      showBoardNotice(error instanceof Error ? error.message : "The task could not be assigned.");
+      focusBoardTask(task.id, ".task-assignee");
+    }
+  });
+  controls.appendChild(assignment);
+  const nextStatus = NEXT_STATUS[task.status];
+  if (nextStatus) {
+    const advance = document.createElement("button");
+    advance.type = "button";
+    advance.className = "task-advance";
+    advance.textContent = `${NEXT_STATUS_LABEL[task.status]} →`;
+    advance.setAttribute("aria-label", `${NEXT_STATUS_LABEL[task.status]}: ${task.title}`);
+    advance.addEventListener("click", async () => {
+      try {
+        const updated = await advanceBoardTask(task, advance);
+        showBoardNotice(`${updated.title} moved to ${STATUS_LABELS[updated.status]}.`, "success");
+        focusBoardTask(task.id, ".task-advance");
+      } catch (error) {
+        await loadBoard({ silent: true });
+        showBoardNotice(error instanceof Error ? error.message : "The task could not be moved.");
+        focusBoardTask(task.id, ".task-advance");
+      }
+    });
+    controls.appendChild(advance);
+  } else {
+    const complete = document.createElement("span");
+    complete.className = "task-complete-label";
+    complete.textContent = "Complete";
+    controls.appendChild(complete);
+  }
+  card.appendChild(controls);
+  return card;
+}
+
+function renderBoard() {
+  renderBoardFilters();
+  for (const status of STATUS_ORDER) {
+    const tasks = filteredTasks(status);
+    boardColumnCountEls[status].textContent = String(tasks.length);
+    const body = boardColumnEls[status];
+    body.innerHTML = "";
+    if (!tasks.length) {
+      renderRegionState(body, selectedCategory === "all" ? "No tasks here." : `No ${selectedCategory} tasks here.`);
+      continue;
+    }
+    for (const task of tasks) body.appendChild(renderTaskCard(task));
+  }
+  updatePulse();
+}
+
+async function loadBoard({ silent = false } = {}) {
+  const loadGeneration = ++boardLoadGeneration;
+  if (!silent) {
+    boardFiltersEl.innerHTML = "";
+    for (const status of STATUS_ORDER) renderRegionState(boardColumnEls[status], "Loading tasks…", "loading");
+  }
+  try {
+    const data = await requestJson("/api/board");
+    if (loadGeneration !== boardLoadGeneration) return;
+    const focusTarget = captureBoardFocus();
+    boardState = {
+      backlog: Array.isArray(data?.backlog) ? data.backlog : [],
+      "in-progress": Array.isArray(data?.["in-progress"]) ? data["in-progress"] : [],
+      done: Array.isArray(data?.done) ? data.done : [],
+      categories: Array.isArray(data?.categories) ? data.categories : [],
+    };
+    renderBoard();
+    if (focusTarget) focusBoardTask(focusTarget.taskId, focusTarget.selector);
+  } catch (error) {
+    if (loadGeneration !== boardLoadGeneration) return;
+    const message = error instanceof Error ? error.message : "The board could not be loaded.";
+    renderRegionState(boardFiltersEl, message, "error", () => void loadBoard());
+    for (const status of STATUS_ORDER) renderRegionState(boardColumnEls[status], "Tasks unavailable.", "error");
+  }
+}
+
+async function assignBoardTask(taskId, assignee, control) {
+  control.disabled = true;
+  try {
+    const updated = await requestJson(`/api/tasks/${encodeURIComponent(taskId)}/assign`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ assignee }),
+    });
+    mergeBoardTask(updated);
+    return updated;
+  } finally {
+    control.disabled = false;
+  }
+}
+
+async function advanceBoardTask(task, control) {
+  const status = NEXT_STATUS[task.status];
+  if (!status) return;
+  control.disabled = true;
+  try {
+    const updated = await requestJson(`/api/tasks/${encodeURIComponent(task.id)}/status`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status, expectedStatus: task.status }),
+    });
+    mergeBoardTask(updated);
+    return updated;
+  } finally {
+    control.disabled = false;
+  }
+}
+
+function openTaskPanel(eyebrow) {
+  if (taskOverlay.hidden) taskPanelReturnFocus = document.activeElement;
+  taskPanelEyebrow.textContent = eyebrow;
+  taskOverlay.hidden = false;
+  document.body.classList.add("modal-open");
+  requestAnimationFrame(() => (taskPanelBody.querySelector("input, textarea, select, button") || taskPanelClose).focus());
+}
+
+function closeTaskPanel() {
+  taskPanelTaskId = null;
+  taskPanelLoadGeneration += 1;
+  clearTimeout(taskPanelRefreshTimer);
+  taskPanelRefreshSuppressedUntil = 0;
+  taskOverlay.hidden = true;
+  document.body.classList.remove("modal-open");
+  taskPanelBody.innerHTML = "";
+  if (taskPanelReturnFocus instanceof HTMLElement && taskPanelReturnFocus.isConnected) taskPanelReturnFocus.focus();
+  else tabButtons.find((button) => button.dataset.tab === activeTab)?.focus();
+  taskPanelReturnFocus = null;
+}
+
+function setTaskPanelError(form, message) {
+  let error = form.querySelector(".task-form-error");
+  if (!error) {
+    error = document.createElement("p");
+    error.className = "task-form-error";
+    error.setAttribute("role", "alert");
+    form.prepend(error);
+  }
+  error.textContent = message;
+}
+
+function openNewTaskPanel() {
+  taskPanelTaskId = null;
+  taskPanelLoadGeneration += 1;
+  const categories = boardCategories();
+  taskPanelBody.innerHTML = `
+    <form class="task-form" id="new-task-form">
+      <div class="task-field task-field-wide">
+        <label for="task-title">Title</label>
+        <input id="task-title" name="title" required maxlength="160" autocomplete="off">
+      </div>
+      <div class="task-field task-field-wide">
+        <label for="task-detail">Details</label>
+        <textarea id="task-detail" name="detail" rows="4" maxlength="2000"></textarea>
+      </div>
+      <div class="task-field">
+        <label for="task-category">Category</label>
+        <input id="task-category" name="category" list="task-category-list" value="general" required autocomplete="off">
+        <datalist id="task-category-list">${categories.map((category) => `<option value="${escapeHtml(category)}"></option>`).join("")}</datalist>
+      </div>
+      <div class="task-field">
+        <label for="task-priority">Priority</label>
+        <select id="task-priority" name="priority"><option value="low">Low</option><option value="normal" selected>Normal</option><option value="high">High</option></select>
+      </div>
+      <div class="task-field">
+        <label for="task-assignee-new">Assign to</label>
+        <select id="task-assignee-new" name="assignee"><option value="">Unassigned</option>${personas.map((persona) => `<option value="${escapeHtml(persona.id)}">${escapeHtml(persona.name)}</option>`).join("")}</select>
+      </div>
+      <div class="task-field">
+        <label for="task-due">Due date</label>
+        <input id="task-due" name="dueDate" type="date">
+      </div>
+      <div class="task-form-actions task-field-wide"><button type="button" class="task-cancel">Cancel</button><button type="submit" class="task-submit">Create task</button></div>
+    </form>`;
+  openTaskPanel("New task");
+  const form = taskPanelBody.querySelector("#new-task-form");
+  form.querySelector(".task-cancel").addEventListener("click", closeTaskPanel);
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const submit = form.querySelector(".task-submit");
+    const values = new FormData(form);
+    submit.disabled = true;
+    submit.textContent = "Creating…";
+    try {
+      const created = await requestJson("/api/tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: String(values.get("title") || "").trim(),
+          detail: String(values.get("detail") || "").trim(),
+          category: String(values.get("category") || "general").trim().toLowerCase(),
+          priority: String(values.get("priority") || "normal"),
+          assignee: String(values.get("assignee") || "") || null,
+          dueDate: String(values.get("dueDate") || "") || undefined,
+        }),
+      });
+      mergeBoardTask(created);
+      closeTaskPanel();
+      await setActiveTab("board", { refresh: false });
+    } catch (error) {
+      setTaskPanelError(form, error instanceof Error ? error.message : "The task could not be created.");
+      submit.disabled = false;
+      submit.textContent = "Create task";
+    }
+  });
+}
+
+function renderTaskActivity(task) {
+  const activity = Array.isArray(task.activity) ? [...task.activity] : [];
+  activity.sort((a, b) => String(b.at || "").localeCompare(String(a.at || "")));
+  if (!activity.length) return '<p class="task-activity-empty">No activity recorded yet.</p>';
+  return `<ol class="task-activity-list">${activity.map((entry) => `
+    <li><span class="task-activity-dot"></span><div><p>${escapeHtml(entry.note)}</p><small>${escapeHtml(actorName(entry.by))} · <time datetime="${escapeHtml(entry.at)}">${escapeHtml(formatDate(entry.at, true))}</time></small></div></li>`).join("")}</ol>`;
+}
+
+async function openTaskDetail(taskId, { background = false } = {}) {
+  taskPanelTaskId = taskId;
+  const loadGeneration = ++taskPanelLoadGeneration;
+  if (!background) taskPanelBody.innerHTML = '<div class="task-panel-loading">Loading task…</div>';
+  if (taskOverlay.hidden) openTaskPanel("Task detail");
+  else taskPanelEyebrow.textContent = "Task detail";
+  try {
+    const task = await requestJson(`/api/tasks/${encodeURIComponent(taskId)}`);
+    if (loadGeneration !== taskPanelLoadGeneration || taskPanelTaskId !== taskId || taskOverlay.hidden) return;
+    const focusedControl = background && taskPanelBody.contains(document.activeElement)
+      ? document.activeElement.matches("#task-note")
+        ? "#task-note"
+        : document.activeElement.matches(".task-detail-assignee")
+          ? ".task-detail-assignee"
+          : document.activeElement.matches(".task-detail-advance")
+            ? ".task-detail-advance"
+            : document.activeElement.closest(".task-note-form")
+              ? ".task-note-form button"
+              : null
+      : null;
+    const noteDraft = background ? taskPanelBody.querySelector("#task-note")?.value ?? "" : "";
+    const nextStatus = NEXT_STATUS[task.status];
+    taskPanelBody.innerHTML = `
+      <article class="task-detail-view">
+        <div class="task-detail-heading">
+          <div><span class="task-category static">${escapeHtml(task.category || "general")}</span><h2>${escapeHtml(task.title)}</h2></div>
+          <span class="task-status-badge status-${escapeHtml(task.status)}">${escapeHtml(STATUS_LABELS[task.status] || task.status)}</span>
+        </div>
+        ${task.detail ? `<p class="task-detail-copy">${escapeHtml(task.detail)}</p>` : '<p class="task-detail-copy muted">No details provided.</p>'}
+        <dl class="task-facts">
+          <div><dt>Priority</dt><dd>${escapeHtml(task.priority || "normal")}</dd></div>
+          <div><dt>Due</dt><dd>${escapeHtml(task.dueDate ? formatDate(task.dueDate) : "No due date")}</dd></div>
+          <div><dt>Created</dt><dd>${escapeHtml(formatDate(task.createdAt, true))}</dd></div>
+          <div><dt>Updated</dt><dd>${escapeHtml(formatDate(task.updatedAt, true))}</dd></div>
+        </dl>
+        <div class="task-detail-controls">
+          <label><span>Assigned to</span><span id="task-detail-assignee-slot"></span></label>
+          ${nextStatus ? `<button type="button" class="task-detail-advance">${escapeHtml(NEXT_STATUS_LABEL[task.status])} →</button>` : '<span class="task-complete-label">Complete</span>'}
+        </div>
+        <section class="task-activity"><h3>Activity</h3>${renderTaskActivity(task)}</section>
+        <form class="task-note-form"><label for="task-note">Add a progress note</label><div><input id="task-note" name="note" required maxlength="500" autocomplete="off" placeholder="What changed?"><button type="submit">Add note</button></div></form>
+      </article>`;
+    const assignment = makeAssigneeSelect(task, "task-detail-assignee");
+    taskPanelBody.querySelector("#task-detail-assignee-slot").appendChild(assignment);
+    assignment.addEventListener("change", async () => {
+      try {
+        await assignBoardTask(task.id, assignment.value || null, assignment);
+        suppressTaskPanelRefresh();
+        if (!taskOverlay.hidden) {
+          await openTaskDetail(task.id, { background: true });
+          taskPanelBody.querySelector(".task-detail-assignee")?.focus();
+        }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "The task could not be assigned.";
+        suppressTaskPanelRefresh();
+        await openTaskDetail(task.id, { background: true });
+        setTaskPanelError(taskPanelBody.querySelector(".task-detail-view") || taskPanelBody, message);
+      }
+    });
+    const advance = taskPanelBody.querySelector(".task-detail-advance");
+    if (advance) {
+      advance.addEventListener("click", async () => {
+        try {
+          await advanceBoardTask(task, advance);
+          suppressTaskPanelRefresh();
+          if (!taskOverlay.hidden) {
+            await openTaskDetail(task.id, { background: true });
+            (taskPanelBody.querySelector(".task-detail-advance") || taskPanelClose).focus();
+          }
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "The task could not be moved.";
+          suppressTaskPanelRefresh();
+          await openTaskDetail(task.id, { background: true });
+          setTaskPanelError(taskPanelBody.querySelector(".task-detail-view") || taskPanelBody, message);
+          (taskPanelBody.querySelector(".task-detail-advance") || taskPanelClose).focus();
+        }
+      });
+    }
+    const noteForm = taskPanelBody.querySelector(".task-note-form");
+    noteForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const note = String(new FormData(noteForm).get("note") || "").trim();
+      const button = noteForm.querySelector("button");
+      if (!note) return;
+      button.disabled = true;
+      try {
+        const updated = await requestJson(`/api/tasks/${encodeURIComponent(task.id)}/note`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ note }),
+        });
+        mergeBoardTask(updated);
+        suppressTaskPanelRefresh();
+        await openTaskDetail(task.id);
+        taskPanelBody.querySelector("#task-note")?.focus();
+      } catch (error) {
+        setTaskPanelError(noteForm, error instanceof Error ? error.message : "The note could not be added.");
+        button.disabled = false;
+      }
+    });
+    if (noteDraft) taskPanelBody.querySelector("#task-note").value = noteDraft;
+    if (focusedControl) requestAnimationFrame(() => taskPanelBody.querySelector(focusedControl)?.focus());
+  } catch (error) {
+    if (loadGeneration !== taskPanelLoadGeneration || taskPanelTaskId !== taskId || taskOverlay.hidden) return;
+    const message = error instanceof Error ? error.message : "The task could not be loaded.";
+    if (background) setTaskPanelError(taskPanelBody.querySelector(".task-detail-view") || taskPanelBody, message);
+    else renderRegionState(taskPanelBody, message, "error", () => void openTaskDetail(taskId));
+  }
+}
+
+// ---------- calendar / activity ----------
+
+function calendarItemDate(timestamp) {
+  const time = document.createElement("time");
+  if (timestamp) time.dateTime = timestamp;
+  time.textContent = formatDate(timestamp, true);
+  return time;
+}
+
+function renderActivityTimeline(entries) {
+  calendarCompletedEl.innerHTML = "";
+  if (!entries.length) {
+    renderRegionState(calendarCompletedEl, "No recent activity yet.");
+    return;
+  }
+  for (const entry of entries) {
+    const item = document.createElement("article");
+    item.className = `calendar-item activity-${entry.type || "unknown"}`;
+    const body = document.createElement("div");
+    body.className = "calendar-item-body";
+    if (entry.type === "completed" && entry.task) {
+      const title = document.createElement("button");
+      title.type = "button";
+      title.className = "calendar-title-button";
+      title.textContent = entry.task.title;
+      title.addEventListener("click", () => void openTaskDetail(entry.task.id));
+      body.appendChild(title);
+      const meta = document.createElement("p");
+      const completedBy = taskCompletionActor(entry.task);
+      meta.textContent = `${entry.task.category || "general"}${completedBy ? ` · completed by ${completedBy}` : " · completed"}`;
+      body.appendChild(meta);
+    } else if (entry.type === "team-update" && entry.update) {
+      const title = document.createElement("strong");
+      title.textContent = actorName(entry.update.agent);
+      body.appendChild(title);
+      const copy = document.createElement("p");
+      copy.textContent = entry.update.message || "Team update";
+      body.appendChild(copy);
+    } else {
+      const copy = document.createElement("p");
+      copy.textContent = "Activity recorded.";
+      body.appendChild(copy);
+    }
+    item.append(calendarItemDate(entry.timestamp), body);
+    calendarCompletedEl.appendChild(item);
+  }
+}
+
+function renderUpcoming(tasks) {
+  calendarUpcomingEl.innerHTML = "";
+  if (!tasks.length) {
+    renderRegionState(calendarUpcomingEl, "Nothing is planned yet.");
+    return;
+  }
+  for (const task of tasks) {
+    const item = document.createElement("article");
+    item.className = "calendar-item calendar-upcoming-item";
+    const date = document.createElement("div");
+    date.className = "calendar-date calendar-date-upcoming";
+    date.textContent = task.dueDate ? formatDate(task.dueDate) : "No due date";
+    const body = document.createElement("div");
+    body.className = "calendar-item-body";
+    const title = document.createElement("button");
+    title.type = "button";
+    title.className = "calendar-title-button";
+    title.textContent = task.title;
+    title.addEventListener("click", () => void openTaskDetail(task.id));
+    const meta = document.createElement("p");
+    meta.textContent = `${STATUS_LABELS[task.status] || task.status} · ${taskAssigneeName(task)} · ${task.category || "general"}`;
+    body.append(title, meta);
+    item.append(date, body);
+    calendarUpcomingEl.appendChild(item);
+  }
+}
+
+async function loadCalendar({ silent = false } = {}) {
+  const loadGeneration = ++calendarLoadGeneration;
+  if (!silent) {
+    renderRegionState(calendarCompletedEl, "Loading activity…", "loading");
+    renderRegionState(calendarUpcomingEl, "Loading planned work…", "loading");
+  }
+  try {
+    const data = await requestJson("/api/calendar");
+    if (loadGeneration !== calendarLoadGeneration) return;
+    const completed = Array.isArray(data?.completed) ? data.completed : [];
+    const updates = Array.isArray(data?.teamUpdates) ? data.teamUpdates : [];
+    const activity = Array.isArray(data?.activity) ? data.activity : [
+      ...completed.map((task) => ({ id: `completed-${task.id}`, type: "completed", timestamp: task.completedAt || task.updatedAt, task })),
+      ...updates.map((update, index) => ({ id: `update-${index}`, type: "team-update", timestamp: update.timestamp, update })),
+    ].sort((a, b) => String(b.timestamp || "").localeCompare(String(a.timestamp || "")));
+    renderActivityTimeline(activity);
+    renderUpcoming(Array.isArray(data?.upcoming) ? data.upcoming : []);
+  } catch (error) {
+    if (loadGeneration !== calendarLoadGeneration) return;
+    const message = error instanceof Error ? error.message : "Calendar activity could not be loaded.";
+    renderRegionState(calendarCompletedEl, message, "error", () => void loadCalendar());
+    renderRegionState(calendarUpcomingEl, "Planned work unavailable.", "error");
+  }
+}
+
+async function refreshWorkViews({ silent = true } = {}) {
+  await Promise.all([loadBoard({ silent }), loadRoster({ silent }), loadCalendar({ silent })]);
+}
+
+function scheduleWorkRefresh() {
+  if (workRefreshTimer) clearTimeout(workRefreshTimer);
+  workRefreshTimer = setTimeout(() => {
+    workRefreshTimer = null;
+    void refreshWorkViews({ silent: true });
+  }, 120);
+}
+
+function scheduleTaskPanelRefresh() {
+  if (!taskPanelTaskId || taskOverlay.hidden) return;
+  if (taskPanelRefreshTimer) clearTimeout(taskPanelRefreshTimer);
+  const taskId = taskPanelTaskId;
+  const delay = Math.max(120, taskPanelRefreshSuppressedUntil - Date.now() + 10);
+  taskPanelRefreshTimer = setTimeout(() => {
+    taskPanelRefreshTimer = null;
+    if (taskPanelTaskId === taskId && !taskOverlay.hidden) void openTaskDetail(taskId, { background: true });
+  }, delay);
+}
+
+function suppressTaskPanelRefresh(duration = 750) {
+  const refreshWasQueued = Boolean(taskPanelRefreshTimer);
+  taskPanelRefreshSuppressedUntil = Date.now() + duration;
+  clearTimeout(taskPanelRefreshTimer);
+  taskPanelRefreshTimer = null;
+  if (refreshWasQueued) scheduleTaskPanelRefresh();
+}
+
+taskPanel.setAttribute("role", "dialog");
+taskPanel.setAttribute("aria-modal", "true");
+taskPanel.setAttribute("aria-labelledby", "task-panel-eyebrow");
+newTaskBtn.addEventListener("click", openNewTaskPanel);
+taskPanelClose.addEventListener("click", closeTaskPanel);
+taskOverlay.addEventListener("click", (event) => {
+  if (event.target === taskOverlay) closeTaskPanel();
+});
+document.addEventListener("keydown", (event) => {
+  if (taskOverlay.hidden) return;
+  if (event.key === "Escape") {
+    closeTaskPanel();
+    return;
+  }
+  if (event.key !== "Tab") return;
+  const focusable = [...taskPanel.querySelectorAll('button:not(:disabled), input:not(:disabled), textarea:not(:disabled), select:not(:disabled), [href], [tabindex]:not([tabindex="-1"])')]
+    .filter((element) => element.getClientRects().length > 0);
+  if (!focusable.length) return;
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  }
+});
 
 // ---------- theme ----------
 
@@ -766,6 +1677,9 @@ async function switchChannel(id) {
     activeChannel = id;
     localStorage.setItem("gui-active-channel", id);
   }
+  const channelPersona = personaById(id);
+  chatChannelEyebrow.textContent = id === TEAM_CHANNEL ? "Team channel" : "Direct channel";
+  chatChannelTitle.textContent = id === TEAM_CHANNEL ? "Team" : (channelPersona?.name || actorName(id));
   unreadChannels.delete(id);
   streaming.clear();
   hopIndicators.clear();
@@ -807,7 +1721,25 @@ function renderApprovals(list) {
   approvalsEl.innerHTML = "";
   for (const approval of list) approvalsEl.appendChild(approvalCard(approval));
   approvalsPanel.hidden = list.length === 0;
+  reconcileApprovalAlerts(list);
   updatePulse();
+}
+
+function reconcileApprovalAlerts(list) {
+  const pendingByPersona = new Map();
+  for (const approval of list) pendingByPersona.set(approval.personaId, approval);
+
+  for (const [personaId, alert] of [...agentAlerts.entries()]) {
+    if (alert.source === "approval" && !pendingByPersona.has(personaId)) clearAgentAlert(personaId, "approval");
+  }
+  for (const [personaId, approval] of pendingByPersona) {
+    const current = agentAlerts.get(personaId);
+    if (current && current.source !== "approval") continue;
+    const message = `${approval.reason}. Your approval is needed.`;
+    if (current?.message !== message || current.status !== "hand-raised") {
+      setAgentAlert(personaId, "hand-raised", message, "approval");
+    }
+  }
 }
 
 function approvalCard(approval) {
@@ -972,20 +1904,59 @@ composer.addEventListener("submit", async (e) => {
 // ---------- data + events ----------
 
 async function loadPersonas() {
-  const res = await fetch("/api/personas");
-  personas = await res.json();
+  try {
+    const data = await requestJson("/api/personas");
+    personas = Array.isArray(data) ? data : [];
+  } catch (error) {
+    personas = [];
+    setComposerError(error instanceof Error ? error.message : "The team list could not be loaded.");
+  }
   renderChannelList();
   updateComposerState();
 }
 
 async function loadApprovals() {
-  const res = await fetch("/api/approvals");
-  renderApprovals(await res.json());
+  if (approvalsLoadInFlight) {
+    approvalsLoadQueued = true;
+    return;
+  }
+  approvalsLoadInFlight = true;
+  const stateVersion = approvalsStateVersion;
+  try {
+    const approvals = await requestJson("/api/approvals");
+    if (stateVersion !== approvalsStateVersion) {
+      approvalsLoadQueued = true;
+      return;
+    }
+    renderApprovals(Array.isArray(approvals) ? approvals : []);
+  } catch {
+    // The event stream will still deliver new approvals if the first read fails.
+  } finally {
+    approvalsLoadInFlight = false;
+    if (approvalsLoadQueued) {
+      approvalsLoadQueued = false;
+      scheduleApprovalsRefresh();
+    }
+  }
+}
+
+function scheduleApprovalsRefresh() {
+  clearTimeout(approvalsRefreshTimer);
+  approvalsRefreshTimer = setTimeout(() => {
+    approvalsRefreshTimer = null;
+    void loadApprovals();
+  }, 80);
 }
 
 function connectEvents() {
   const source = new EventSource("/api/events");
-  source.onmessage = (evt) => handleEvent(JSON.parse(evt.data));
+  source.onmessage = (evt) => {
+    try {
+      handleEvent(JSON.parse(evt.data));
+    } catch {
+      // Ignore a malformed event; EventSource will continue with the next one.
+    }
+  };
 }
 
 function endHop(channel) {
@@ -995,13 +1966,37 @@ function endHop(channel) {
 }
 
 function handleEvent(event, when) {
+  if (event.type === "dashboard_sync") {
+    scheduleWorkRefresh();
+    scheduleTaskPanelRefresh();
+    void loadApprovals();
+    return;
+  }
+  if (event.type === "board_updated") {
+    scheduleWorkRefresh();
+    scheduleTaskPanelRefresh();
+    return;
+  }
+  if (event.type === "calendar_updated") {
+    scheduleWorkRefresh();
+    return;
+  }
   if (event.type === "approval_requested") {
+    approvalsStateVersion += 1;
     approvalsPanel.hidden = false;
-    approvalsEl.appendChild(approvalCard(event.approval));
-    setAgentAlert(event.approval.personaId, "hand-raised", `${event.approval.reason}. Your approval is needed.`);
+    const existing = approvalsEl.querySelector(`[data-id="${event.approval.id}"]`);
+    if (existing) existing.replaceWith(approvalCard(event.approval));
+    else approvalsEl.appendChild(approvalCard(event.approval));
+    updatePulse();
+    const currentAlert = agentAlerts.get(event.approval.personaId);
+    if (!currentAlert || currentAlert.source === "approval") {
+      setAgentAlert(event.approval.personaId, "hand-raised", `${event.approval.reason}. Your approval is needed.`, "approval");
+    }
+    scheduleApprovalsRefresh();
     return;
   }
   if (event.type === "approval_resolved") {
+    approvalsStateVersion += 1;
     const card = approvalsEl.querySelector(`[data-id="${event.id}"]`);
     if (event.timedOut) {
       const personaId = card?.dataset.personaId;
@@ -1010,11 +2005,18 @@ function handleEvent(event, when) {
     }
     if (card) card.remove();
     approvalsPanel.hidden = approvalsEl.children.length === 0;
+    updatePulse();
     const personaId = card?.dataset.personaId;
     if (personaId) {
-      clearAgentAlert(personaId);
-      setAgentStatus(personaId, event.approved ? "working" : "attention", event.approved ? "Approval received; continuing." : "Approval was denied.");
+      const hasAnotherApproval = [...approvalsEl.children].some((item) => item.dataset.personaId === personaId);
+      if (!hasAnotherApproval) {
+        clearAgentAlert(personaId, "approval");
+        if (!agentAlerts.has(personaId)) {
+          setAgentStatus(personaId, event.approved ? "working" : "attention", event.approved ? "Approval received; continuing." : "Approval was denied.");
+        }
+      }
     }
+    scheduleApprovalsRefresh();
     return;
   }
 
@@ -1069,6 +2071,7 @@ function handleEvent(event, when) {
   } else if (event.type === "tool_result") {
     fillToolResult(event.id, event.result);
   } else if (event.type === "team_update") {
+    scheduleWorkRefresh();
     addTeamNote(event);
   } else if (event.type === "done") {
     clearHopIndicator(event.personaId);
@@ -1090,11 +2093,17 @@ function handleEvent(event, when) {
 }
 
 async function bootstrap() {
+  initialiseTabs();
   await loadPersonas();
+  if (activeChannel !== TEAM_CHANNEL && !personaById(activeChannel)) activeChannel = TEAM_CHANNEL;
   renderQuickReplies();
   await switchChannel(activeChannel);
-  loadApprovals();
+  await setActiveTab(activeTab, { refresh: false });
+  await refreshWorkViews({ silent: false });
+  void loadApprovals();
   connectEvents();
 }
 
-bootstrap();
+bootstrap().catch((error) => {
+  setComposerError(error instanceof Error ? error.message : "The dashboard could not finish loading.");
+});

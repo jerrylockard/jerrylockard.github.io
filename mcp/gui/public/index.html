@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Site Agents — Jerry Lockard</title>
+<title>Dashboard — jerrylockard.me</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Public+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -12,7 +12,16 @@
 <body>
 <div class="app">
   <header class="topbar">
-    <span class="wordmark">Site&nbsp;Agents</span>
+    <div class="topbar-brand">
+      <span class="wordmark">Dashboard</span>
+      <span class="wordmark-domain">jerrylockard.me</span>
+    </div>
+    <nav class="tabbar" id="tabbar" aria-label="Dashboard sections">
+      <button type="button" class="tab-btn" data-tab="team" aria-pressed="false">Team</button>
+      <button type="button" class="tab-btn" data-tab="board" aria-pressed="false">Board</button>
+      <button type="button" class="tab-btn" data-tab="calendar" aria-pressed="false">Calendar</button>
+      <button type="button" class="tab-btn" data-tab="chat" aria-pressed="false">Chat</button>
+    </nav>
     <div class="topbar-actions">
       <button id="profile-toggle" class="theme-btn" type="button" aria-pressed="false">Profile</button>
       <button id="preview-toggle" class="theme-btn" type="button" aria-pressed="false">Preview</button>
@@ -24,78 +33,161 @@
     <path class="cable" d="M0,1 Q600,34 1200,1"/>
   </svg>
 
-  <div class="body" id="body-layout">
-    <aside class="sidebar" id="sidebar">
-      <section class="panel" id="channel-panel">
-        <p class="eyebrow">Channels</p>
-        <div id="channel-list" class="channel-list"></div>
-      </section>
-      <section class="panel" id="approvals-panel" hidden>
-        <p class="eyebrow eyebrow-warn">Needs your OK</p>
-        <div id="approvals" class="approvals"></div>
-      </section>
-      <section class="panel" id="agent-alerts-panel" hidden>
-        <p class="eyebrow eyebrow-alert">Agent signals</p>
-        <div id="agent-alerts" class="agent-alerts"></div>
-      </section>
-    </aside>
+  <div class="pulse-bar" aria-label="Project status">
+    <div class="pulse-stats">
+      <div class="pulse-stat"><span class="pulse-value" id="agent-count">0</span><span class="pulse-label">team</span></div>
+      <div class="pulse-stat"><span class="pulse-value" id="active-count">0</span><span class="pulse-label">working</span></div>
+      <div class="pulse-stat"><span class="pulse-value" id="board-progress-count">0</span><span class="pulse-label">in progress</span></div>
+      <div class="pulse-stat"><span class="pulse-value" id="board-backlog-count">0</span><span class="pulse-label">backlog</span></div>
+      <div class="pulse-stat"><span class="pulse-value" id="approval-count">0</span><span class="pulse-label">approvals</span></div>
+      <div class="pulse-stat"><span class="pulse-value" id="signal-count">0</span><span class="pulse-label">signals</span></div>
+    </div>
+    <p class="deck-status"><span class="status-light"></span><span id="studio-status">Ready for direction</span></p>
+  </div>
 
-    <main class="chat">
-      <section class="command-deck" aria-label="Project pulse">
-        <div class="command-deck-heading">
-          <p class="eyebrow">Private site studio</p>
-          <h1>jerrylockard.me</h1>
-          <p class="deck-status"><span class="status-light"></span><span id="studio-status">Ready for direction</span></p>
-        </div>
-        <div class="deck-actions" aria-label="Chat history actions">
-          <button id="reconcile-chat" class="deck-action primary" type="button" title="Ask Ledger to reconcile this history, then clear it">Reconcile &amp; clear</button>
-          <button id="clear-chat" class="deck-action" type="button" title="Clear this channel's chat history">Clear chat</button>
-        </div>
-        <div class="pulse-stats" aria-label="Project status">
-          <div class="pulse-stat"><span class="pulse-value" id="agent-count">0</span><span class="pulse-label">agents</span></div>
-          <div class="pulse-stat"><span class="pulse-value" id="active-count">0</span><span class="pulse-label">working</span></div>
-          <div class="pulse-stat"><span class="pulse-value" id="approval-count">0</span><span class="pulse-label">approvals</span></div>
-          <div class="pulse-stat"><span class="pulse-value" id="signal-count">0</span><span class="pulse-label">signals</span></div>
-          <div class="pulse-stat"><span class="pulse-value">main</span><span class="pulse-label">branch</span></div>
-        </div>
-      </section>
-      <div id="log" class="log">
-        <div class="empty-state" id="empty-state">
-          <p>Pick a channel on the left, or say hello to Team.</p>
-        </div>
-      </div>
-      <div class="quick-replies" id="quick-replies"></div>
-      <form id="composer" class="composer">
-        <p class="composer-error" id="composer-error" hidden></p>
-        <p class="recipients-preview" id="recipients-preview" hidden></p>
-        <div class="composer-inner">
-          <div class="mention-popover" id="mention-popover" hidden></div>
-          <button type="button" id="mention-btn" class="icon-btn mention-btn" aria-label="Tag an agent" title="Tag an agent">@</button>
-          <textarea id="input" placeholder="Tag someone with @, then say hello…" rows="1"></textarea>
-          <button type="submit" id="send-btn" aria-label="Send">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 8h11M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </button>
-        </div>
-      </form>
-    </main>
+  <main class="views">
 
-    <aside class="preview-pane" id="preview-pane" hidden>
-      <div class="preview-header" id="preview-drag-handle">
-        <p class="eyebrow" style="margin:0">Live preview</p>
-        <div class="preview-controls">
-          <button type="button" id="preview-refresh" class="icon-btn" title="Refresh">⟳</button>
-          <a href="http://localhost:4321/" target="_blank" rel="noopener" class="icon-btn" title="Open in new tab">↗</a>
-          <button type="button" id="preview-close" class="icon-btn close-btn" title="Close">✕</button>
+    <!-- ---------- TEAM VIEW ---------- -->
+    <section class="view" id="view-team" hidden>
+      <div class="view-head">
+        <div>
+          <p class="eyebrow">Roster</p>
+          <h1>Your team</h1>
+          <p class="view-sub">Who's working on what, right now.</p>
         </div>
       </div>
-      <div class="preview-body">
-        <div class="preview-offline" id="preview-offline">
-          <p>Preview server isn't running.</p>
-          <button type="button" id="preview-start-btn">Start preview</button>
+      <div class="roster-grid" id="roster-grid"></div>
+    </section>
+
+    <!-- ---------- BOARD VIEW ---------- -->
+    <section class="view" id="view-board" hidden>
+      <div class="view-head">
+        <div>
+          <p class="eyebrow">Work</p>
+          <h1>Board</h1>
+          <p class="view-sub">Assign work and move it from backlog to in progress to done with one click.</p>
         </div>
-        <iframe id="preview-frame" class="preview-frame" title="Live site preview" hidden></iframe>
+        <button type="button" class="deck-action primary" id="new-task-btn">New task</button>
       </div>
-    </aside>
+      <p class="board-notice" id="board-notice" aria-live="polite" hidden></p>
+      <div class="board-filters" id="board-filters"></div>
+      <div class="board-columns" id="board-columns">
+        <section class="board-col" data-status="backlog" aria-labelledby="board-heading-backlog">
+          <div class="board-col-head"><h2 class="board-col-title" id="board-heading-backlog">Backlog</h2><span class="board-col-count" id="count-backlog">0</span></div>
+          <div class="board-col-body" id="col-backlog"></div>
+        </section>
+        <section class="board-col" data-status="in-progress" aria-labelledby="board-heading-in-progress">
+          <div class="board-col-head"><h2 class="board-col-title" id="board-heading-in-progress">In progress</h2><span class="board-col-count" id="count-in-progress">0</span></div>
+          <div class="board-col-body" id="col-in-progress"></div>
+        </section>
+        <section class="board-col" data-status="done" aria-labelledby="board-heading-done">
+          <div class="board-col-head"><h2 class="board-col-title" id="board-heading-done">Done</h2><span class="board-col-count" id="count-done">0</span></div>
+          <div class="board-col-body" id="col-done"></div>
+        </section>
+      </div>
+    </section>
+
+    <!-- ---------- CALENDAR VIEW ---------- -->
+    <section class="view" id="view-calendar" hidden>
+      <div class="view-head">
+        <div>
+          <p class="eyebrow">Activity</p>
+          <h1>Calendar</h1>
+          <p class="view-sub">What shipped, what's next, and what the team's been telling each other.</p>
+        </div>
+      </div>
+      <div class="calendar-columns">
+        <section class="calendar-col" aria-labelledby="calendar-heading-activity">
+          <h2 class="calendar-col-label" id="calendar-heading-activity">Recent activity</h2>
+          <div id="calendar-completed" class="calendar-list"></div>
+        </section>
+        <section class="calendar-col" aria-labelledby="calendar-heading-upcoming">
+          <h2 class="calendar-col-label" id="calendar-heading-upcoming">Planned &amp; in progress</h2>
+          <div id="calendar-upcoming" class="calendar-list"></div>
+        </section>
+      </div>
+    </section>
+
+    <!-- ---------- CHAT VIEW ---------- -->
+    <section class="view" id="view-chat" hidden>
+      <div class="body" id="body-layout">
+        <aside class="sidebar" id="sidebar">
+          <section class="panel" id="channel-panel">
+            <p class="eyebrow">Channels</p>
+            <div id="channel-list" class="channel-list"></div>
+          </section>
+          <section class="panel" id="approvals-panel" hidden>
+            <p class="eyebrow eyebrow-warn">Needs your OK</p>
+            <div id="approvals" class="approvals"></div>
+          </section>
+          <section class="panel" id="agent-alerts-panel" hidden>
+            <p class="eyebrow eyebrow-alert">Agent signals</p>
+            <div id="agent-alerts" class="agent-alerts"></div>
+          </section>
+        </aside>
+
+        <div class="chat">
+          <section class="command-deck" aria-label="Channel actions">
+            <div class="command-deck-heading">
+              <p class="eyebrow" id="chat-channel-eyebrow">Team channel</p>
+              <h2 id="chat-channel-title">Team</h2>
+            </div>
+            <div class="deck-actions" aria-label="Chat history actions">
+              <button id="reconcile-chat" class="deck-action primary" type="button" title="Ask the Ops &amp; Docs Lead to reconcile this history, then clear it">Reconcile &amp; clear</button>
+              <button id="clear-chat" class="deck-action" type="button" title="Clear this channel's chat history">Clear chat</button>
+            </div>
+          </section>
+          <div id="log" class="log">
+            <div class="empty-state" id="empty-state">
+              <p>Pick a channel on the left, or say hello to Team.</p>
+            </div>
+          </div>
+          <div class="quick-replies" id="quick-replies"></div>
+          <form id="composer" class="composer">
+            <p class="composer-error" id="composer-error" hidden></p>
+            <p class="recipients-preview" id="recipients-preview" hidden></p>
+            <div class="composer-inner">
+              <div class="mention-popover" id="mention-popover" hidden></div>
+              <button type="button" id="mention-btn" class="icon-btn mention-btn" aria-label="Tag a teammate" title="Tag a teammate">@</button>
+              <textarea id="input" placeholder="Tag someone with @, then say hello…" rows="1"></textarea>
+              <button type="submit" id="send-btn" aria-label="Send">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 8h11M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <aside class="preview-pane" id="preview-pane" hidden>
+          <div class="preview-header" id="preview-drag-handle">
+            <p class="eyebrow" style="margin:0">Live preview</p>
+            <div class="preview-controls">
+              <button type="button" id="preview-refresh" class="icon-btn" title="Refresh">⟳</button>
+              <a href="http://localhost:4321/" target="_blank" rel="noopener" class="icon-btn" title="Open in new tab">↗</a>
+              <button type="button" id="preview-close" class="icon-btn close-btn" title="Close">✕</button>
+            </div>
+          </div>
+          <div class="preview-body">
+            <div class="preview-offline" id="preview-offline">
+              <p>Preview server isn't running.</p>
+              <button type="button" id="preview-start-btn">Start preview</button>
+            </div>
+            <iframe id="preview-frame" class="preview-frame" title="Live site preview" hidden></iframe>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ---------- task detail / new task modal ---------- -->
+  <div class="task-overlay" id="task-overlay" hidden>
+    <div class="task-panel" id="task-panel">
+      <div class="task-panel-header">
+        <p class="eyebrow" style="margin:0" id="task-panel-eyebrow">Task</p>
+        <button type="button" id="task-panel-close" class="icon-btn close-btn" title="Close">✕</button>
+      </div>
+      <div class="task-panel-body" id="task-panel-body"></div>
+    </div>
   </div>
 
   <div class="profile-overlay" id="profile-overlay" hidden>

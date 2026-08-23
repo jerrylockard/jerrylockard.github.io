@@ -1,4 +1,4 @@
-import { appendFileSync, existsSync, readFileSync } from "node:fs";
+import { appendFileSync, existsSync, readFileSync, unwatchFile, watchFile } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
@@ -49,4 +49,12 @@ export function readTeamUpdates(limit = 50): TeamUpdate[] {
   if (!existsSync(teamLogPath)) return [];
   const lines = readFileSync(teamLogPath, "utf-8").trim().split("\n").filter(Boolean);
   return lines.slice(-limit).map((line) => JSON.parse(line) as TeamUpdate);
+}
+
+export function watchTeamUpdates(onChange: () => void): () => void {
+  const listener = (current: { mtimeMs: number; size: number }, previous: { mtimeMs: number; size: number }) => {
+    if (current.mtimeMs !== previous.mtimeMs || current.size !== previous.size) onChange();
+  };
+  watchFile(teamLogPath, { interval: 500 }, listener);
+  return () => unwatchFile(teamLogPath, listener);
 }

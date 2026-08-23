@@ -1,6 +1,6 @@
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
-import express, { type Request, type Response } from "express";
+import express, { type NextFunction, type Request, type Response } from "express";
 import { PERSONAS, getPersona } from "../../agents/src/personas.js";
 import { runMentionChain, runPersonaTurn, type ChainEvent } from "./run-persona.js";
 import { parseMentions } from "./mentions.js";
@@ -9,6 +9,24 @@ import { checkPreviewStatus, startPreviewServer, PREVIEW_URL } from "./preview.j
 import { appendTranscriptEvent, clearTranscript, readTranscript } from "./transcript.js";
 import { routeMessage } from "./router.js";
 import { readProfile } from "../../server/src/profile.js";
+import { readTeamUpdates, watchTeamUpdates } from "../../server/src/memory.js";
+import {
+  createTask,
+  listTasks,
+  getTask,
+  getBoard,
+  updateTaskStatus,
+  assignTask,
+  addTaskNote,
+  listTaskCategories,
+  proposeTaskCategory,
+  tasksByAssignee,
+  recentlyCompleted,
+  upcomingWork,
+  watchTaskStore,
+  isTaskDueDate,
+  TaskStatusConflictError,
+} from "../../server/src/tasks.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const publicDir = join(__dirname, "..", "public");
@@ -20,7 +38,10 @@ app.use(express.static(publicDir));
 type StreamEvent =
   | (ChainEvent & { channel?: string })
   | { type: "approval_requested"; approval: PendingApproval }
-  | { type: "approval_resolved"; id: string; approved: boolean; timedOut: boolean };
+  | { type: "approval_resolved"; id: string; approved: boolean; timedOut: boolean }
+  | { type: "dashboard_sync" }
+  | { type: "board_updated"; reason: "sync" }
+  | { type: "calendar_updated" };
 
 const clients = new Set<Response>();
 type ReconcileState = "queued" | "working" | "waiting" | "complete" | "error";
@@ -39,6 +60,12 @@ function broadcast(event: StreamEvent) {
   const payload = `data: ${JSON.stringify(event)}\n\n`;
   for (const res of clients) res.write(payload);
 }
+
+watchTaskStore(() => {
+  broadcast({ type: "board_updated", reason: "sync" });
+  broadcast({ type: "calendar_updated" });
+});
+watchTeamUpdates(() => broadcast({ type: "calendar_updated" }));
 
 onApprovalRequested((approval) => {
   for (const job of reconcileJobs.values()) {
@@ -65,11 +92,12 @@ app.get("/api/events", (req: Request, res: Response) => {
   res.setHeader("Connection", "keep-alive");
   res.flushHeaders();
   clients.add(res);
+  res.write(`data: ${JSON.stringify({ type: "dashboard_sync" })}\n\n`);
   req.on("close", () => clients.delete(res));
 });
 
 app.get("/api/personas", (_req: Request, res: Response) => {
-  res.json(PERSONAS.map(({ id, name, role, tagline, color }) => ({ id, name, role, tagline, color })));
+  res.json(PERSONAS.map(({ id, name, role, department, tagline, color }) => ({ id, name, role, department, tagline, color })));
 });
 
 app.get("/api/approvals", (_req: Request, res: Response) => {
@@ -217,6 +245,201 @@ app.get("/api/preview/status", async (_req: Request, res: Response) => {
 app.post("/api/preview/start", async (_req: Request, res: Response) => {
   const result = await startPreviewServer();
   res.json(result);
+});
+
+// ---------- task board ----------
+// REST surface over mcp/server/src/tasks.ts — the single shared store agents write to via
+// MCP tools (create_task, update_task_status, etc.) and the dashboard reads/writes via these
+// routes. Same data either way; there's no separate "GUI copy" of the board.
+
+app.get("/api/board", (_req: Request, res: Response) => {
+  res.json(getBoard());
+});
+
+app.get("/api/tasks", (req: Request, res: Response) => {
+  const rawStatus = typeof req.query.status === "string" ? req.query.status : undefined;
+  if (rawStatus && rawStatus !== "backlog" && rawStatus !== "in-progress" && rawStatus !== "done") {
+    res.status(400).json({ error: "status must be backlog, in-progress, or done" });
+    return;
+  }
+  const status = rawStatus === "backlog" || rawStatus === "in-progress" || rawStatus === "done" ? rawStatus : undefined;
+  const assignee = typeof req.query.assignee === "string" ? req.query.assignee : undefined;
+  const category = typeof req.query.category === "string" ? req.query.category : undefined;
+  res.json(listTasks({ status, assignee, category }));
+});
+
+app.get("/api/tasks/:id", (req: Request, res: Response) => {
+  const task = getTask(String(req.params.id));
+  if (!task) {
+    res.status(404).json({ error: "not found" });
+    return;
+  }
+  res.json(task);
+});
+
+app.post("/api/tasks", (req: Request, res: Response) => {
+  const { title, detail, category, priority, assignee, dueDate } = req.body ?? {};
+  if (typeof title !== "string" || !title.trim()) {
+    res.status(400).json({ error: "title required" });
+    return;
+  }
+  if (assignee != null && (typeof assignee !== "string" || !getPersona(assignee))) {
+    res.status(400).json({ error: "assignee must be a current persona id or null" });
+    return;
+  }
+  if (dueDate != null && (typeof dueDate !== "string" || !isTaskDueDate(dueDate))) {
+    res.status(400).json({ error: "dueDate must be a real date in YYYY-MM-DD format" });
+    return;
+  }
+  const task = createTask({
+    title,
+    detail: typeof detail === "string" ? detail : "",
+    category: typeof category === "string" && category.trim() ? category : "general",
+    priority: priority === "low" || priority === "high" ? priority : "normal",
+    assignee: typeof assignee === "string" && assignee ? assignee : null,
+    createdBy: "jerry",
+    dueDate: typeof dueDate === "string" ? dueDate : undefined,
+  });
+  res.status(201).json(task);
+});
+
+app.post("/api/tasks/:id/status", (req: Request, res: Response) => {
+  const { status, note, expectedStatus } = req.body ?? {};
+  if (status !== "backlog" && status !== "in-progress" && status !== "done") {
+    res.status(400).json({ error: "status must be backlog, in-progress, or done" });
+    return;
+  }
+  if (expectedStatus !== "backlog" && expectedStatus !== "in-progress" && expectedStatus !== "done") {
+    res.status(400).json({ error: "expectedStatus is required and must be backlog, in-progress, or done" });
+    return;
+  }
+  let task;
+  try {
+    task = updateTaskStatus(
+      String(req.params.id),
+      status,
+      "jerry",
+      typeof note === "string" ? note : undefined,
+      expectedStatus,
+    );
+  } catch (error) {
+    if (error instanceof TaskStatusConflictError) {
+      res.status(409).json({ error: error.message, currentStatus: error.currentStatus });
+      return;
+    }
+    throw error;
+  }
+  if (!task) {
+    res.status(404).json({ error: "not found" });
+    return;
+  }
+  res.json(task);
+});
+
+app.post("/api/tasks/:id/assign", (req: Request, res: Response) => {
+  if (!req.body || typeof req.body !== "object" || !("assignee" in req.body)) {
+    res.status(400).json({ error: "assignee is required; use null to unassign" });
+    return;
+  }
+  const { assignee } = req.body ?? {};
+  if (assignee != null && (typeof assignee !== "string" || !getPersona(assignee))) {
+    res.status(400).json({ error: "assignee must be a current persona id or null" });
+    return;
+  }
+  const task = assignTask(String(req.params.id), assignee ?? null, "jerry");
+  if (!task) {
+    res.status(404).json({ error: "not found" });
+    return;
+  }
+  res.json(task);
+});
+
+app.post("/api/tasks/:id/note", (req: Request, res: Response) => {
+  const { note } = req.body ?? {};
+  if (typeof note !== "string" || !note.trim()) {
+    res.status(400).json({ error: "note required" });
+    return;
+  }
+  const task = addTaskNote(String(req.params.id), "jerry", note);
+  if (!task) {
+    res.status(404).json({ error: "not found" });
+    return;
+  }
+  res.json(task);
+});
+
+app.get("/api/task-categories", (_req: Request, res: Response) => {
+  res.json(listTaskCategories());
+});
+
+app.post("/api/task-categories", (req: Request, res: Response) => {
+  const { category } = req.body ?? {};
+  if (typeof category !== "string" || !category.trim()) {
+    res.status(400).json({ error: "category required" });
+    return;
+  }
+  const categories = proposeTaskCategory(category);
+  res.json({ categories });
+});
+
+// ---------- roster + calendar ----------
+// Derived views over the same task store — no separate state, just different slices for the
+// dashboard's Team tab (who's doing what right now) and Calendar tab (what shipped, what's next).
+
+app.get("/api/roster", (_req: Request, res: Response) => {
+  const byAssignee = tasksByAssignee();
+  const roster = PERSONAS.map((p) => ({
+    id: p.id,
+    name: p.name,
+    role: p.role,
+    department: p.department,
+    color: p.color,
+    tagline: p.tagline,
+    activeTasks: byAssignee[p.id] ?? [],
+  }));
+  res.json(roster);
+});
+
+app.get("/api/calendar", (req: Request, res: Response) => {
+  const requestedDays = typeof req.query.days === "string" ? Number(req.query.days) : 30;
+  if (!Number.isFinite(requestedDays) || requestedDays < 1 || requestedDays > 365) {
+    res.status(400).json({ error: "days must be a number between 1 and 365" });
+    return;
+  }
+
+  const days = Math.floor(requestedDays);
+  const completed = recentlyCompleted(days);
+  const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+  const teamUpdates = readTeamUpdates(Number.MAX_SAFE_INTEGER)
+    .filter((update) => new Date(update.timestamp).getTime() >= cutoff)
+    .sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+  const activity = [
+    ...completed.map((task) => ({
+      id: `task:${task.id}`,
+      type: "completed" as const,
+      timestamp: task.completedAt ?? task.updatedAt,
+      task,
+    })),
+    ...teamUpdates.map((update, index) => ({
+      id: `update:${update.timestamp}:${index}`,
+      type: "team-update" as const,
+      timestamp: update.timestamp,
+      update,
+    })),
+  ].sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+
+  res.json({
+    activity,
+    completed,
+    upcoming: upcomingWork(),
+    teamUpdates,
+  });
+});
+
+app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {
+  console.error("mcp-gui request failed:", error instanceof Error ? error.message : "unknown error");
+  const status = typeof error === "object" && error !== null && "status" in error && Number(error.status) === 400 ? 400 : 500;
+  res.status(status).json({ error: status === 400 ? "Request body must be valid JSON." : "The request could not be completed safely." });
 });
 
 const PORT = Number(process.env.PORT ?? 4405);

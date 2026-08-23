@@ -101,7 +101,7 @@ const {
         return i === -1 ? null : href.slice(i);
       }
 
-      const links = Array.from(document.querySelectorAll<HTMLAnchorElement>(".nav-links a"));
+      const links = Array.from(document.querySelectorAll(".nav-links a") as NodeListOf<HTMLAnchorElement>);
       const sections = links
         .map((a) => {
           const hash = hashOf(a.getAttribute("href"));
@@ -109,7 +109,7 @@ const {
         })
         .filter((el): el is Element => el !== null);
 
-      if ("IntersectionObserver" in window && sections.length) {
+      if ("IntersectionObserver" in window && sections.length && links.length) {
         const spy = new IntersectionObserver(
           (entries) => {
             for (const entry of entries) {

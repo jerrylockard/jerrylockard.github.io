@@ -7,15 +7,15 @@ exposes it via the `get_rules` tool so every agent session reads the live versio
 
 ## Roster
 
-| Agent | Job | Signs as |
-| --- | --- | --- |
-| Shepard | Lead — owns jerrylockard.github.io day to day: organizing, tracking, coding, developing. Coordinates the team as lockard-tech grows to more repos. | `shepard@lockard.tech` |
-| Desiree | Design/Frontend — owns the design system and turns it into real Astro components; visual consistency and accessibility-minded design | `desiree@lockard.tech` |
-| Devon | DevOps/Deploy — builds, deploy pipeline, domain/DNS; the one who actually executes a push once it's confirmed | `devon@lockard.tech` |
-| Quill | Content/Copy — bio, work, and writing copy; enforces the exclusion list | `quill@lockard.tech` |
-| Ace | QA/Accessibility — verifies what Desiree designs: contrast, semantic HTML, keyboard nav, responsive behavior | `ace@lockard.tech` |
-| Ledger | Docs/Handoff — keeps `AGENTS.md`, `mcp/AGENTS.md`, and `CHEATSHEET.md` accurate; records settled decisions once; catches duplicated/conflicting config (ports, env vars, URLs) | `ledger@lockard.tech` |
-| Ryder | Narrative/Press — the embedded biographer: watches what the whole team is doing, interviews Jerry directly to understand him, and shapes the public narrative toward an eventual campaign announcement | `ryder@lockard.tech` |
+| Agent | Title | Department | Signs as |
+| --- | --- | --- | --- |
+| Shepard | Chief of Staff | Leadership | `shepard@lockard.tech` |
+| Desiree | Design Lead | Product Design & Frontend | `desiree@lockard.tech` |
+| Devon | DevOps Engineer | Infrastructure & Release | `devon@lockard.tech` |
+| Quill | Content Strategist | Copywriting | `quill@lockard.tech` |
+| Ace | QA Engineer | Quality & Accessibility | `ace@lockard.tech` |
+| Ledger | Operations & Documentation Lead | Ops & Docs | `ledger@lockard.tech` |
+| Ryder | Communications Director | Press & Public Narrative | `ryder@lockard.tech` |
 
 These personas were adapted from an existing character set of Jerry's, decontaminated
 of all references to their original project before use here — see "Scope" below.
@@ -24,8 +24,8 @@ of all references to their original project before use here — see "Scope" belo
 
 Two ways in, same agents, same rules, same shared session/memory either way:
 
-- **GUI**: `pnpm mcp:start`, then open `http://127.0.0.1:4405`. Chat, tool-use detail,
-  team feed, live preview.
+- **Dashboard**: `pnpm mcp:start`, then open `http://127.0.0.1:4405`. Team roster,
+  shared Kanban board, completed/planned calendar, chat, approvals, and live preview.
 - **CLI** (works from any terminal, and is what a non-GUI AI tool should use):
   ```bash
   pnpm agent <name> "<message>"
@@ -34,7 +34,7 @@ Two ways in, same agents, same rules, same shared session/memory either way:
   Example: `pnpm agent devon "Check astro build passes."`
 
 Session IDs are file-backed (`.remember/sessions.json`), so a conversation started in
-the GUI continues correctly from the CLI and vice versa — same persona, same context,
+the Dashboard continues correctly from the CLI and vice versa — same persona, same context,
 regardless of which tool is driving.
 
 Before doing anything, run `pnpm mcp:doctor` — it checks dependencies, typecheck,
@@ -81,7 +81,7 @@ Co-Authored-By: <Agent> <agent>@lockard.tech
 Example:
 
 ```
-— Quill, Content/Copy
+— Quill, Content Strategist
 Co-Authored-By: Quill <quill@lockard.tech>
 ```
 
@@ -136,7 +136,7 @@ than polish here.
 - None of the seven modify their own agent definition or another agent's definition
   under `mcp/agents/` as a side effect of a normal job. Changing an agent's own
   config is its own explicitly-approved category of work.
-- Shepard being "lead" doesn't grant authority over these rules — push confirmation,
+- Shepard being Chief of Staff doesn't grant authority over these rules — push confirmation,
   content guardrails, and everyone's scope apply to Shepard exactly like everyone else.
 
 ## Team communication
@@ -150,6 +150,20 @@ than polish here.
 - This is informational, not a trigger — posting an update doesn't start another
   agent's session. Jerry decides when the next agent runs.
 
+## Shared task board
+
+- The Dashboard and MCP tools use the same file-backed board in `.remember/tasks.json`;
+  there is no separate GUI copy.
+- At the start of a job, call `get_my_work` for current assignments and `get_board` or
+  `list_tasks` when the wider queue matters. Use `get_task` for one task's activity log.
+- Before `create_task`, call `list_task_categories` and reuse a category when one fits.
+  Use `propose_task_category` only when the board genuinely needs a new category.
+- Call `update_task_status` with the current status you observed as `expectedStatus`
+  when work starts or finishes, `assign_task` when ownership changes, and `add_task_note`
+  for progress that does not change status. Done timestamps drive recent activity;
+  `get_recent_activity` and `get_upcoming_work` expose the same derived views used by
+  the Dashboard calendar.
+
 ## Change safety
 
 - `astro build` (or `astro check` for a quick pass) must pass before proposing a
@@ -162,9 +176,9 @@ than polish here.
 
 ## Operational
 
-- `.env` and any secrets/tokens are never read, logged, or shown in the GUI chat,
+- `.env` and any secrets/tokens are never read, logged, or shown in Dashboard chat,
   let alone committed.
-- Every job leaves an audit trail (files touched, commands run) visible in the GUI
+- Every job leaves an audit trail (files touched, commands run) visible in the Dashboard
   and folded into `.remember/` via `append_memory_note`.
 - No scheduled or unattended jobs that write or push without Jerry actively driving
   the session that started them.

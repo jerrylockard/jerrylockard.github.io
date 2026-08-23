@@ -1,5 +1,5 @@
 import { execSync, spawnSync } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -48,9 +48,9 @@ check("MCP server starts cleanly", () => {
   return "ok";
 });
 
-check("Astro scaffold present", () => {
+check("Astro site source present", () => {
   if (!existsSync(join(repoRoot, "src", "pages", "index.astro"))) throw new Error("missing src/pages/index.astro");
-  return "still the starter scaffold — real site not built yet (expected)";
+  return "ok";
 });
 
 check("mockup.html present", () => {
@@ -79,6 +79,15 @@ check("git branch is main", () => {
 check(".remember/ present", () => {
   if (!existsSync(join(repoRoot, ".remember"))) throw new Error("missing");
   return "ok";
+});
+
+check("AI_GATEWAY_API_KEY", () => {
+  const envPath = join(repoRoot, ".env");
+  const inEnvFile = existsSync(envPath) && readFileSync(envPath, "utf-8").includes("AI_GATEWAY_API_KEY=");
+  if (process.env.AI_GATEWAY_API_KEY || inEnvFile) return "set — agents can run";
+  // Non-fatal: the dashboard and CLI still start fine without it, an agent
+  // turn just reports this clearly instead of running. See CHEATSHEET.md.
+  return "not set — chat/agent turns will show a clear in-app error until you add one";
 });
 
 console.log("\nDoctor report");

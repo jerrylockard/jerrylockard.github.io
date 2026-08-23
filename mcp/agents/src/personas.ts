@@ -11,6 +11,13 @@ export interface Persona {
   systemPrompt: string;
   /** Path globs (relative to repo root) this persona primarily works in. Soft guidance, not a hard sandbox. */
   scope: string[];
+  /**
+   * Vercel AI Gateway model string (e.g. "openai/gpt-5.5", "google/gemini-3.1-pro-preview").
+   * Optional — unset personas fall back to providers.ts's DEFAULT_MODEL (Claude). This is how
+   * one employee's identity stays separate from which model actually runs them: change this
+   * field and nothing else about the persona (memory, tasks, relationships) changes.
+   */
+  model?: string;
 }
 
 const SHARED_PREAMBLE = `You're part of the small team that runs Jerry Lockard's lockard-tech projects — starting

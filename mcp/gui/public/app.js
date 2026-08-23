@@ -1,9 +1,5 @@
 const sidebar = document.getElementById("sidebar");
 const channelListEl = document.getElementById("channel-list");
-const approvalsEl = document.getElementById("approvals");
-const approvalsPanel = document.getElementById("approvals-panel");
-const agentAlertsPanel = document.getElementById("agent-alerts-panel");
-const agentAlertsEl = document.getElementById("agent-alerts");
 const bodyLayout = document.getElementById("body-layout");
 const logEl = document.getElementById("log");
 const emptyState = document.getElementById("empty-state");
@@ -16,6 +12,7 @@ const sendBtn = document.getElementById("send-btn");
 const mentionBtn = document.getElementById("mention-btn");
 const mentionPopover = document.getElementById("mention-popover");
 const themeBtn = document.getElementById("theme-btn");
+const themeBtnLabel = document.getElementById("theme-btn-label");
 const previewToggle = document.getElementById("preview-toggle");
 const previewPane = document.getElementById("preview-pane");
 const previewFrame = document.getElementById("preview-frame");
@@ -30,13 +27,15 @@ const profileListEl = document.getElementById("profile-list");
 const agentCountEl = document.getElementById("agent-count");
 const activeCountEl = document.getElementById("active-count");
 const approvalCountEl = document.getElementById("approval-count");
-const signalCountEl = document.getElementById("signal-count");
 const studioStatusEl = document.getElementById("studio-status");
 const clearChatBtn = document.getElementById("clear-chat");
 const reconcileChatBtn = document.getElementById("reconcile-chat");
-const tabbar = document.getElementById("tabbar");
-const tabButtons = [...document.querySelectorAll(".tab-btn")];
+const navButtons = [...document.querySelectorAll(".nav-btn")];
 const views = [...document.querySelectorAll(".view")];
+const pageEyebrowEl = document.getElementById("page-eyebrow");
+const pageTitleEl = document.getElementById("page-title");
+const badgeChatEl = document.getElementById("badge-chat");
+const badgeApprovalsEl = document.getElementById("badge-approvals");
 const rosterGridEl = document.getElementById("roster-grid");
 const boardFiltersEl = document.getElementById("board-filters");
 const boardNoticeEl = document.getElementById("board-notice");
@@ -62,11 +61,31 @@ const taskPanelBody = document.getElementById("task-panel-body");
 const taskPanelClose = document.getElementById("task-panel-close");
 const chatChannelEyebrow = document.getElementById("chat-channel-eyebrow");
 const chatChannelTitle = document.getElementById("chat-channel-title");
+const employeeOverlay = document.getElementById("employee-overlay");
+const employeePanelBody = document.getElementById("employee-panel-body");
+const employeePanelClose = document.getElementById("employee-panel-close");
+const approvalsFullEl = document.getElementById("approvals-full");
+const attentionListEl = document.getElementById("attention-list");
+const attentionCountEl = document.getElementById("attention-count");
+const teamStripEl = document.getElementById("team-strip");
+const currentWorkListEl = document.getElementById("current-work-list");
+const homeActivityListEl = document.getElementById("home-activity-list");
+const homeGreetingEl = document.getElementById("home-greeting");
+const askBar = document.getElementById("ask-bar");
+const askInput = document.getElementById("ask-input");
 let reconcilePollTimer = null;
 
 const TEAM_CHANNEL = "team";
 const QUICK_REPLIES = ["Yes, go ahead", "Looks good", "Not yet — hold off", "What's the status?", "Can you explain more?", "No, stop."];
-const TAB_IDS = ["team", "board", "calendar", "chat"];
+const TAB_IDS = ["home", "employees", "board", "calendar", "chat", "approvals"];
+const PAGE_META = {
+  home: { eyebrow: "Overview", title: "Command Center" },
+  employees: { eyebrow: "Directory", title: "Employees" },
+  chat: { eyebrow: "Internal comms", title: "Messages" },
+  board: { eyebrow: "Work", title: "Tasks" },
+  calendar: { eyebrow: "Activity", title: "Activity" },
+  approvals: { eyebrow: "Approval Center", title: "Approvals" },
+};
 const STATUS_ORDER = ["backlog", "in-progress", "done"];
 const STATUS_LABELS = { backlog: "Backlog", "in-progress": "In progress", done: "Done" };
 const NEXT_STATUS = { backlog: "in-progress", "in-progress": "done" };
@@ -75,9 +94,12 @@ const NEXT_STATUS_LABEL = { backlog: "Start task", "in-progress": "Mark done" };
 let personas = [];
 let activeChannel = localStorage.getItem("gui-active-channel") || TEAM_CHANNEL;
 const savedTab = localStorage.getItem("gui-active-tab");
-let activeTab = TAB_IDS.includes(savedTab) ? savedTab : "team";
+let activeTab = TAB_IDS.includes(savedTab) ? savedTab : "home";
 let roster = [];
 let boardState = { backlog: [], "in-progress": [], done: [], categories: [] };
+let approvalsList = [];
+let lastActivityFeed = [];
+let lastTeamUpdates = [];
 let selectedCategory = "all";
 let workRefreshTimer = null;
 let taskPanelReturnFocus = null;
@@ -85,6 +107,7 @@ let taskPanelTaskId = null;
 let taskPanelLoadGeneration = 0;
 let taskPanelRefreshTimer = null;
 let taskPanelRefreshSuppressedUntil = 0;
+let employeeReturnFocus = null;
 let rosterLoadGeneration = 0;
 let boardLoadGeneration = 0;
 let calendarLoadGeneration = 0;
@@ -118,20 +141,26 @@ function statusLabel(status) {
   return { available: "Available", working: "Working", attention: "Needs attention", question: "Has a question", "hand-raised": "Hand raised", help: "Immediate help" }[status] || "Available";
 }
 
+function updateBadges() {
+  badgeApprovalsEl.hidden = approvalsList.length === 0;
+  badgeApprovalsEl.textContent = String(approvalsList.length);
+  badgeChatEl.hidden = unreadChannels.size === 0;
+  badgeChatEl.textContent = String(unreadChannels.size);
+}
+
 function updatePulse() {
   const activeCount = [...agentStatuses.values()].filter((status) => status === "working").length;
-  const approvalCount = approvalsEl.children.length;
-  const signalCount = agentAlerts.size;
   agentCountEl.textContent = String(personas.length);
   activeCountEl.textContent = String(activeCount);
   boardProgressCountEl.textContent = String(boardState["in-progress"].length);
   boardBacklogCountEl.textContent = String(boardState.backlog.length);
-  approvalCountEl.textContent = String(approvalCount);
-  signalCountEl.textContent = String(signalCount);
+  approvalCountEl.textContent = String(approvalsList.length);
   const urgent = [...agentStatuses.values()].some((status) => status === "help");
   const hasQuestion = [...agentStatuses.values()].some((status) => status === "question");
   const handRaised = [...agentStatuses.values()].some((status) => status === "hand-raised");
-  studioStatusEl.textContent = urgent ? "An agent needs immediate help" : handRaised ? "An agent has raised a hand" : hasQuestion ? "An agent has a question" : approvalCount ? "Your approval is needed" : activeCount ? `${activeCount} agent${activeCount === 1 ? " is" : "s are"} working` : "Ready for direction";
+  studioStatusEl.textContent = urgent ? "An agent needs immediate help" : handRaised ? "An agent has raised a hand" : hasQuestion ? "An agent has a question" : approvalsList.length ? "Your approval is needed" : activeCount ? `${activeCount} agent${activeCount === 1 ? " is" : "s are"} working` : "Ready for direction";
+  updateBadges();
+  if (activeTab === "home") renderHome();
 }
 
 function setAgentStatus(id, status, message = "") {
@@ -140,7 +169,7 @@ function setAgentStatus(id, status, message = "") {
   if (message) agentStatusMessages.set(id, message);
   renderChannelList();
   if (roster.length) renderRoster();
-  renderAgentAlerts();
+  renderAttention();
   updatePulse();
 }
 
@@ -157,22 +186,8 @@ function clearAgentAlert(id, source) {
   agentStatusMessages.delete(id);
   renderChannelList();
   if (roster.length) renderRoster();
-  renderAgentAlerts();
+  renderAttention();
   updatePulse();
-}
-
-function renderAgentAlerts() {
-  agentAlertsEl.innerHTML = "";
-  agentAlertsPanel.hidden = agentAlerts.size === 0;
-  for (const alert of agentAlerts.values()) {
-    const persona = personaById(alert.id);
-    if (!persona) continue;
-    const card = document.createElement("div");
-    card.className = `agent-alert alert-${alert.status}`;
-    card.innerHTML = `<div class="agent-alert-head"><span class="status-dot"></span><strong>${escapeHtml(persona.name)}</strong><span>${escapeHtml(statusLabel(alert.status))}</span></div><p>${escapeHtml(alert.message)}</p><button type="button">Open channel</button>`;
-    card.querySelector("button").addEventListener("click", () => switchChannel(alert.id));
-    agentAlertsEl.appendChild(card);
-  }
 }
 
 const TOOL_LABELS = {
@@ -355,55 +370,139 @@ function taskCompletionActor(task) {
   return entry ? actorName(entry.by) : null;
 }
 
-function initialiseTabs() {
-  const boardHelp = document.querySelector("#view-board .view-sub");
-  if (boardHelp) boardHelp.textContent = "Backlog, in progress, done. Assign work or use a card's action to move it forward.";
-  tabbar.setAttribute("role", "tablist");
-  tabButtons.forEach((button, index) => {
+function greetingForNow() {
+  const hour = new Date().getHours();
+  if (hour < 5) return "Working late, Jerry";
+  if (hour < 12) return "Good morning, Jerry";
+  if (hour < 17) return "Good afternoon, Jerry";
+  return "Good evening, Jerry";
+}
+
+function initialiseNav() {
+  for (const button of navButtons) {
     const tab = button.dataset.tab;
-    if (!TAB_IDS.includes(tab)) return;
-    button.id = `tab-${tab}`;
-    button.setAttribute("role", "tab");
-    button.setAttribute("aria-controls", `view-${tab}`);
+    if (!TAB_IDS.includes(tab)) continue;
     button.addEventListener("click", () => void setActiveTab(tab));
-    button.addEventListener("keydown", (event) => {
-      if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
-      event.preventDefault();
-      let nextIndex = index;
-      if (event.key === "ArrowLeft") nextIndex = (index - 1 + tabButtons.length) % tabButtons.length;
-      if (event.key === "ArrowRight") nextIndex = (index + 1) % tabButtons.length;
-      if (event.key === "Home") nextIndex = 0;
-      if (event.key === "End") nextIndex = tabButtons.length - 1;
-      tabButtons[nextIndex].focus();
-      tabButtons[nextIndex].click();
-    });
-  });
-  views.forEach((view) => {
-    const tab = view.id.replace(/^view-/, "");
-    view.setAttribute("role", "tabpanel");
-    view.setAttribute("aria-labelledby", `tab-${tab}`);
-  });
+  }
+  for (const button of document.querySelectorAll("[data-goto]")) {
+    button.addEventListener("click", () => void setActiveTab(button.dataset.goto));
+  }
 }
 
 async function setActiveTab(tab, { refresh = true } = {}) {
-  if (!TAB_IDS.includes(tab)) tab = "team";
+  if (!TAB_IDS.includes(tab)) tab = "home";
   activeTab = tab;
   localStorage.setItem("gui-active-tab", tab);
-  for (const button of tabButtons) {
-    const selected = button.dataset.tab === tab;
-    button.setAttribute("aria-pressed", String(selected));
-    button.setAttribute("aria-selected", String(selected));
-    button.tabIndex = selected ? 0 : -1;
+  for (const button of navButtons) {
+    button.setAttribute("aria-pressed", String(button.dataset.tab === tab));
   }
   for (const view of views) view.hidden = view.id !== `view-${tab}`;
+  const meta = PAGE_META[tab] || PAGE_META.home;
+  pageEyebrowEl.textContent = meta.eyebrow;
+  pageTitleEl.textContent = meta.title;
   if (tab === "chat") applyChannelAccent(activeChannel);
   else document.documentElement.style.removeProperty("--channel-accent");
 
   if (!refresh) return;
-  if (tab === "team") await loadRoster({ silent: roster.length > 0 });
+  if (tab === "home") {
+    await Promise.all([
+      loadRoster({ silent: roster.length > 0 }),
+      loadBoard({ silent: allBoardTasks().length > 0 }),
+      loadCalendar({ silent: true }),
+    ]);
+    renderHome();
+  }
+  if (tab === "employees") await loadRoster({ silent: roster.length > 0 });
   if (tab === "board") await loadBoard({ silent: allBoardTasks().length > 0 });
   if (tab === "calendar") await loadCalendar({ silent: true });
+  if (tab === "approvals") renderApprovalsFull();
 }
+
+// ---------- home / command center ----------
+
+function renderHome() {
+  homeGreetingEl.textContent = greetingForNow();
+  renderAttention();
+  renderTeamStrip();
+  renderCurrentWork();
+  renderHomeActivity();
+}
+
+function signalCard(alert) {
+  const persona = personaById(alert.id);
+  const card = document.createElement("div");
+  card.className = `approval-card signal-card alert-${alert.status}`;
+  card.innerHTML = `
+    <div class="reason">${escapeHtml(persona?.name ?? alert.id)} · ${escapeHtml(statusLabel(alert.status))}</div>
+    <div class="detail">${escapeHtml(alert.message)}</div>
+    <div class="buttons"><button type="button" class="open-channel">Open channel</button></div>
+  `;
+  card.querySelector(".open-channel").addEventListener("click", async () => {
+    await setActiveTab("chat", { refresh: false });
+    await switchChannel(alert.id);
+  });
+  return card;
+}
+
+function renderAttention() {
+  const signals = [...agentAlerts.values()].filter((alert) => alert.source !== "approval");
+  const total = approvalsList.length + signals.length;
+  attentionCountEl.textContent = String(total);
+  attentionListEl.innerHTML = "";
+  if (!total) {
+    renderRegionState(attentionListEl, "All caught up — nothing needs you right now.");
+    return;
+  }
+  for (const approval of approvalsList) attentionListEl.appendChild(approvalCard(approval));
+  for (const alert of signals) attentionListEl.appendChild(signalCard(alert));
+}
+
+function renderTeamStrip() {
+  teamStripEl.innerHTML = "";
+  if (!roster.length) {
+    renderRegionState(teamStripEl, "Loading team…");
+    return;
+  }
+  for (const member of roster) {
+    const status = statusFor(member.id);
+    const row = document.createElement("button");
+    row.type = "button";
+    row.className = "team-strip-row";
+    row.innerHTML = `
+      <span class="avatar" style="background:${safePersonaColor(member.color)}">${avatarInner(personaById(member.id) || member)}</span>
+      <span class="team-strip-copy"><span class="team-strip-name">${escapeHtml(member.name)}</span><span class="team-strip-role">${escapeHtml(member.role)}</span></span>
+      <span class="roster-status status-${escapeHtml(status)}"><span class="status-dot"></span></span>
+    `;
+    row.addEventListener("click", () => openEmployeeProfile(member.id));
+    teamStripEl.appendChild(row);
+  }
+}
+
+function renderCurrentWork() {
+  currentWorkListEl.innerHTML = "";
+  const inProgress = Array.isArray(boardState["in-progress"]) ? boardState["in-progress"] : [];
+  if (!inProgress.length) {
+    renderRegionState(currentWorkListEl, "Nothing in progress right now.");
+    return;
+  }
+  for (const task of inProgress.slice(0, 5)) currentWorkListEl.appendChild(renderTaskCard(task));
+}
+
+function renderHomeActivity() {
+  renderActivityItems(homeActivityListEl, lastActivityFeed.slice(0, 5));
+}
+
+askBar.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const text = askInput.value.trim();
+  if (!text) return;
+  askInput.value = "";
+  await setActiveTab("chat", { refresh: false });
+  if (activeChannel !== TEAM_CHANNEL) await switchChannel(TEAM_CHANNEL);
+  input.value = text;
+  input.dispatchEvent(new Event("input"));
+  composer.requestSubmit();
+});
 
 // ---------- team roster ----------
 
@@ -438,8 +537,8 @@ function renderRoster() {
         <div class="roster-task-list"></div>
       </div>
       <div class="roster-actions">
-        <button type="button" class="roster-chat">Open chat</button>
-        <button type="button" class="roster-board">View board</button>
+        <button type="button" class="roster-profile">View profile</button>
+        <button type="button" class="roster-chat">Message</button>
       </div>`;
 
     const taskList = card.querySelector(".roster-task-list");
@@ -458,11 +557,12 @@ function renderRoster() {
         taskList.appendChild(button);
       }
     }
+    card.querySelector(".roster-card-head").addEventListener("click", () => openEmployeeProfile(member.id));
+    card.querySelector(".roster-profile").addEventListener("click", () => openEmployeeProfile(member.id));
     card.querySelector(".roster-chat").addEventListener("click", async () => {
       await setActiveTab("chat", { refresh: false });
       await switchChannel(member.id);
     });
-    card.querySelector(".roster-board").addEventListener("click", () => void setActiveTab("board"));
     rosterGridEl.appendChild(card);
   }
 }
@@ -475,11 +575,107 @@ async function loadRoster({ silent = false } = {}) {
     if (loadGeneration !== rosterLoadGeneration) return;
     roster = Array.isArray(data) ? data : [];
     renderRoster();
+    if (activeTab === "home") renderTeamStrip();
   } catch (error) {
     if (loadGeneration !== rosterLoadGeneration) return;
     renderRegionState(rosterGridEl, error instanceof Error ? error.message : "The roster could not be loaded.", "error", () => void loadRoster());
   }
 }
+
+// ---------- employee profile ----------
+
+function closeEmployeeProfile() {
+  employeeOverlay.hidden = true;
+  document.body.classList.remove("modal-open");
+  employeePanelBody.innerHTML = "";
+  if (employeeReturnFocus instanceof HTMLElement && employeeReturnFocus.isConnected) employeeReturnFocus.focus();
+  employeeReturnFocus = null;
+}
+
+function openEmployeeProfile(id) {
+  const persona = personaById(id);
+  const member = roster.find((r) => r.id === id) || persona;
+  if (!persona || !member) return;
+
+  employeeReturnFocus = document.activeElement;
+  const status = statusFor(id);
+  const tasks = Array.isArray(member.activeTasks) ? member.activeTasks : [];
+  const scope = Array.isArray(persona.scope) ? persona.scope : [];
+  const scopeLine = !scope.length ? "" : scope.length === 1 && scope[0] === "**" ? "Whole repository" : scope.join(", ");
+  const related = lastTeamUpdates.filter((update) => personaForActor(update.agent)?.id === id).slice(0, 5);
+
+  employeePanelBody.innerHTML = `
+    <div class="employee-profile-head">
+      <span class="avatar employee-avatar" style="background:${safePersonaColor(persona.color)}">${avatarInner(persona)}</span>
+      <div>
+        <h2>${escapeHtml(persona.name)}</h2>
+        <p class="employee-role">${escapeHtml(persona.role)}${persona.department ? ` · ${escapeHtml(persona.department)}` : ""}</p>
+        <span class="roster-status status-${escapeHtml(status)}"><span class="status-dot"></span>${escapeHtml(statusLabel(status))}</span>
+      </div>
+    </div>
+    ${persona.tagline ? `<p class="employee-tagline">${escapeHtml(persona.tagline)}</p>` : ""}
+    <dl class="task-facts">
+      <div><dt>Identity</dt><dd>${persona.email ? `<a href="mailto:${escapeHtml(persona.email)}">${escapeHtml(persona.email)}</a>` : "—"}</dd></div>
+      ${scopeLine ? `<div><dt>Primarily works in</dt><dd>${escapeHtml(scopeLine)}</dd></div>` : ""}
+    </dl>
+    <section class="employee-section">
+      <h3>Current work <span>${tasks.length}</span></h3>
+      <div class="employee-task-list" id="employee-task-list"></div>
+    </section>
+    <section class="employee-section">
+      <h3>Recent activity</h3>
+      <div id="employee-activity-list"></div>
+    </section>
+    <div class="employee-actions">
+      <button type="button" class="deck-action primary" id="employee-open-chat">Message ${escapeHtml(persona.name)}</button>
+    </div>`;
+
+  const taskListEl = employeePanelBody.querySelector("#employee-task-list");
+  if (!tasks.length) {
+    renderRegionState(taskListEl, "No active work assigned.");
+  } else {
+    for (const task of tasks) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "roster-task";
+      button.innerHTML = `<span>${escapeHtml(task.title)}</span><small>${escapeHtml(STATUS_LABELS[task.status] || task.status)}</small>`;
+      button.addEventListener("click", () => {
+        closeEmployeeProfile();
+        void openTaskDetail(task.id);
+      });
+      taskListEl.appendChild(button);
+    }
+  }
+
+  const activityEl = employeePanelBody.querySelector("#employee-activity-list");
+  if (!related.length) {
+    renderRegionState(activityEl, `No recorded updates from ${persona.name} yet.`);
+  } else {
+    renderActivityItems(
+      activityEl,
+      related.map((update, index) => ({ id: `emp-update-${index}`, type: "team-update", timestamp: update.timestamp, update })),
+    );
+  }
+
+  employeePanelBody.querySelector("#employee-open-chat").addEventListener("click", async () => {
+    closeEmployeeProfile();
+    await setActiveTab("chat", { refresh: false });
+    await switchChannel(id);
+  });
+
+  employeeOverlay.hidden = false;
+  document.body.classList.add("modal-open");
+  requestAnimationFrame(() => (employeePanelBody.querySelector("button, a") || employeePanelClose).focus());
+}
+
+employeePanelClose.addEventListener("click", closeEmployeeProfile);
+employeeOverlay.addEventListener("click", (event) => {
+  if (event.target === employeeOverlay) closeEmployeeProfile();
+});
+document.addEventListener("keydown", (event) => {
+  if (employeeOverlay.hidden) return;
+  if (event.key === "Escape") closeEmployeeProfile();
+});
 
 // ---------- task board ----------
 
@@ -536,6 +732,7 @@ function mergeBoardTask(task) {
   boardState[task.status].unshift(task);
   if (task.category && !boardState.categories.includes(task.category)) boardState.categories.push(task.category);
   renderBoard();
+  if (activeTab === "home") renderCurrentWork();
 }
 
 function renderBoardFilters() {
@@ -705,6 +902,7 @@ async function loadBoard({ silent = false } = {}) {
       categories: Array.isArray(data?.categories) ? data.categories : [],
     };
     renderBoard();
+    if (activeTab === "home") renderCurrentWork();
     if (focusTarget) focusBoardTask(focusTarget.taskId, focusTarget.selector);
   } catch (error) {
     if (loadGeneration !== boardLoadGeneration) return;
@@ -763,7 +961,7 @@ function closeTaskPanel() {
   document.body.classList.remove("modal-open");
   taskPanelBody.innerHTML = "";
   if (taskPanelReturnFocus instanceof HTMLElement && taskPanelReturnFocus.isConnected) taskPanelReturnFocus.focus();
-  else tabButtons.find((button) => button.dataset.tab === activeTab)?.focus();
+  else navButtons.find((button) => button.dataset.tab === activeTab)?.focus();
   taskPanelReturnFocus = null;
 }
 
@@ -971,10 +1169,10 @@ function calendarItemDate(timestamp) {
   return time;
 }
 
-function renderActivityTimeline(entries) {
-  calendarCompletedEl.innerHTML = "";
+function renderActivityItems(container, entries) {
+  container.innerHTML = "";
   if (!entries.length) {
-    renderRegionState(calendarCompletedEl, "No recent activity yet.");
+    renderRegionState(container, "No recent activity yet.");
     return;
   }
   for (const entry of entries) {
@@ -1006,7 +1204,7 @@ function renderActivityTimeline(entries) {
       body.appendChild(copy);
     }
     item.append(calendarItemDate(entry.timestamp), body);
-    calendarCompletedEl.appendChild(item);
+    container.appendChild(item);
   }
 }
 
@@ -1052,8 +1250,11 @@ async function loadCalendar({ silent = false } = {}) {
       ...completed.map((task) => ({ id: `completed-${task.id}`, type: "completed", timestamp: task.completedAt || task.updatedAt, task })),
       ...updates.map((update, index) => ({ id: `update-${index}`, type: "team-update", timestamp: update.timestamp, update })),
     ].sort((a, b) => String(b.timestamp || "").localeCompare(String(a.timestamp || "")));
-    renderActivityTimeline(activity);
+    lastActivityFeed = activity;
+    lastTeamUpdates = updates;
+    renderActivityItems(calendarCompletedEl, activity);
     renderUpcoming(Array.isArray(data?.upcoming) ? data.upcoming : []);
+    if (activeTab === "home") renderHomeActivity();
   } catch (error) {
     if (loadGeneration !== calendarLoadGeneration) return;
     const message = error instanceof Error ? error.message : "Calendar activity could not be loaded.";
@@ -1064,6 +1265,7 @@ async function loadCalendar({ silent = false } = {}) {
 
 async function refreshWorkViews({ silent = true } = {}) {
   await Promise.all([loadBoard({ silent }), loadRoster({ silent }), loadCalendar({ silent })]);
+  if (activeTab === "home") renderHome();
 }
 
 function scheduleWorkRefresh() {
@@ -1126,7 +1328,7 @@ document.addEventListener("keydown", (event) => {
 
 function setTheme(mode) {
   document.documentElement.setAttribute("data-theme", mode);
-  themeBtn.textContent = mode === "dark" ? "Light" : "Dark";
+  themeBtnLabel.textContent = mode === "dark" ? "Light mode" : "Dark mode";
   localStorage.setItem("gui-theme", mode);
 }
 
@@ -1575,6 +1777,7 @@ function renderChannelList() {
     row.addEventListener("click", () => switchChannel(entry.id));
     channelListEl.appendChild(row);
   }
+  updateBadges();
 }
 
 function clearLog() {
@@ -1717,17 +1920,18 @@ function renderQuickReplies() {
 
 // ---------- approvals ----------
 
-function renderApprovals(list) {
-  approvalsEl.innerHTML = "";
-  for (const approval of list) approvalsEl.appendChild(approvalCard(approval));
-  approvalsPanel.hidden = list.length === 0;
-  reconcileApprovalAlerts(list);
-  updatePulse();
+function renderApprovalsFull() {
+  approvalsFullEl.innerHTML = "";
+  if (!approvalsList.length) {
+    renderRegionState(approvalsFullEl, "No approvals pending. Agents will surface anything sensitive or externally visible here before acting.");
+    return;
+  }
+  for (const approval of approvalsList) approvalsFullEl.appendChild(approvalCard(approval));
 }
 
-function reconcileApprovalAlerts(list) {
+function reconcileApprovalAlerts() {
   const pendingByPersona = new Map();
-  for (const approval of list) pendingByPersona.set(approval.personaId, approval);
+  for (const approval of approvalsList) pendingByPersona.set(approval.personaId, approval);
 
   for (const [personaId, alert] of [...agentAlerts.entries()]) {
     if (alert.source === "approval" && !pendingByPersona.has(personaId)) clearAgentAlert(personaId, "approval");
@@ -1928,7 +2132,11 @@ async function loadApprovals() {
       approvalsLoadQueued = true;
       return;
     }
-    renderApprovals(Array.isArray(approvals) ? approvals : []);
+    approvalsList = Array.isArray(approvals) ? approvals : [];
+    reconcileApprovalAlerts();
+    renderApprovalsFull();
+    renderAttention();
+    updatePulse();
   } catch {
     // The event stream will still deliver new approvals if the first read fails.
   } finally {
@@ -1983,10 +2191,11 @@ function handleEvent(event, when) {
   }
   if (event.type === "approval_requested") {
     approvalsStateVersion += 1;
-    approvalsPanel.hidden = false;
-    const existing = approvalsEl.querySelector(`[data-id="${event.approval.id}"]`);
-    if (existing) existing.replaceWith(approvalCard(event.approval));
-    else approvalsEl.appendChild(approvalCard(event.approval));
+    const idx = approvalsList.findIndex((a) => a.id === event.approval.id);
+    if (idx === -1) approvalsList.push(event.approval);
+    else approvalsList[idx] = event.approval;
+    renderApprovalsFull();
+    renderAttention();
     updatePulse();
     const currentAlert = agentAlerts.get(event.approval.personaId);
     if (!currentAlert || currentAlert.source === "approval") {
@@ -1997,18 +2206,19 @@ function handleEvent(event, when) {
   }
   if (event.type === "approval_resolved") {
     approvalsStateVersion += 1;
-    const card = approvalsEl.querySelector(`[data-id="${event.id}"]`);
+    const resolved = approvalsList.find((a) => a.id === event.id);
     if (event.timedOut) {
-      const personaId = card?.dataset.personaId;
+      const personaId = resolved?.personaId;
       const who = (personaId && personaById(personaId)?.name) ?? personaId ?? "An agent";
       addMessage("error", who, null).textContent = `${who}'s request timed out waiting for a response and was denied automatically.`;
     }
-    if (card) card.remove();
-    approvalsPanel.hidden = approvalsEl.children.length === 0;
+    approvalsList = approvalsList.filter((a) => a.id !== event.id);
+    renderApprovalsFull();
+    renderAttention();
     updatePulse();
-    const personaId = card?.dataset.personaId;
+    const personaId = resolved?.personaId;
     if (personaId) {
-      const hasAnotherApproval = [...approvalsEl.children].some((item) => item.dataset.personaId === personaId);
+      const hasAnotherApproval = approvalsList.some((item) => item.personaId === personaId);
       if (!hasAnotherApproval) {
         clearAgentAlert(personaId, "approval");
         if (!agentAlerts.has(personaId)) {
@@ -2093,7 +2303,7 @@ function handleEvent(event, when) {
 }
 
 async function bootstrap() {
-  initialiseTabs();
+  initialiseNav();
   await loadPersonas();
   if (activeChannel !== TEAM_CHANNEL && !personaById(activeChannel)) activeChannel = TEAM_CHANNEL;
   renderQuickReplies();
@@ -2101,6 +2311,7 @@ async function bootstrap() {
   await setActiveTab(activeTab, { refresh: false });
   await refreshWorkViews({ silent: false });
   void loadApprovals();
+  if (activeTab === "home") renderHome();
   connectEvents();
 }
 

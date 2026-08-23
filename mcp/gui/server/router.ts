@@ -1,9 +1,6 @@
-import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
-import { query } from "@anthropic-ai/claude-agent-sdk";
+import { generateText } from "ai";
 import { PERSONAS } from "../../agents/src/personas.js";
-
-const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
+import { resolveModel } from "../../agents/src/providers.js";
 
 const DEFAULT_CHAIN = ["shepard"];
 
@@ -19,22 +16,13 @@ export async function routeMessage(message: string): Promise<string[]> {
   const prompt = `Jerry posted this in the team's shared channel without addressing anyone specific:\n"${message}"\n\nTeam roster:\n${roster}\n\nWhich agent(s) should answer? Reply with ONLY their id(s), comma-separated, in the order they should respond (usually just one — only list more than one if the message genuinely spans multiple lanes). If it's genuinely unclear or general, reply "shepard".`;
 
   try {
-    const q = query({
+    const { text } = await generateText({
+      model: resolveModel({}),
+      instructions: "You are a routing classifier for a small team. Output only agent ids, comma-separated — no explanation, no other text.",
       prompt,
-      options: {
-        cwd: repoRoot,
-        systemPrompt: "You are a routing classifier for a small team. Output only agent ids, comma-separated — no explanation, no other text.",
-        allowedTools: [],
-        permissionMode: "default",
-      } as Parameters<typeof query>[0]["options"],
     });
 
-    let result = "";
-    for await (const msg of q as AsyncIterable<any>) {
-      if (msg.type === "result" && msg.subtype === "success") result = msg.result ?? "";
-    }
-
-    const ids = [...new Set(result.toLowerCase().split(/[,\s]+/).map((s) => s.trim()))].filter((id) =>
+    const ids = [...new Set(text.toLowerCase().split(/[,\s]+/).map((s) => s.trim()))].filter((id) =>
       PERSONAS.some((p) => p.id === id),
     );
 

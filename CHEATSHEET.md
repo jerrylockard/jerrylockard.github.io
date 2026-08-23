@@ -21,8 +21,31 @@ pnpm agent list              # see the roster
 pnpm agent <name> "<msg>"    # talk to one agent from any terminal, no Dashboard needed
 ```
 
-Dashboard tabs: **Team** (roster and assignments), **Board** (Backlog/In progress/Done),
-**Calendar** (completed work, planned work, team updates), and **Chat**.
+Dashboard sections (left sidebar): **Command Center** (home — needs-your-attention,
+team status, current work, recent activity), **Employees** (directory + full profile
+pages), **Messages** (chat, channels, @mentions), **Tasks** (Backlog/In progress/Done),
+**Activity** (completed work, planned work, team updates), and **Approvals**.
+
+Agent turns need one env var to actually run (Dashboard and CLI both start fine without
+it — a turn just reports this clearly instead of running, and `pnpm mcp:doctor` flags it
+non-fatally). Put it in a repo-root `.env` file (gitignored) or your shell profile:
+
+| Var | Purpose |
+| --- | --- |
+| `AI_GATEWAY_API_KEY` | Required for any agent to respond. One key covers every provider (Anthropic, OpenAI, Google, …) via the Vercel AI Gateway — get one at vercel.com (AI Gateway → API Keys). |
+
+Everything else is optional and inert unless set — local default behavior is unchanged:
+
+| Var | Default | Purpose |
+| --- | --- | --- |
+| `PORT` | `4405` | Port the dashboard listens on |
+| `HOST` | `127.0.0.1` | Bind address — set to `0.0.0.0` for a non-localhost deploy |
+| `DASHBOARD_PASSWORD` | unset | If set, gates the whole app behind HTTP Basic Auth |
+| `DASHBOARD_USER` | `jerry` | Basic Auth username, only used when a password is set |
+
+Each persona in `mcp/agents/src/personas.ts` can optionally set its own `model` (a Gateway
+model string, e.g. `"openai/gpt-5.5"`) — unset falls back to Claude. See `mcp/AGENTS.md`
+for details.
 
 Roster: `shepard` (Chief of Staff — Leadership), `desiree` (Design Lead — Product
 Design & Frontend), `devon` (DevOps Engineer — Infrastructure & Release), `quill`

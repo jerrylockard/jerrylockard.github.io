@@ -33,9 +33,25 @@ Two ways in, same agents, same rules, same shared session/memory either way:
   ```
   Example: `pnpm agent devon "Check astro build passes."`
 
-Session IDs are file-backed (`.remember/sessions.json`), so a conversation started in
+Session history is file-backed (`.remember/sessions.json`), so a conversation started in
 the Dashboard continues correctly from the CLI and vice versa — same persona, same context,
 regardless of which tool is driving.
+
+### AI provider
+
+Agent turns run on `mcp/agents/src/run.ts`, a provider-agnostic runtime (AI SDK's
+`ToolLoopAgent`) routed through the Vercel AI Gateway — one `AI_GATEWAY_API_KEY` covers
+Anthropic, OpenAI, Google, and anything else the Gateway lists. Without that key set (env
+var, or `AI_GATEWAY_API_KEY=...` in a repo-root `.env`), the Dashboard and CLI still start
+fine, but any agent turn reports the missing key as a normal in-chat error instead of
+running — `pnpm mcp:doctor` also flags this (non-fatally).
+
+Each persona in `personas.ts` has an optional `model` field — a Gateway model string like
+`"openai/gpt-5.5"` or `"google/gemini-3.1-pro-preview"`. Unset means the shared default in
+`providers.ts` (currently Claude). A persona's identity, memory, tasks, and relationships
+live independently of which model runs them — changing `model` changes nothing else. Check
+`https://ai-gateway.vercel.sh/v1/models` for the live, current model list before setting one
+— IDs change often enough that anything written down here would go stale.
 
 Before doing anything, run `pnpm mcp:doctor` — it checks dependencies, typecheck,
 that the MCP server actually starts, GitHub auth, branch, and that the cross-tool

@@ -1,0 +1,96 @@
+---
+// A richer summary card for one writing entry — used on /notes, where it
+// sits alongside academy-note-card and civic-note-card. The slim .entry row
+// in writing.astro stays as-is for the dedicated /writing list; this is the
+// "featured" treatment, the most personal-voice of the three cards on
+// purpose — a drop-cap teaser instead of a status pill or byline, since
+// there's no meeting or program to report on, just a reflection.
+import type { CollectionEntry } from "astro:content";
+
+interface Props {
+  entry: CollectionEntry<"writing">;
+}
+
+const { entry } = Astro.props;
+const { title, date, tag, description } = entry.data;
+const formattedDate = date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+---
+
+<a class="journal-card" href={`/writing/${entry.id}`}>
+  <div class="journal-card-head">
+    <span class="journal-kicker">{tag}</span>
+    <span class="journal-card-date">{formattedDate}</span>
+  </div>
+  <h3 class="journal-card-title">{title}</h3>
+  <p class="journal-card-teaser">{description}</p>
+</a>
+
+<style>
+  .journal-card {
+    display: block;
+    padding: 22px 0;
+    border-bottom: 1px solid var(--rule);
+    text-decoration: none;
+    color: inherit;
+    transition: padding-left 180ms ease, background-color 180ms ease;
+  }
+
+  .journal-card:first-of-type {
+    border-top: 1px solid var(--rule);
+  }
+
+  .journal-card:hover {
+    background: var(--limestone);
+    padding-left: 12px;
+  }
+
+  .journal-card-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+
+  .journal-kicker {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent-ink);
+  }
+
+  .journal-card-date {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--ink-faint);
+  }
+
+  .journal-card-title {
+    font-family: var(--display);
+    font-weight: 400;
+    font-style: italic;
+    font-size: 1.35rem;
+    letter-spacing: -0.01em;
+    margin: 0 0 10px;
+  }
+
+  .journal-card-teaser {
+    margin: 0;
+    color: var(--ink-soft);
+    font-size: 15.5px;
+    line-height: 1.6;
+    max-width: 68ch;
+  }
+
+  .journal-card-teaser::first-letter {
+    font-family: var(--display);
+    font-size: 2.4em;
+    font-weight: 400;
+    font-style: normal;
+    float: left;
+    line-height: 0.8;
+    padding: 4px 6px 0 0;
+    color: var(--accent-ink);
+  }
+</style>

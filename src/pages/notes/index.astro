@@ -1,0 +1,136 @@
+---
+import { getCollection } from "astro:content";
+import Layout from "../../layouts/layout.astro";
+import Nav from "../../components/nav.astro";
+import Catenary from "../../components/catenary.astro";
+import AcademyNoteCard from "../../components/academy-note-card.astro";
+import CivicNoteCard from "../../components/civic-note-card.astro";
+import JournalEntryCard from "../../components/journal-entry-card.astro";
+import Footer from "../../components/footer.astro";
+
+const academyNotes = (await getCollection("academyNotes", ({ data }) => !data.draft)).sort(
+  (a, b) => b.data.sessionDate.valueOf() - a.data.sessionDate.valueOf(),
+);
+const civicNotes = (await getCollection("civicNotes", ({ data }) => !data.draft)).sort(
+  (a, b) => b.data.meetingDate.valueOf() - a.data.meetingDate.valueOf(),
+);
+const writing = (await getCollection("writing", ({ data }) => !data.draft)).sort(
+  (a, b) => b.data.date.valueOf() - a.data.date.valueOf(),
+);
+
+const hasAny = academyNotes.length > 0 || civicNotes.length > 0 || writing.length > 0;
+---
+
+<Layout
+  title="Notes — Jerry Lockard"
+  description="Mayor's Academy sessions, Covington civic meetings, and personal writing — Jerry's first-person notes on public service in Covington, Kentucky, in one place."
+>
+  <Nav />
+  <main id="top">
+    <div class="wrap page-header">
+      <p class="eyebrow">Notes</p>
+      <p class="page-lede">
+        Three related threads, kept in one place: what I'm learning in the Mayor's Academy, what I
+        hear at public meetings, and what I write when something's worth putting down on its own.
+        Same voice throughout — first-person, dated, and corrected in the open when I get something
+        wrong.
+      </p>
+    </div>
+    <Catenary tight />
+
+    {!hasAny && (
+      <div class="wrap observe">
+        <p class="empty-note">Nothing published yet — check back after the next session or meeting.</p>
+      </div>
+    )}
+
+    {academyNotes.length > 0 && (
+      <section class="wrap observe notes-section" id="academy">
+        <div class="section-head">
+          <p class="eyebrow">Mayor's Academy</p>
+          <a class="section-link" href="/academy-notes">All Academy Notes &nbsp;→</a>
+        </div>
+        {academyNotes.slice(0, 3).map((entry) => <AcademyNoteCard entry={entry} />)}
+      </section>
+    )}
+
+    {academyNotes.length > 0 && civicNotes.length > 0 && <Catenary tight />}
+
+    {civicNotes.length > 0 && (
+      <section class="wrap observe notes-section" id="civic">
+        <div class="section-head">
+          <p class="eyebrow">Civic Field Notes</p>
+          <a class="section-link" href="/civic-notes">All civic notes &nbsp;→</a>
+        </div>
+        {civicNotes.slice(0, 3).map((entry) => <CivicNoteCard entry={entry} />)}
+      </section>
+    )}
+
+    {(academyNotes.length > 0 || civicNotes.length > 0) && writing.length > 0 && <Catenary tight />}
+
+    {writing.length > 0 && (
+      <section class="wrap observe notes-section" id="journal">
+        <div class="section-head">
+          <p class="eyebrow">Journal</p>
+          <a class="section-link" href="/writing">All writing &nbsp;→</a>
+        </div>
+        {writing.slice(0, 3).map((entry) => <JournalEntryCard entry={entry} />)}
+      </section>
+    )}
+  </main>
+  <Footer />
+</Layout>
+
+<style>
+  .page-header {
+    padding-top: 56px;
+  }
+
+  .page-header .eyebrow {
+    margin-bottom: 8px;
+  }
+
+  .page-lede {
+    font-family: var(--display);
+    font-size: 1.22rem;
+    font-weight: 400;
+    line-height: 1.5;
+    color: var(--ink-soft);
+    max-width: var(--measure);
+    margin: 0 0 8px;
+  }
+
+  .notes-section .eyebrow {
+    margin-bottom: 0;
+  }
+
+  .section-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+  }
+
+  .section-link {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    letter-spacing: 0.04em;
+    color: var(--accent-ink);
+    text-decoration: none;
+    border-bottom: 1px solid var(--rule);
+    padding-bottom: 2px;
+    white-space: nowrap;
+    transition: border-color 160ms ease;
+  }
+
+  .section-link:hover {
+    border-bottom-color: var(--accent);
+  }
+
+  .empty-note {
+    color: var(--ink-faint);
+    padding: 24px 0 64px;
+  }
+</style>

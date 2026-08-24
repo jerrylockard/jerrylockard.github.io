@@ -3,6 +3,8 @@ import { getCollection } from "astro:content";
 
 const hasWriting = (await getCollection("writing", ({ data }) => !data.draft)).length > 0;
 const hasCivicNotes = (await getCollection("civicNotes", ({ data }) => !data.draft)).length > 0;
+const hasAcademyNotes = (await getCollection("academyNotes", ({ data }) => !data.draft)).length > 0;
+const hasNotes = hasWriting || hasCivicNotes || hasAcademyNotes;
 ---
 
 <nav class="nav">
@@ -13,8 +15,7 @@ const hasCivicNotes = (await getCollection("civicNotes", ({ data }) => !data.dra
         <a href="/#work">Work</a>
         <a href="/#about">About</a>
         <a href="/#platform">Platform</a>
-        {hasCivicNotes && <a href="/civic-notes">Civic Notes</a>}
-        {hasWriting && <a href="/writing">Writing</a>}
+        {hasNotes && <a href="/notes">Notes</a>}
         <a href="/#contact">Contact</a>
       </div>
       <button class="theme-btn" id="theme-btn" type="button" aria-live="polite">Dark</button>

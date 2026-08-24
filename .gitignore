@@ -26,8 +26,14 @@ pnpm-debug.log*
 # jetbrains setting folder
 .idea/
 
-# local Claude Code settings (per-machine, not shared)
-.claude/
+# local Claude Code settings (per-machine, not shared) — except reusable
+# skills, which are project tooling, not machine-local config. Tracked
+# skills are opted in individually below, same pattern as .remember/'s
+# own .gitignore uses for its tracked-vs-runtime split.
+.claude/*
+!.claude/skills/
+.claude/skills/*
+!.claude/skills/run-jerrylockard-github-io/
 
 # .remember/ has its OWN .gitignore (a blanket `*`, which wins over anything listed
 # here for that directory) — the tracked/ignored split for planning docs vs runtime

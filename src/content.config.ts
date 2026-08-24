@@ -39,4 +39,26 @@ const civicNotes = defineCollection({
   }),
 });
 
-export const collections = { writing, civicNotes };
+// One entry per Mayor's Academy session Jerry attends. Sits between `writing`
+// (free-form) and `civicNotes` (heavily structured) — enough structure to
+// track where he is in the 8-session program, not a full status/topic system
+// like civicNotes since there's no "decision" being tracked here.
+const academyNotes = defineCollection({
+  loader: glob({ pattern: "**/*.md", base: "./src/content/academy-notes" }),
+  schema: z.object({
+    title: z.string(),
+    sessionNumber: z.number(),
+    sessionCount: z.number().default(8),
+    sessionDate: z.coerce.date(),
+    publishedDate: z.coerce.date(),
+    speakers: z.array(z.string()),
+    location: z.string(),
+    description: z.string(),
+    image: z.string().optional(),
+    imageAlt: z.string().optional(),
+    imageCaption: z.string().optional(),
+    draft: z.boolean().default(false),
+  }),
+});
+
+export const collections = { writing, civicNotes, academyNotes };

@@ -465,27 +465,6 @@ a {
   gap: 28px;
 }
 
-.about-photo {
-  margin: 0;
-  border: 0.25px solid var(--rule);
-}
-
-.about-photo img {
-  width: 100%;
-  height: auto;
-  display: block;
-}
-
-.about-photo figcaption {
-  font-family: var(--mono);
-  font-size: 11px;
-  line-height: 1.6;
-  letter-spacing: 0.02em;
-  color: var(--ink-faint);
-  padding: 10px 12px;
-  border-top: 0.25px solid var(--rule);
-}
-
 /* ---------- footer ---------- */
 
 .footer {

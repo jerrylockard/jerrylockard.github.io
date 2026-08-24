@@ -1,0 +1,69 @@
+---
+import { getCollection } from "astro:content";
+import Layout from "../../layouts/layout.astro";
+import Nav from "../../components/nav.astro";
+import Catenary from "../../components/catenary.astro";
+import AcademyNoteCard from "../../components/academy-note-card.astro";
+import Footer from "../../components/footer.astro";
+
+const entries = (await getCollection("academyNotes", ({ data }) => !data.draft)).sort(
+  (a, b) => b.data.sessionDate.valueOf() - a.data.sessionDate.valueOf(),
+);
+---
+
+<Layout
+  title="Mayor's Academy — Jerry Lockard"
+  description="Jerry's notes from the City of Covington's Mayor's Academy — one write-up after each of the eight sessions."
+>
+  <Nav />
+  <main id="top">
+    <div class="wrap page-header">
+      <p class="eyebrow">Mayor's Academy</p>
+      <p class="page-lede">
+        The City of Covington's 2026–2027 Mayor's Academy is eight sessions covering how the city
+        actually runs — departments, budgets, public safety, infrastructure. I'm writing up each
+        one close to what I heard, not a polished summary written later.
+      </p>
+    </div>
+    <Catenary tight />
+    {
+      entries.length > 0 ? (
+        <div class="wrap observe">
+          {entries.map((entry) => (
+            <AcademyNoteCard entry={entry} />
+          ))}
+        </div>
+      ) : (
+        <div class="wrap observe">
+          <p class="empty-note">Nothing published yet — check back after the next session.</p>
+        </div>
+      )
+    }
+  </main>
+  <Footer />
+</Layout>
+
+<style>
+  .page-header {
+    padding-top: 56px;
+  }
+
+  .page-header .eyebrow {
+    margin-bottom: 8px;
+  }
+
+  .page-lede {
+    font-family: var(--display);
+    font-size: 1.22rem;
+    font-weight: 400;
+    line-height: 1.5;
+    color: var(--ink-soft);
+    max-width: var(--measure);
+    margin: 0 0 8px;
+  }
+
+  .empty-note {
+    color: var(--ink-faint);
+    padding: 24px 0 64px;
+  }
+</style>

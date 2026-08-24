@@ -27,12 +27,11 @@ separate `lockard-tech` GitHub org — unrelated to this site, then and now.
   components from — palette, type system, component patterns, the catenary-divider
   signature motif. Keep it as historical reference; the live source of truth for what's
   actually on the site is `src/components/`, not the mockup.
-- Deploys automatically: a push to `main` triggers `.github/workflows/deploy.yml`, which
-  builds with `pnpm build` and publishes to GitHub Pages at `jerrylockard.me` (custom
-  domain via `public/CNAME`). No manual deploy step. GitHub Pages auto-issues HTTPS for
-  custom domains, which can take a while to provision after DNS/CNAME changes — a cert
-  mismatch on `jerrylockard.me` shortly after a domain change is normal transient
-  provisioning, not a bug.
+- Deploys automatically via **Vercel** (connected to this GitHub repo, framework
+  auto-detected as Astro) — a push to `main` deploys, live at `jerrylockard.me` (custom
+  domain configured in the Vercel project's Domains settings, not `public/CNAME` — that
+  file is a GitHub Pages leftover, harmless but inert now). Moved off GitHub Pages
+  2026-08-23. No manual deploy step.
 - The writing feature (`src/content/writing/`, `/writing` index, `/writing/[slug]`,
   homepage teaser, nav link) is fully wired but has **zero posts** — nothing renders
   until a `.md` file lands in `src/content/writing/`.
@@ -62,18 +61,23 @@ pnpm agent <name> "<message>"   # drive one agent turn from any terminal, no GUI
 ```
 
 See **`CHEATSHEET.md`** for the full command reference and the settled facts (domain,
-GitHub handle, contact email) — go there first if you just need a quick answer.
+GitHub handle, contact email) — go there first if you just need a quick answer. Jerry
+also keeps deeper project facts, rules, guardrails, and Mayor's Academy material in a
+local `.remember/` directory — it's gitignored and not tracked in this repo, so don't
+assume it exists in a fresh clone.
 
 ## The agent team
 
-Seven agents live under `mcp/` — Shepard (lead), Desiree (design/frontend), Devon
-(devops/deploy), Quill (content/copy), Ace (QA/accessibility), Ledger (docs/handoff —
-keeps this file and `mcp/AGENTS.md` accurate as things change), and Ryder (narrative/
-press — interviews Jerry directly, watches the whole team, shapes the public story
-toward an eventual campaign announcement). Full rules, roster
-detail, and the team-communication protocol are in **`mcp/AGENTS.md`** — read it before
-doing agent-related work, it is the live source of truth and this section is just a
-summary.
+Eight agents live under `mcp/` — Shepard (Chief of Staff), Desiree (Design Lead —
+design/frontend), Devon (DevOps Engineer — devops/deploy), Paige (Content Editor —
+copy/editing), Casey (QA & Accessibility Lead), Archie (Documentation & Knowledge Lead —
+keeps this file, `mcp/AGENTS.md`, and `.remember/` accurate as things change), Ryder
+(Communications Director — interviews Jerry directly, watches the whole team, shapes the
+public story toward an eventual campaign announcement), and Scout (Civic Events &
+Schedule Monitor — watches Covington's civic sources and Jerry's calendar directly, not
+repo files). Full rules, roster detail, and the team-communication protocol are in
+**`mcp/AGENTS.md`** — read before doing agent-related work, it's the live source of
+truth and this section is just a summary.
 
 If your tool supports MCP directly (Claude Code does), the site's MCP server is at
 `mcp/server/src/index.ts` (run via `node --import tsx mcp/server/src/index.ts`) and

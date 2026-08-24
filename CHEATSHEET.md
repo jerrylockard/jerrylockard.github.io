@@ -48,10 +48,12 @@ model string, e.g. `"openai/gpt-5.5"`) — unset falls back to Claude. See `mcp/
 for details.
 
 Roster: `shepard` (Chief of Staff — Leadership), `desiree` (Design Lead — Product
-Design & Frontend), `devon` (DevOps Engineer — Infrastructure & Release), `quill`
-(Content Strategist — Copywriting), `ace` (QA Engineer — Quality & Accessibility),
-`ledger` (Operations & Documentation Lead — Ops & Docs), and `ryder`
-(Communications Director — Press & Public Narrative).
+Design & Frontend), `devon` (DevOps Engineer — Infrastructure & Release), `paige`
+(Content Editor — Content & Editorial), `casey` (QA & Accessibility Lead — Quality &
+Accessibility), `archie` (Documentation & Knowledge Lead — Documentation & Continuity),
+`ryder` (Communications Director — Public Narrative & Civic Media), and `scout` (Civic
+Events & Schedule Monitor — watches Covington's civic sources + Jerry's calendar
+directly, not repo files).
 
 Example:
 ```bash
@@ -93,10 +95,10 @@ pnpm --filter mcp-gui check
 
 ## Deploy
 
-Automatic — no manual deploy command. A push to `main` triggers
-`.github/workflows/deploy.yml` (`pnpm build` → GitHub Pages) and it's live at
-`jerrylockard.me` within a few minutes. Custom-domain HTTPS is auto-issued by
-GitHub and can lag behind a DNS/CNAME change — that's normal, not a bug.
+Automatic — no manual deploy command. A push to `main` deploys via **Vercel**
+(connected to this GitHub repo, framework auto-detected as Astro) and it's live at
+`jerrylockard.me` within a few minutes. Custom domain configured in the Vercel
+project's Domains settings. Moved off GitHub Pages 2026-08-23.
 
 ## Git — the rules, not just the commands
 
@@ -116,7 +118,7 @@ GitHub and can lag behind a DNS/CNAME change — that's normal, not a bug.
 | Agent personas/system prompts | `mcp/agents/src/personas.ts` |
 | MCP server (content, guardrails, memory, shared tasks/board/calendar) | `mcp/server/` |
 | Dashboard (Team, Board, Calendar, Chat) | `mcp/gui/` |
-| Session memory / team log / shared task board | `.remember/` (gitignored, local only) |
+| Session memory / team log / shared task board / Jerry's planning docs | `.remember/` (entirely local and gitignored — nothing under it is tracked in this repo) |
 
 ## Settled facts (so nobody has to re-ask)
 

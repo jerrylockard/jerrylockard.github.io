@@ -57,18 +57,28 @@ Dashboard and MCP tools read and write the same local task store in
 
 ## Deploy
 
-Automatic — no manual deploy step. A push to `main` triggers
-`.github/workflows/deploy.yml`, which builds with `pnpm build` and publishes to
-GitHub Pages at `jerrylockard.me` (custom domain via `public/CNAME`).
+Automatic — no manual deploy step. A push to `main` deploys via **Vercel** (connected
+to this GitHub repo), live at `jerrylockard.me` (custom domain, configured in the
+Vercel project's Domains settings). Framework auto-detected as Astro. Moved off
+GitHub Pages 2026-08-23.
 
 ## The agent team
 
-Seven agents work this repo: Shepard (Chief of Staff — Leadership), Desiree (Design
+Eight agents work this repo: Shepard (Chief of Staff — Leadership), Desiree (Design
 Lead — Product Design & Frontend), Devon (DevOps Engineer — Infrastructure & Release),
-Quill (Content Strategist — Copywriting), Ace (QA Engineer — Quality & Accessibility),
-Ledger (Operations & Documentation Lead — Ops & Docs), and Ryder (Communications
-Director — Press & Public Narrative). Full rules, roster detail, and the
-team-communication protocol live in **`mcp/AGENTS.md`**.
+Paige (Content Editor — Content & Editorial), Casey (QA & Accessibility Lead — Quality
+& Accessibility), Archie (Documentation & Knowledge Lead — Documentation & Continuity),
+Ryder (Communications Director — Public Narrative & Civic Media), and Scout (Civic
+Events & Schedule Monitor — Community Monitoring & Scheduling). Full rules, roster
+detail, and the team-communication protocol live in **`mcp/AGENTS.md`** and
+**`.remember/AGENTS.md`**.
+
+## Project memory & planning docs
+
+`.remember/` is a local, gitignored directory that holds Jerry's planning docs and
+the runtime memory the MCP server writes as agents work (session state, task board,
+team log). None of it is currently tracked in git, so don't rely on it existing in a
+fresh clone.
 
 The site's MCP server includes identity, education, work, design-token, civic-voice,
 rules, todo, content-safety, guardrail, memory, team, profile, and journal tools, plus

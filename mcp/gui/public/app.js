@@ -215,7 +215,7 @@ function initial(name) {
 }
 
 // One small line-icon per persona, reflecting their job — a compass for the
-// lead who sets direction, a wrench for DevOps, a quill for copy, and so on.
+// lead who sets direction, a wrench for DevOps, a pen nib for copy, and so on.
 // Personas without an entry (e.g. a new one someone adds later) fall back to
 // their initial letter, same as before this existed.
 const AGENT_ICONS = {
@@ -224,12 +224,14 @@ const AGENT_ICONS = {
   desiree: '<rect x="7" y="7" width="10" height="10" rx="1.5" transform="rotate(45 12 12)"/>',
   devon:
     '<path d="M14.2 6.2a3.6 3.6 0 00-4.9 4.9L4 16.4 7.6 20l5.3-5.3a3.6 3.6 0 004.9-4.9l-2.1 2.1-2.6-2.6z"/>',
-  quill:
+  paige:
     '<path d="M4.5 19.5l2.6-.9L16.4 9.3a1.9 1.9 0 00-2.7-2.7L4.4 16.9z"/><path d="M13 7.3l3.7 3.7"/>',
-  ace: '<circle cx="12" cy="12" r="8"/><path d="M8.3 12.4l2.5 2.5 5-5.2"/>',
-  ledger: '<rect x="4.5" y="3.5" width="15" height="17" rx="1.5"/><path d="M8 8h8M8 12h8M8 16h5"/>',
+  casey: '<circle cx="12" cy="12" r="8"/><path d="M8.3 12.4l2.5 2.5 5-5.2"/>',
+  archie: '<rect x="4.5" y="3.5" width="15" height="17" rx="1.5"/><path d="M8 8h8M8 12h8M8 16h5"/>',
   ryder:
     '<rect x="9.3" y="3" width="5.4" height="10.5" rx="2.7"/><path d="M6.3 11a5.7 5.7 0 0011.4 0"/><path d="M12 16.5V20M9.3 20h5.4"/>',
+  scout:
+    '<circle cx="12" cy="12" r="8"/><path d="M12 12l3.6-2-1.6 4.6L10.4 16l1.6-4z"/>',
 };
 
 function avatarInner(persona) {
@@ -1807,18 +1809,18 @@ async function clearChat() {
 }
 
 async function reconcileAndClearChat() {
-  if (!window.confirm(`Ask Ledger to reconcile ${historyActionLabel()} against the current repository, then clear the history?`)) return;
+  if (!window.confirm(`Ask Archie to reconcile ${historyActionLabel()} against the current repository, then clear the history?`)) return;
   clearChatBtn.disabled = true;
   reconcileChatBtn.disabled = true;
-  studioStatusEl.textContent = "Ledger is reconciling history";
+  studioStatusEl.textContent = "Archie is reconciling history";
   reconcileChatBtn.textContent = "Starting…";
   try {
     const res = await fetch("/api/transcript/reconcile", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ channel: activeChannel }) });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "Ledger could not reconcile this history.");
+    if (!res.ok) throw new Error(data.error || "Archie could not reconcile this history.");
     await watchReconcile(data.job.id);
   } catch (err) {
-    setComposerError(err instanceof Error ? err.message : "Ledger could not reconcile this history.");
+    setComposerError(err instanceof Error ? err.message : "Archie could not reconcile this history.");
     studioStatusEl.textContent = "Reconciliation needs attention";
     reconcileChatBtn.textContent = "Reconcile & clear";
   } finally {
@@ -2250,7 +2252,7 @@ function handleEvent(event, when) {
 
   if (event.personaId) {
     if (event.type === "hop_start" || event.type === "text") setAgentStatus(event.personaId, "working", "Working on your request.");
-    if (event.type === "tool_use" && event.tool === "AskUserQuestion") setAgentAlert(event.personaId, "question", "Ledger needs an answer before continuing.");
+    if (event.type === "tool_use" && event.tool === "AskUserQuestion") setAgentAlert(event.personaId, "question", "Archie needs an answer before continuing.");
     else if (event.type === "tool_use") setAgentStatus(event.personaId, "working", `Using ${toolLabel(event.tool)}.`);
     if (event.type === "done") {
       clearAgentAlert(event.personaId);

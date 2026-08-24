@@ -29,8 +29,9 @@ pnpm-debug.log*
 # local Claude Code settings (per-machine, not shared)
 .claude/
 
-# Remember plugin runtime memory (per-machine, not shared)
-.remember/
+# .remember/ has its OWN .gitignore (a blanket `*`, which wins over anything listed
+# here for that directory) — the tracked/ignored split for planning docs vs runtime
+# memory is defined there, not here. See .remember/.gitignore and .remember/MEMORY.md.
 
 # Playwright MCP tool scratch output (screenshots, page snapshots)
 .playwright-mcp/

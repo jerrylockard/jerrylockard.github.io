@@ -104,9 +104,9 @@ watchTeamUpdates(() => broadcast({ type: "calendar_updated" }));
 
 onApprovalRequested((approval) => {
   for (const job of reconcileJobs.values()) {
-    if (job.state === "working" && approval.personaId === "ledger") {
+    if (job.state === "working" && approval.personaId === "archie") {
       job.state = "waiting";
-      job.message = "Ledger is waiting for your approval.";
+      job.message = "Archie is waiting for your approval.";
     }
   }
   broadcast({ type: "approval_requested", approval });
@@ -115,7 +115,7 @@ onApprovalResolved((id, approved, timedOut) => {
   for (const job of reconcileJobs.values()) {
     if (job.state === "waiting") {
       job.state = "working";
-      job.message = approved ? "Approval received. Ledger is continuing." : "Approval denied. Ledger is wrapping up.";
+      job.message = approved ? "Approval received. Archie is continuing." : "Approval denied. Archie is wrapping up.";
     }
   }
   broadcast({ type: "approval_resolved", id, approved, timedOut });
@@ -182,26 +182,26 @@ app.post("/api/transcript/reconcile", (req: Request, res: Response) => {
   const transcript = history
     .map(({ ts, event }) => `[${ts}] ${JSON.stringify(event)}`)
     .join("\n");
-  const prompt = `Reconcile this old GUI chat history for the lockard-tech website. Treat the current repository, live rules, current MCP data, and current source files as authoritative over anything stale in the transcript. Inspect the relevant code and documentation. Correct stale names (including any old Lexi references when the current agent is Ledger), update the appropriate project documentation and shared agent memory with only verified current information, and do not commit or push. Do not invent facts. When finished, report exactly what you corrected and where.\n\nChannel: ${channel}\nTranscript:\n${transcript}`;
+  const prompt = `Reconcile this old GUI chat history for the lockard-tech website. Treat the current repository, live rules, current MCP data, and current source files as authoritative over anything stale in the transcript. Inspect the relevant code and documentation. Correct stale names (including any old Lexi references when the current agent is Archie), update the appropriate project documentation and shared agent memory with only verified current information, and do not commit or push. Do not invent facts. When finished, report exactly what you corrected and where.\n\nChannel: ${channel}\nTranscript:\n${transcript}`;
 
   const job: ReconcileJob = {
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     channel,
     state: "queued",
     startedAt: new Date().toISOString(),
-    message: "Queued for Ledger.",
+    message: "Queued for Archie.",
   };
   reconcileJobs.set(job.id, job);
   res.status(202).json({ ok: true, job });
 
   void (async () => {
     job.state = "working";
-    job.message = "Ledger is checking the current repository and shared context.";
+    job.message = "Archie is checking the current repository and shared context.";
     try {
-      await runPersonaTurn("ledger", prompt, () => undefined);
+      await runPersonaTurn("archie", prompt, () => undefined);
       clearTranscript(channel);
       job.state = "complete";
-      job.message = "Ledger reconciled the history and it was cleared.";
+      job.message = "Archie reconciled the history and it was cleared.";
     } catch (err) {
       job.state = "error";
       job.message = err instanceof Error ? err.message : String(err);

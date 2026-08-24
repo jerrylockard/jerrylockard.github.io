@@ -16,7 +16,7 @@ importers:
         version: 7.2.2(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.3)(@types/node@22.20.1)(tsx@4.23.12)
     devDependencies:
       tsx:
-        specifier: ^4.19.0
+        specifier: ^4.23.12
         version: 4.23.12
 
   mcp/agents:

@@ -75,10 +75,11 @@ detail, and the team-communication protocol live in **`mcp/AGENTS.md`** and
 
 ## Project memory & planning docs
 
-`.remember/` is a local, gitignored directory that holds Jerry's planning docs and
-the runtime memory the MCP server writes as agents work (session state, task board,
-team log). None of it is currently tracked in git, so don't rely on it existing in a
-fresh clone.
+`.remember/` holds Jerry's planning docs and the runtime memory the MCP server writes
+as agents work (session state, task board, team log). The hand-authored planning docs
+(`RULES.md`, `GUARDRAILS.md`, `FACTS.md`, etc. — see `.remember/README.md` for the full
+list) are tracked in git and public in this repo. Only the MCP server's session/runtime
+state is gitignored and local-only — don't rely on that part existing in a fresh clone.
 
 The site's MCP server includes identity, education, work, design-token, civic-voice,
 rules, todo, content-safety, guardrail, memory, team, profile, and journal tools, plus

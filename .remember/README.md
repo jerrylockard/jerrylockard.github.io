@@ -1,8 +1,9 @@
 # .remember/ — Index
 
-This directory is Jerry's local, gitignored-by-default planning kit and the site's session
-memory. Two different kinds of content live here side by side — see `.gitignore` for exactly
-which files are tracked vs. local-only, and `MEMORY.md` for why the split is drawn where it is.
+This directory is Jerry's planning kit and the site's session memory. Two different kinds of
+content live here side by side: the hand-authored docs below are tracked in git and public in
+this repo, same as any other file; the session/runtime state further down is gitignored and
+local-only. See `.gitignore` for the exact split and `MEMORY.md` for why it's drawn where it is.
 
 ## Hand-authored planning docs (tracked)
 

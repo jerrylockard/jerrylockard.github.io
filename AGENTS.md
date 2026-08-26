@@ -63,8 +63,10 @@ pnpm agent <name> "<message>"   # drive one agent turn from any terminal, no GUI
 See **`CHEATSHEET.md`** for the full command reference and the settled facts (domain,
 GitHub handle, contact email) — go there first if you just need a quick answer. Jerry
 also keeps deeper project facts, rules, guardrails, and Mayor's Academy material in a
-local `.remember/` directory — it's gitignored and not tracked in this repo, so don't
-assume it exists in a fresh clone.
+`.remember/` directory. Its hand-authored docs (`RULES.md`, `GUARDRAILS.md`, `FACTS.md`,
+etc. — see `.remember/README.md` for the full list) are tracked in git and public in
+this repo, same as any other file here; only the MCP server's session/runtime state
+under `.remember/` is gitignored and local-only.
 
 ## The agent team
 

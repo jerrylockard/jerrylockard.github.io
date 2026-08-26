@@ -1714,7 +1714,7 @@ function updateRecipientsPreview() {
 
 function addMessage(kind, who, persona, when) {
   const color = persona?.color;
-  const avatar = persona ? `<span class="msg-avatar" style="background:${color}">${avatarInner(persona)}</span>` : "";
+  const avatar = persona ? `<span class="avatar msg-avatar" style="background:${color}">${avatarInner(persona)}</span>` : "";
   const div = document.createElement("div");
   div.className = `msg ${kind}`;
   div.innerHTML = `
@@ -1809,7 +1809,7 @@ function showHopIndicator(personaId) {
   const div = document.createElement("div");
   div.className = "msg hop-indicator";
   div.style.color = persona?.color ?? "";
-  const avatar = persona ? `<span class="msg-avatar" style="background:${persona.color}">${avatarInner(persona)}</span>` : "";
+  const avatar = persona ? `<span class="avatar msg-avatar" style="background:${persona.color}">${avatarInner(persona)}</span>` : "";
   div.innerHTML = `${avatar}${escapeHtml(persona?.name ?? personaId)} is replying…`;
   logEl.appendChild(div);
   logEl.scrollTop = logEl.scrollHeight;

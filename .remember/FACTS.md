@@ -146,16 +146,17 @@ actually run first: `pnpm install` then `pnpm mcp:doctor`.
 | Styles | `src/styles/global.css` |
 | Identity/Work/Education data | `src/data/site.ts` (mirrors MCP) |
 | Writing content | `src/content/writing/` (zero posts — pipeline ready) |
-| Civic Notes content | `src/content/civic-notes/` |
+| Civic Notes content | `src/content/civic-notes/` (one post published) |
+| Academy Notes content | `src/content/academy-notes/` (Session 1 published) |
 | Content config | `src/content.config.ts` |
-| CI/CD | `.github/workflows/deploy.yml` |
-| Custom domain | `public/CNAME` |
+| CI/CD | None — Vercel builds directly from the GitHub repo, no `.github/workflows/` |
+| Custom domain | Configured in Vercel project Domains settings, not a `CNAME` file. A root `CNAME` file (not `public/CNAME`) still exists — GitHub Pages leftover, harmless but inert |
 | Cross-tool hub (read first) | `AGENTS.md` (root) — symlinked as `CLAUDE.md`, imported by `GEMINI.md` |
 | Agent rules | `mcp/AGENTS.md` |
 | Agent personas | `mcp/agents/src/personas.ts` |
 | MCP server tools | `mcp/server/src/index.ts` |
 | Dashboard | `mcp/gui/` |
-| Session memory | `.remember/` (gitignored) |
+| Session memory (runtime state) | `.remember/` — gitignored, except the hand-authored planning docs (`RULES.md`, `GUARDRAILS.md`, `FACTS.md`, etc.), which are tracked in git and public |
 | Portrait photo | `public/PORTRAIT.jpg` |
 | Resume | `public/resume.pdf` (self-hosted, safety-checked) |
 

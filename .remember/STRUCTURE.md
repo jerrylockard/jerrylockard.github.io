@@ -15,26 +15,35 @@ lives in `CONFIG.md` (not repeated here); the MCP data shape lives in `TOOLS.md`
 
 ## Content Collections
 
-The old site had two Astro content collections. Worth carrying the *shape and behavior*
-forward even if the pages that render them look completely different:
+Three Astro content collections now, defined via the glob loader in `src/content.config.ts`
+(full field lists there, not duplicated here):
 
 ### Writing (`src/content/writing/`)
-- Schema: `title`, `date`, `description?`, `draft?`
+- Schema: `title`, `date`, `tag`, `description`, `draft?`
 - **Behavior rule, not just schema:** zero posts = the section doesn't render at all, anywhere
   (index page, homepage teaser, nav link) — not a "coming soon" placeholder. This was a
   deliberate Jerry call, matching the broader "real data over placeholders" pattern in
   `PROFILE.md`. Carry the rule forward, not just the field list.
 
 ### Civic Notes (`src/content/civic-notes/`)
-- Schema: `title`, `date`, `meeting`, `description?`, `draft?`
-- Editorial rules are owned by Ryder and live in the `get_civic_voice_guide` MCP tool — full
-  content of that guide (9-section structure, fact/attribution/opinion table, hard rules like
-  never rounding "advanced from caucus" up to "approved") should be ported into
-  `mcp/server/data/civic-voice-guide.md` verbatim when the server is rebuilt; it's editorial
-  policy, not implementation, so it doesn't depend on the new design either.
-- One real post exists in the old repo as a working example:
-  `2026-08-18-board-of-commissioners-caucus.md` — worth reading before writing the new voice
-  guide's example section, if one gets added.
+- Schema: `title`, `meetingDate`, `publishedDate`, `updatedDate`, `meetingType`, `location`,
+  `attendance`, `recordingCoverage?`, `status` (`proposed`/`advanced-from-caucus`/`approved`/
+  `deferred`/`rejected`/`implemented`), `nextActionDate?`, `topics[]`, `summary`, `recordingUrl?`,
+  `officialAgendaUrl?`, `officialPacketUrl?`, `draft?` — richer than `writing` on purpose, since
+  status tracking and topic tags are the point.
+- Editorial rules are owned by Ryder and live in `mcp/server/data/civic-voice-guide.md`
+  (fact/attribution/opinion structure, hard rules like never rounding "advanced from caucus" up
+  to "approved").
+- One post is currently published.
+
+### Academy Notes (`src/content/academy-notes/`)
+- Schema: `title`, `sessionNumber`, `sessionCount` (default 8), `sessionDate`, `publishedDate`,
+  `speakers[]`, `location`, `description`, `image?`, `imageAlt?`, `imageCaption?`, `draft?` —
+  sits between `writing` (free-form) and `civicNotes` (heavily structured): enough structure to
+  track where Jerry is in the 8-session Mayor's Academy program, no status/decision tracking
+  since there's no "decision" being made here.
+- Session 1 is currently published. This is the settled home for Mayor's Academy posts — no
+  longer an open question (see below).
 
 ---
 
@@ -53,10 +62,8 @@ want to draft the post himself (see `PROFILE.md`). The pipeline:
    voice/perspective. Not done automatically as part of capture; a deliberate step once there's
    enough material and a place to publish it.
 3. **Publish** — lands in whichever content collection applies. Board of Commissioners meetings
-   have a settled home already (`Civic Notes`, below). **Open question, not yet decided:** does a
-   Mayor's Academy post belong in `Writing`, get its own new collection, or fold into `Civic
-   Notes`? Don't invent a collection to answer this — flag it for Jerry when publishing is
-   actually about to happen.
+   go to `Civic Notes`; Mayor's Academy sessions go to `Academy Notes` (settled — see above,
+   resolved as of the `academy-notes` collection shipping with Session 1 published).
 
 ## What's not documented in this file (real, but lives elsewhere now)
 

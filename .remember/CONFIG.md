@@ -81,31 +81,18 @@ export default defineConfig({
 
 ## Content Config (`src/content.config.ts`)
 
+Three collections now (glob loader, not the old `type: "content"` shorthand) — full schemas in
+`STRUCTURE.md`, not duplicated here:
+
 ```ts
 import { defineCollection, z } from "astro:content";
+import { glob } from "astro/loaders";
 
-const writing = defineCollection({
-  type: "content",
-  schema: z.object({
-    title: z.string(),
-    date: z.date(),
-    description: z.string().optional(),
-    draft: z.boolean().default(false),
-  }),
-});
+const writing = defineCollection({ loader: glob({ pattern: "**/*.md", base: "./src/content/writing" }), schema: z.object({ /* title, date, tag, description, draft */ }) });
+const civicNotes = defineCollection({ loader: glob({ pattern: "**/*.md", base: "./src/content/civic-notes" }), schema: z.object({ /* meeting metadata + status tracking — see STRUCTURE.md */ }) });
+const academyNotes = defineCollection({ loader: glob({ pattern: "**/*.md", base: "./src/content/academy-notes" }), schema: z.object({ /* session metadata — see STRUCTURE.md */ }) });
 
-const civicNotes = defineCollection({
-  type: "content",
-  schema: z.object({
-    title: z.string(),
-    date: z.date(),
-    meeting: z.string(),
-    description: z.string().optional(),
-    draft: z.boolean().default(false),
-  }),
-});
-
-export const collections = { writing, civicNotes };
+export const collections = { writing, civicNotes, academyNotes };
 ```
 
 ---
@@ -212,7 +199,7 @@ pnpm agent list          # Roster
 pnpm agent <name> "<msg>"  # CLI agent turn
 
 # Deploy
-# Automatic: push to main → GitHub Actions → jerrylockard.me
+# Automatic: push to main → Vercel (connected to the GitHub repo) → jerrylockard.me
 ```
 
 ---

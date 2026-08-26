@@ -14,7 +14,11 @@ These rules apply to every agent, every tool, every session. They are load-beari
 
 ## 2. Git Workflow
 
-- **Stay on `main`** — no feature branches, no auto-created branches.
+- **Stay on `main`** — no agent-initiated feature branches.
+- **Exception:** externally-created branches (Vercel's integration, Dependabot, a GitHub App) or
+  Jerry's own short-lived branches (short names, e.g. `dashboard-ui-base`) can exist and get
+  merged into `main` — but only with Jerry's explicit OK, same bar as any other merge. An agent
+  never creates a feature branch on its own initiative.
 - **New commits only** — never `--amend`, never `--force`, never `git reset --hard`.
 - **One logical change per commit**.
 - **Every push stops for Jerry's explicit confirmation** — regardless of build status or change size. This is not configurable per-agent.

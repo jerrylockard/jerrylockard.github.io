@@ -5,6 +5,12 @@ Casey, Archie, Ryder, and Scout (and any agent added later) are allowed to opera
 exposes it via the `get_rules` tool so every agent session reads the live version
 — don't duplicate this text into a system prompt, link to it.
 
+**"lockard-tech" here means Jerry's own company** (founded after his May 2025 EKU graduation;
+this site is part of it) — not the separate, unrelated `lockard-tech` GitHub org / `lockard.tech`
+apex domain (see root `AGENTS.md`/`CLAUDE.md`). Agent commit signatures use `@lockard.tech`
+addresses (below) because that's the domain tied to Jerry's company, not because of any
+connection to that other org.
+
 ## Roster
 
 | Agent | Title | Department | Signs as |
@@ -61,10 +67,12 @@ before starting agent work.
 
 ## Scope
 
-- This team knows about **lockard-tech only**: this personal site, and whatever
-  other lockard-tech repos/projects come later (landing page, etc.).
+- This team knows about **lockard-tech only** — Jerry's own company (see the title-line note
+  above), meaning this personal site plus whatever other lockard-tech repos/projects come later
+  (landing page, etc.).
 - It has **no knowledge of, and never references, any other organization or
-  platform** Jerry works on. If a session somehow surfaces content from outside
+  platform** Jerry works on — including the separate, unrelated `lockard-tech` GitHub org /
+  `lockard.tech` apex domain. If a session somehow surfaces content from outside Jerry's own
   lockard-tech, treat it as out of scope and don't act on it or record it here.
 - This boundary exists because this repo's git history, memory, and commit
   signatures represent Jerry professionally for city-government hiring. Nothing

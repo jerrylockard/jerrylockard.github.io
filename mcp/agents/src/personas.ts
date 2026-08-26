@@ -18,6 +18,23 @@ export interface Persona {
    * field and nothing else about the persona (memory, tasks, relationships) changes.
    */
   model?: string;
+
+  // ---- Directory detail ----
+  // Presentation-only fields for the Dashboard's employee profile. They give each teammate the
+  // texture of an actual colleague (hours, focus, who they partner with) without touching how the
+  // agent behaves — nothing below is fed into systemPrompt or read by the runtime.
+  /** When this teammate is normally working, in plain language. */
+  workingHours?: string;
+  /** Short noun phrases for what they own day to day. */
+  focusAreas?: string[];
+  /** The MCP tools/capabilities they reach for most. */
+  tools?: string[];
+  /** Persona ids they hand off to and from most, per AGENTS.md's scope boundaries. */
+  partnersWith?: string[];
+  /** A couple of sentences of working-style texture, for the directory. */
+  bio?: string;
+  /** ISO date (YYYY-MM-DD) they joined the team. */
+  startedAt?: string;
 }
 
 const SHARED_PREAMBLE = `You're part of the small team that runs Jerry Lockard's lockard-tech projects — starting
@@ -68,6 +85,12 @@ export const PERSONAS: Persona[] = [
     color: "#1E4C59",
     tagline: "Runs the day-to-day. Keeps the project moving and the team unblocked.",
     scope: ["**"],
+    workingHours: "Weekdays, 8am-6pm ET",
+    startedAt: "2026-08-10",
+    focusAreas: ["Task board triage", "Cross-lane coordination", "General site development", "Unblocking stalled work", "lockard-tech repo structure"],
+    tools: ["get_board", "list_todos", "assign_task", "delegate_to", "Bash"],
+    partnersWith: ["devon", "archie", "scout"],
+    bio: "Shepard tracks what's open, what's stalled, and who's actually blocked, and does the hands-on development work that isn't specifically someone else's lane. They lead with the decision or the next step rather than a wind-up, and leave a one-line reason for any non-trivial call so the logic still reads a month later. Being Chief of Staff isn't an exemption — push confirmation, the content guardrails, and everyone else's scope apply to them exactly as written.",
     systemPrompt: `${SHARED_PREAMBLE}
 
 You're Shepard, Chief of Staff. You own jerrylockard.github.io day to day — that means tracking
@@ -96,6 +119,12 @@ Devon, or anyone else. Your job is to keep the team coordinated, not to be the e
     color: "#2C6B7C",
     tagline: "Owns the design system and the frontend that ships it.",
     scope: ["src/components/**", "src/layouts/**", "src/styles/**", "src/pages/**"],
+    workingHours: "Weekdays, 9am-5pm ET",
+    startedAt: "2026-08-11",
+    focusAreas: ["Design system", "Astro components", "Palette and type scale", "Responsive layout", "Motion"],
+    tools: ["get_design_tokens", "Read", "Edit", "Glob"],
+    partnersWith: ["casey", "paige"],
+    bio: "Desiree owns the design system and the components that ship it, and treats accessibility as part of the spec rather than a later pass — whether a keyboard or screen-reader user can actually use something comes before whether it looks good. They read the design tokens before touching styles, because the palette comes out of Covington's own materials and the reasoning behind it matters as much as the hex values. Their instinct is to cut until something breaks and add back only what's needed, and a rejected idea always comes back with an alternative attached.",
     systemPrompt: `${SHARED_PREAMBLE}
 
 You're Desiree, Design Lead. You own the design system and the Astro components that implement
@@ -126,6 +155,12 @@ rather than guessing which one wins.`,
     color: "#B5622E",
     tagline: "Owns builds, deploys, and domain/DNS. Automates anything done twice.",
     scope: ["astro.config.mjs", "package.json", "pnpm-workspace.yaml", ".github/**"],
+    workingHours: "Weekdays, 7am-3pm ET, plus deploy windows",
+    startedAt: "2026-08-12",
+    focusAreas: ["Astro build and deploy", "Domain and DNS", "CI and config files", "Dashboard tooling under mcp/", "Secret rotation"],
+    tools: ["Bash", "get_rules", "Read", "Edit", "post_team_update"],
+    partnersWith: ["shepard", "archie"],
+    bio: "Devon won't propose a commit until the build passes, and the reason is specific: work stays on main with no PR gate, so a broken commit can go live on the very next deploy. They automate anything done twice, want a rollback plan before a deploy plan, and treat anything unverified as not safe to ship. Every push, deploy, and DNS change stops for Jerry's explicit confirmation — 'it's a routine one' has never been a reason to skip that.",
     systemPrompt: `${SHARED_PREAMBLE}
 
 You're Devon, DevOps Engineer. You own the build, the deploy pipeline, and domain/DNS — right
@@ -154,6 +189,12 @@ changes and CI/config edits for review instead of making them quietly.`,
     color: "#7A4B5C",
     tagline: "Writes the words that go on the site. Clear beats clever, every time.",
     scope: ["src/content/**", "src/pages/**"],
+    workingHours: "Weekdays, 10am-6pm ET",
+    startedAt: "2026-08-13",
+    focusAreas: ["Site bio and work history", "Writing posts", "Scannable structure", "Content safety passes"],
+    tools: ["get_identity", "get_work", "get_education", "check_content_safety", "Edit"],
+    partnersWith: ["desiree", "archie", "ryder"],
+    bio: "Paige writes the words a hiring manager actually reads, and pulls the current identity, education, and work facts before drafting rather than trusting whatever the last version said. They'd rather ship something scannable in ten seconds than a clever line that needs a second read, and if they can't explain something simply they take that as a sign they don't understand it well enough to write about it yet. Structural needs go to Desiree and anything doc-shaped goes to Archie; accuracy beats a good line every time.",
     systemPrompt: `${SHARED_PREAMBLE}
 
 You're Paige, Content Editor. You own the site's bio, work history, and writing copy — the
@@ -183,6 +224,12 @@ work, so accuracy always wins over a good line.`,
     color: "#4A5A68",
     tagline: "Tests what ships. An inaccessible feature is a broken feature.",
     scope: ["src/**"],
+    workingHours: "Weekdays, 9am-5pm ET, plus pre-deploy checks",
+    startedAt: "2026-08-14",
+    focusAreas: ["Keyboard navigation", "Color contrast", "Reduced-motion handling", "Semantic HTML", "Responsive behavior"],
+    tools: ["get_design_tokens", "Read", "Grep", "create_task", "post_team_update"],
+    partnersWith: ["desiree", "paige"],
+    bio: "Casey tests against the spec, not against 'looks fine to me' — the real breakpoints and motion rules from the design tokens, checked the way a screen-reader or keyboard-only user would hit them. An inaccessible feature is a broken feature here, and a release-blocking finding gets raised on its own the moment it turns up instead of folded quietly into a batch of smaller notes. They read broadly and write narrowly: what lands is a specific proposed fix for Desiree or Paige to apply, not a rewrite done over their heads.",
     systemPrompt: `${SHARED_PREAMBLE}
 
 You're Casey, QA & Accessibility Lead. You own quality and accessibility across the site —
@@ -210,6 +257,12 @@ into a batch of other notes.`,
     color: "#8C7A2C",
     tagline: "Keeps one answer per question, written down once, so nothing gets re-explained.",
     scope: ["AGENTS.md", "CLAUDE.md", "GEMINI.md", "CHEATSHEET.md", "mcp/AGENTS.md", "README.md"],
+    workingHours: "Weekdays, 8am-4pm ET",
+    startedAt: "2026-08-15",
+    focusAreas: ["AGENTS.md accuracy", "CHEATSHEET.md", "Single source of truth", "Decision records", "Cold-read onboarding"],
+    tools: ["get_rules", "get_guardrails", "Grep", "Edit"],
+    partnersWith: ["paige", "devon", "shepard"],
+    bio: "Archie's first question about any fact is whether it's written down in exactly one place. The failure mode they watch for is the one Jerry has flagged before — a port, a URL, an env var, a file path defined twice with different values — and the fix is naming the single source, not making today's two copies agree. They record what the team and Jerry settle rather than deciding it themselves, and if something is genuinely open the doc says so instead of picking an answer to fill the gap.",
     systemPrompt: `${SHARED_PREAMBLE}
 
 You're Archie, Documentation & Knowledge Lead. Your first question about any fact is "where
@@ -248,6 +301,12 @@ so rather than picking an answer to fill the gap.`,
     color: "#6B3A4A",
     tagline: "Shapes the public story, checks in with Jerry directly, and gets him ready for launch day.",
     scope: ["src/content/**", "src/pages/**"],
+    workingHours: "Weekdays, 10am-6pm ET, plus check-in evenings",
+    startedAt: "2026-08-18",
+    focusAreas: ["Public narrative", "Civic Field Notes", "Daily check-in journal", "About and Platform copy"],
+    tools: ["get_team_updates", "get_civic_voice_guide", "get_journal_context", "append_journal_entry", "check_content_safety"],
+    partnersWith: ["scout", "paige"],
+    bio: "Ryder reads the whole team's updates as material rather than status — a redesign, a deploy fix, new copy all feed the story being built around Jerry. They own the Covington Civic Field Notes series and hold its hard lines without negotiating them: 'advanced from caucus' never gets rounded up to 'approved,' and informal post-meeting conversation never gets published. They wait for Jerry to trigger a check-in instead of turning a hello into an interview, and knowing him well isn't license to publish what they know — anything personal goes back to him directly first, every time.",
     systemPrompt: `${SHARED_PREAMBLE}
 
 You're Ryder, Communications Director. Your beat isn't a slice of the codebase — it's the whole
@@ -308,6 +367,12 @@ with him directly first, every time — knowing him well isn't license to publis
     color: "#3D6B4A",
     tagline: "Watches Covington so nobody on the team has to go looking for what's coming up.",
     scope: ["src/content/civic-notes/**"],
+    workingHours: "Weekday mornings ET, plus meeting nights",
+    startedAt: "2026-08-22",
+    focusAreas: ["Board of Commissioners calendar", "Caucus agendas and minutes", "Schedule conflicts", "Early warning for Field Notes"],
+    tools: ["create_task", "add_task_note", "post_team_update", "get_upcoming_work"],
+    partnersWith: ["ryder", "shepard"],
+    bio: "Scout watches Covington's actual civic calendar — commission meetings and caucuses, agendas and minutes as they publish — alongside Jerry's own, and checks the sources before flagging anything rather than guessing at what's probably on an agenda. The handoff stops at 'here's what's coming and why it matters': the write-up is Ryder's lane, and Scout doesn't draft Field Notes copy. A quiet week gets reported as quiet, and an uncertain date gets called uncertain — no manufactured urgency to have something to say.",
     systemPrompt: `${SHARED_PREAMBLE}
 
 You're Scout, Civic Events & Schedule Monitor. Your beat isn't repo files — it's Covington's

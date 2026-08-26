@@ -1,7 +1,10 @@
 #!/usr/bin/env node
 import * as readline from "node:readline/promises";
 import { PERSONAS, getPersona } from "./personas.js";
-import { runPersonaTurn, type PersonaEvent } from "./run.js";
+import type { PersonaEvent } from "./run.js";
+import { runPersonaChain as runPersonaTurn, type HandoffChainEvent } from "./handoff.js";
+
+type CliEvent = PersonaEvent | HandoffChainEvent;
 
 function printRoster(): void {
   console.log("Agents:\n");
@@ -27,7 +30,7 @@ function toolLabel(tool: string): string {
   return tool;
 }
 
-function handleEvent(event: PersonaEvent): void {
+function handleEvent(event: CliEvent): void {
   if (event.type === "text") {
     process.stdout.write(event.text);
   } else if (event.type === "tool_use") {
@@ -35,6 +38,10 @@ function handleEvent(event: PersonaEvent): void {
   } else if (event.type === "team_update") {
     const affects = event.affects?.length ? ` (→ ${event.affects.join(", ")})` : "";
     console.log(`\n  ◆ ${event.agent} to the team: ${event.message}${affects}`);
+  } else if (event.type === "handoff_start") {
+    console.log(`\n  ⇄ ${event.fromPersonaId} handed off to ${event.toPersonaId}`);
+  } else if (event.type === "handoff_limit_reached") {
+    console.log(`\n  ⚠ Hand-off chain stopped after ${event.chain.length} hop(s) before reaching ${event.blockedPersonaId} — task is assigned and waiting.`);
   } else if (event.type === "error") {
     console.error(`\nError: ${event.message}`);
   } else if (event.type === "done") {

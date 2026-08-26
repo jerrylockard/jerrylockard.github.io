@@ -16,6 +16,8 @@ export type ApprovalRequester = (personaId: string, toolName: string, reason: st
 export interface ToolContext {
   personaId: string;
   requestApproval: ApprovalRequester;
+  /** When true, only Read/Glob/Grep are returned — Write/Edit/Bash are absent from the tool set entirely, a code-level guarantee for idle/brainstorm turns that must not change anything real. */
+  readOnly?: boolean;
 }
 
 const IGNORED_DIRS = new Set(["node_modules", ".git", "dist", ".astro", ".remember", "coverage", ".pnpm-store"]);
@@ -50,7 +52,7 @@ async function* walk(dir: string): AsyncGenerator<string> {
   }
 }
 
-export function buildHostTools({ personaId, requestApproval }: ToolContext) {
+export function buildHostTools({ personaId, requestApproval, readOnly = false }: ToolContext) {
   const bash = tool({
     description: "Run a shell command in the repository root and return its stdout/stderr.",
     inputSchema: z.object({
@@ -187,5 +189,10 @@ export function buildHostTools({ personaId, requestApproval }: ToolContext) {
     },
   });
 
-  return { Bash: bash, Read: read, Write: write, Edit: edit, Glob: glob, Grep: grep };
+  return {
+    Read: read,
+    Glob: glob,
+    Grep: grep,
+    ...(readOnly ? {} : { Bash: bash, Write: write, Edit: edit }),
+  };
 }

@@ -19,6 +19,7 @@ import {
   updateTaskStatus,
   assignTask,
   addTaskNote,
+  setTaskDueDate,
   listTaskCategories,
   proposeTaskCategory,
   tasksByAssignee,
@@ -26,6 +27,7 @@ import {
   upcomingWork,
   isTaskDueDate,
 } from "./tasks.js";
+import { createWorkLogEntry, listWorkLog, signOffWorkLogEntry } from "./worklog.js";
 
 const rulesPath = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "AGENTS.md");
 
@@ -348,6 +350,25 @@ server.registerTool(
 );
 
 server.registerTool(
+  "set_task_due_date",
+  {
+    title: "Set or clear a task's due date",
+    description:
+      "Move a task's due date, or clear it entirely by omitting dueDate. Due dates drive the Dashboard's calendar and the ordering of get_upcoming_work, so keep them honest — set one when there's a real deadline, not to signal priority.",
+    inputSchema: {
+      id: z.string(),
+      dueDate: taskDueDateSchema.optional().describe("YYYY-MM-DD; omit to clear the due date"),
+      by: taskActorSchema.describe("Your persona id"),
+    },
+  },
+  async ({ id, dueDate, by }) => {
+    const task = setTaskDueDate(id, dueDate ?? null, by);
+    if (!task) return json({ error: "not found" });
+    return json(task);
+  }
+);
+
+server.registerTool(
   "list_task_categories",
   {
     title: "List task categories",
@@ -395,6 +416,103 @@ server.registerTool(
     description: "In-progress work followed by Backlog, ordered by due date and priority — the 'what's planned next' side of the dashboard's calendar view.",
   },
   async () => json(upcomingWork())
+);
+
+server.registerTool(
+  "delegate_to",
+  {
+    title: "Delegate to a teammate now",
+    description:
+      "Hand off execution to another persona for the rest of THIS already-running session " +
+      "(human- or schedule-started) — not just board metadata like assign_task. Use this when " +
+      "you mean 'their turn should run next, right now,' not 'assign this for later.' Creates or " +
+      "reassigns a task, exactly like create_task/assign_task, and separately signals the runtime " +
+      "to continue this session into their turn once yours ends. Has no effect if called outside " +
+      "a live session — in that case the task is still assigned/created normally, it just won't " +
+      "spawn a session (same as assign_task always has).",
+    inputSchema: {
+      personaId: taskAssigneeSchema.describe("Who should pick this up next"),
+      taskId: z.string().optional().describe("Existing task id to hand off; omit to create a new one"),
+      title: z.string().trim().min(1).optional().describe("Required if taskId is omitted"),
+      detail: z.string().optional(),
+      category: z.string().optional(),
+      instructions: z.string().describe("What you want them to do and why — becomes the prompt that starts their turn"),
+      by: taskActorSchema.describe("Your persona id"),
+    },
+  },
+  async ({ personaId, taskId, title, detail, category, instructions, by }) => {
+    let task;
+    if (taskId) {
+      task = assignTask(taskId, personaId, by);
+      if (!task) return json({ error: "not found" });
+      addTaskNote(taskId, by, `Delegated to ${personaId}: ${instructions}`);
+    } else {
+      if (!title) return json({ error: "title is required when taskId is omitted" });
+      task = createTask({ title, detail: detail ?? "", category: category ?? "general", assignee: personaId, createdBy: by });
+    }
+    return json({ task, handoff: { personaId, instructions, taskId: task.id } });
+  }
+);
+
+// ---------- work log ----------
+// A shared, sign-off-able, cross-linkable record of what got done/decided/planned and why —
+// distinct from post_team_update (the quick live "FYI" that also drives the Team chat channel).
+// Backed by its own file-locked store (.remember/worklog.json), same pattern as tasks.json.
+
+server.registerTool(
+  "post_work_log_entry",
+  {
+    title: "Post a work-log entry",
+    description:
+      "Record a durable, team-visible entry in the shared work log — what got done/decided/" +
+      "planned, and why. Distinct from post_team_update: this is the structured, cross-linkable, " +
+      "sign-off-able record, not the quick FYI. Use kind:'brainstorm' when you had no assigned " +
+      "work and used idle time to propose an improvement — that's a proposal, not a change: don't " +
+      "edit real files in a brainstorm turn, just describe the idea here.",
+    inputSchema: {
+      by: taskActorSchema,
+      kind: z.enum(["update", "add-on", "decision", "plan", "brainstorm"]),
+      summary: z.string().trim().min(1),
+      rationale: z.string().optional(),
+      taskId: z.string().optional(),
+      tag: z.string().optional(),
+      relatedIds: z.array(z.string()).optional(),
+    },
+  },
+  async (input) => json(createWorkLogEntry(input))
+);
+
+server.registerTool(
+  "sign_off_work_log_entry",
+  {
+    title: "Sign off a work-log entry",
+    description: "Mark a work-log entry as reviewed/signed off. Prose/metadata only — grants no permission and blocks nothing.",
+    inputSchema: {
+      id: z.string(),
+      by: taskActorSchema,
+      note: z.string().optional(),
+    },
+  },
+  async ({ id, by, note }) => {
+    const entry = signOffWorkLogEntry(id, by, note);
+    if (!entry) return json({ error: "not found" });
+    return json(entry);
+  }
+);
+
+server.registerTool(
+  "list_work_log",
+  {
+    title: "List work-log entries",
+    description: "List entries from the shared work log, optionally filtered by task, tag, kind, or author.",
+    inputSchema: {
+      taskId: z.string().optional(),
+      tag: z.string().optional(),
+      kind: z.enum(["update", "add-on", "decision", "plan", "brainstorm"]).optional(),
+      personaId: z.string().optional(),
+    },
+  },
+  async (filter) => json(listWorkLog(filter))
 );
 
 const transport = new StdioServerTransport();

@@ -12,6 +12,7 @@
     "stop": "node scripts/ctl.mjs stop",
     "status": "node scripts/ctl.mjs status",
     "logs": "node scripts/ctl.mjs logs",
+    "seed": "tsx server/seed-cli.ts",
     "check": "tsc --noEmit"
   },
   "dependencies": {

@@ -501,6 +501,28 @@ export function assignTask(id: string, assignee: string | null, by: string): Tas
   });
 }
 
+/** Sets or clears a task's due date. Pass null to clear it. Logged to the activity trail like any other change. */
+export function setTaskDueDate(id: string, dueDate: string | null, by: string): Task | undefined {
+  if (!isTaskActor(by)) throw new Error("Task activity actor must be Jerry or a current persona id.");
+  if (dueDate != null && !isTaskDueDate(dueDate)) throw new Error("Due date must be a real date in YYYY-MM-DD format.");
+  return mutateAll((file) => {
+    const task = file.tasks.find((candidate) => candidate.id === id);
+    if (!task) return undefined;
+    const previous = task.dueDate;
+    if (previous === (dueDate ?? undefined)) return task;
+    const now = new Date().toISOString();
+    if (dueDate) task.dueDate = dueDate;
+    else delete task.dueDate;
+    task.updatedAt = now;
+    task.activity.push({
+      at: now,
+      by,
+      note: dueDate ? `Due date ${previous ? `moved from ${previous} to` : "set to"} ${dueDate}` : "Due date cleared",
+    });
+    return task;
+  });
+}
+
 export function addTaskNote(id: string, by: string, note: string): Task | undefined {
   if (!isTaskActor(by)) throw new Error("Task activity actor must be Jerry or a current persona id.");
   return mutateAll((file) => {

@@ -19,6 +19,8 @@ const previewFrame = document.getElementById("preview-frame");
 const previewOffline = document.getElementById("preview-offline");
 const previewStartBtn = document.getElementById("preview-start-btn");
 const previewRefreshBtn = document.getElementById("preview-refresh");
+const pageEyebrowEl = document.getElementById("page-eyebrow");
+const pageTitleEl = document.getElementById("page-title");
 const profileToggle = document.getElementById("profile-toggle");
 const profileOverlay = document.getElementById("profile-overlay");
 const profileClose = document.getElementById("profile-close");
@@ -30,10 +32,14 @@ const approvalCountEl = document.getElementById("approval-count");
 const studioStatusEl = document.getElementById("studio-status");
 const clearChatBtn = document.getElementById("clear-chat");
 const reconcileChatBtn = document.getElementById("reconcile-chat");
+const moveToBtn = document.getElementById("move-to-btn");
+const movePopover = document.getElementById("move-popover");
+const incognitoBtn = document.getElementById("incognito-btn");
+const incognitoBanner = document.getElementById("incognito-banner");
+const incognitoBannerNote = document.getElementById("incognito-banner-note");
+const incognitoEndBtn = document.getElementById("incognito-end-btn");
 const navButtons = [...document.querySelectorAll(".nav-btn")];
 const views = [...document.querySelectorAll(".view")];
-const pageEyebrowEl = document.getElementById("page-eyebrow");
-const pageTitleEl = document.getElementById("page-title");
 const badgeChatEl = document.getElementById("badge-chat");
 const badgeApprovalsEl = document.getElementById("badge-approvals");
 const rosterGridEl = document.getElementById("roster-grid");
@@ -69,44 +75,75 @@ const attentionListEl = document.getElementById("attention-list");
 const attentionCountEl = document.getElementById("attention-count");
 const teamStripEl = document.getElementById("team-strip");
 const currentWorkListEl = document.getElementById("current-work-list");
+const currentWorkToggleBtn = document.getElementById("current-work-toggle");
 const homeActivityListEl = document.getElementById("home-activity-list");
+const homeActivityToggleBtn = document.getElementById("home-activity-toggle");
 const homeGreetingEl = document.getElementById("home-greeting");
 const askBar = document.getElementById("ask-bar");
 const askInput = document.getElementById("ask-input");
+const worklogKindFilterEl = document.getElementById("worklog-kind-filter");
+const worklogTagFilterEl = document.getElementById("worklog-tag-filter");
+const newWorklogBtn = document.getElementById("new-worklog-btn");
+const activityChipsEl = document.getElementById("activity-chips");
+const taskTemplatesEl = document.getElementById("task-templates");
+const taskTemplateChipsEl = document.getElementById("task-template-chips");
+const sampleDataBtn = document.getElementById("sample-data-btn");
+const sidenavToggleEl = document.getElementById("sidenav-toggle");
+const shellEl = document.querySelector(".shell");
+const plannerGridEl = document.getElementById("planner-grid");
+const plannerWeekdaysEl = document.getElementById("planner-weekdays");
+const plannerMonthEl = document.getElementById("planner-month");
+const plannerPrevEl = document.getElementById("planner-prev");
+const plannerNextEl = document.getElementById("planner-next");
+const plannerTodayEl = document.getElementById("planner-today");
+const plannerOptionsEl = document.getElementById("planner-options");
+const plannerOptionsToggleEl = document.getElementById("planner-options-toggle");
+const plannerLayerTasksEl = document.getElementById("planner-layer-tasks");
+const plannerLayerSchedulesEl = document.getElementById("planner-layer-schedules");
+const plannerNewTaskEl = document.getElementById("planner-new-task");
+const plannerNewScheduleEl = document.getElementById("planner-new-schedule");
+const plannerUnscheduledListEl = document.getElementById("planner-unscheduled-list");
+const plannerUnscheduledCountEl = document.getElementById("planner-unscheduled-count");
+const plannerNoticeEl = document.getElementById("planner-notice");
+const schedulesListEl = document.getElementById("schedules-list");
+const schedulesPauseCheckbox = document.getElementById("schedules-pause-checkbox");
+const newScheduleBtn = document.getElementById("new-schedule-btn");
+const scheduleNoticeEl = document.getElementById("schedule-notice");
 let reconcilePollTimer = null;
-let reconcileJobActive = false;
-let activeHistoryLoaded = false;
-let channelLoadGeneration = 0;
-let eventsDisconnected = false;
 
 const TEAM_CHANNEL = "team";
 const QUICK_REPLIES = ["Yes, go ahead", "Looks good", "Not yet — hold off", "What's the status?", "Can you explain more?", "No, stop."];
-const TAB_IDS = ["employees", "board", "calendar", "chat", "approvals"];
+const TAB_IDS = ["home", "employees", "board", "schedules", "calendar", "activity", "chat", "approvals"];
+const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+const WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const PAGE_META = {
-  home: { eyebrow: "Overview", title: "Today" },
-  employees: { eyebrow: "Your agent team", title: "Team" },
-  chat: { eyebrow: "Agent workspace", title: "Workroom" },
-  board: { eyebrow: "Shared work", title: "Work" },
-  calendar: { eyebrow: "Shared work", title: "Activity" },
-  approvals: { eyebrow: "Needs your call", title: "Decisions" },
+  home: { eyebrow: "Overview", title: "Command Center" },
+  employees: { eyebrow: "Directory", title: "Employees" },
+  chat: { eyebrow: "Internal comms", title: "Messages" },
+  board: { eyebrow: "Work", title: "Tasks" },
+  schedules: { eyebrow: "Automation", title: "Schedules" },
+  calendar: { eyebrow: "Planner", title: "Calendar" },
+  activity: { eyebrow: "Activity", title: "Activity" },
+  approvals: { eyebrow: "Approval Center", title: "Approvals" },
 };
 const STATUS_ORDER = ["backlog", "in-progress", "done"];
 const STATUS_LABELS = { backlog: "Backlog", "in-progress": "In progress", done: "Done" };
 const NEXT_STATUS = { backlog: "in-progress", "in-progress": "done" };
 const NEXT_STATUS_LABEL = { backlog: "Start task", "in-progress": "Mark done" };
+const WORKLOG_KIND_LABELS = { update: "Update", "add-on": "Add-on", decision: "Decision", plan: "Plan", brainstorm: "Brainstorm" };
 
 let personas = [];
 let activeChannel = localStorage.getItem("gui-active-channel") || TEAM_CHANNEL;
+const incognitoChannels = new Set();
 const savedTab = localStorage.getItem("gui-active-tab");
-const workspaceRevision = "workroom-v1";
-const isNewWorkspace = localStorage.getItem("gui-workspace-revision") !== workspaceRevision;
-let activeTab = isNewWorkspace ? "chat" : (TAB_IDS.includes(savedTab) ? savedTab : "chat");
-if (isNewWorkspace) localStorage.setItem("gui-workspace-revision", workspaceRevision);
+let activeTab = TAB_IDS.includes(savedTab) ? savedTab : "home";
 let roster = [];
 let boardState = { backlog: [], "in-progress": [], done: [], categories: [] };
 let approvalsList = [];
 let lastActivityFeed = [];
 let lastTeamUpdates = [];
+let currentWorkExpanded = false;
+let homeActivityExpanded = false;
 let selectedCategory = "all";
 let workRefreshTimer = null;
 let taskPanelReturnFocus = null;
@@ -123,6 +160,19 @@ let approvalsRefreshTimer = null;
 let approvalsLoadInFlight = false;
 let approvalsLoadQueued = false;
 let boardNoticeTimer = null;
+let worklogTags = [];
+let activityFilter = "all";
+let plannerMonth = (() => {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), 1);
+})();
+const plannerLayers = { tasks: true, schedules: true };
+let plannerDragTaskId = null;
+let plannerNoticeTimer = null;
+let schedulesList = [];
+let schedulesPaused = false;
+let schedulesLoadGeneration = 0;
+let scheduleNoticeTimer = null;
 const unreadChannels = new Set();
 const agentStatuses = new Map();
 const agentStatusMessages = new Map();
@@ -137,7 +187,7 @@ function isBusy(channel) {
 }
 
 function channelEntries() {
-  return [{ id: TEAM_CHANNEL, name: "Team", role: "Automatic routing", color: "var(--accent)" }, ...personas];
+  return [{ id: TEAM_CHANNEL, name: "Team", role: "Group channel", color: "var(--accent)" }, ...personas];
 }
 
 function statusFor(id) {
@@ -148,15 +198,9 @@ function statusLabel(status) {
   return { available: "Available", working: "Working", attention: "Needs attention", question: "Has a question", "hand-raised": "Hand raised", help: "Immediate help" }[status] || "Available";
 }
 
-function pendingDecisionCount() {
-  const agentAlertCount = [...agentAlerts.values()].filter((alert) => alert.source !== "approval").length;
-  return approvalsList.length + agentAlertCount;
-}
-
 function updateBadges() {
-  const decisionCount = pendingDecisionCount();
-  badgeApprovalsEl.hidden = decisionCount === 0;
-  badgeApprovalsEl.textContent = String(decisionCount);
+  badgeApprovalsEl.hidden = approvalsList.length === 0;
+  badgeApprovalsEl.textContent = String(approvalsList.length);
   badgeChatEl.hidden = unreadChannels.size === 0;
   badgeChatEl.textContent = String(unreadChannels.size);
 }
@@ -167,7 +211,7 @@ function updatePulse() {
   activeCountEl.textContent = String(activeCount);
   boardProgressCountEl.textContent = String(boardState["in-progress"].length);
   boardBacklogCountEl.textContent = String(boardState.backlog.length);
-  approvalCountEl.textContent = String(pendingDecisionCount());
+  approvalCountEl.textContent = String(approvalsList.length);
   const urgent = [...agentStatuses.values()].some((status) => status === "help");
   const hasQuestion = [...agentStatuses.values()].some((status) => status === "question");
   const handRaised = [...agentStatuses.values()].some((status) => status === "hand-raised");
@@ -178,9 +222,6 @@ function updatePulse() {
 
 function setAgentStatus(id, status, message = "") {
   if (!id) return;
-  const previousStatus = agentStatuses.get(id);
-  const previousMessage = agentStatusMessages.get(id);
-  if (previousStatus === status && (!message || previousMessage === message)) return;
   agentStatuses.set(id, status);
   if (message) agentStatusMessages.set(id, message);
   renderChannelList();
@@ -402,28 +443,34 @@ function initialiseNav() {
     if (!TAB_IDS.includes(tab)) continue;
     button.addEventListener("click", () => void setActiveTab(tab));
   }
-  for (const button of document.querySelectorAll("[data-goto]")) {
-    button.addEventListener("click", () => void setActiveTab(button.dataset.goto));
-  }
 }
 
 async function setActiveTab(tab, { refresh = true } = {}) {
-  if (!TAB_IDS.includes(tab)) tab = "chat";
+  if (!TAB_IDS.includes(tab)) tab = "home";
   activeTab = tab;
   localStorage.setItem("gui-active-tab", tab);
+  const meta = PAGE_META[tab];
+  if (meta && pageEyebrowEl && pageTitleEl) {
+    pageEyebrowEl.textContent = meta.eyebrow;
+    pageTitleEl.textContent = meta.title;
+  }
   for (const button of navButtons) {
-    const buttonTab = button.dataset.tab;
-    const active = buttonTab === tab || (buttonTab === "board" && tab === "calendar");
-    button.setAttribute("aria-pressed", String(active));
+    button.setAttribute("aria-pressed", String(button.dataset.tab === tab));
   }
   for (const view of views) view.hidden = view.id !== `view-${tab}`;
-  const meta = PAGE_META[tab] || PAGE_META.home;
-  pageEyebrowEl.textContent = meta.eyebrow;
-  pageTitleEl.textContent = meta.title;
   if (tab === "chat") applyChannelAccent(activeChannel);
   else document.documentElement.style.removeProperty("--channel-accent");
 
   if (!refresh) return;
+  await loadTabData(tab);
+}
+
+/**
+ * Fetches and renders whatever the given tab needs. Shared by setActiveTab and by bootstrap, which
+ * restores the last-used tab from localStorage — without this being callable separately, reloading
+ * on a tab that refreshWorkViews doesn't cover (Calendar, Schedules) left it rendering nothing.
+ */
+async function loadTabData(tab) {
   if (tab === "home") {
     await Promise.all([
       loadRoster({ silent: roster.length > 0 }),
@@ -433,9 +480,13 @@ async function setActiveTab(tab, { refresh = true } = {}) {
     renderHome();
   }
   if (tab === "employees") await loadRoster({ silent: roster.length > 0 });
-  if (tab === "board") await loadBoard({ silent: allBoardTasks().length > 0 });
-  if (tab === "calendar") await loadCalendar({ silent: true });
-  if (tab === "approvals") await loadApprovals();
+  if (tab === "board") await Promise.all([loadBoard({ silent: allBoardTasks().length > 0 }), loadTaskTemplates()]);
+  if (tab === "schedules") await loadSchedules();
+  if (tab === "activity") {
+    await Promise.all([loadCalendar({ silent: true }), loadWorkLogTags()]);
+  }
+  if (tab === "calendar") await loadPlanner();
+  if (tab === "approvals") renderApprovalsFull();
 }
 
 // ---------- home / command center ----------
@@ -466,13 +517,14 @@ function signalCard(alert) {
 
 function renderAttention() {
   const signals = [...agentAlerts.values()].filter((alert) => alert.source !== "approval");
-  const total = signals.length;
+  const total = approvalsList.length + signals.length;
   attentionCountEl.textContent = String(total);
   attentionListEl.innerHTML = "";
   if (!total) {
-    renderRegionState(attentionListEl, "No agent alerts right now.");
+    renderRegionState(attentionListEl, "All caught up — nothing needs you right now.");
     return;
   }
+  for (const approval of approvalsList) attentionListEl.appendChild(approvalCard(approval));
   for (const alert of signals) attentionListEl.appendChild(signalCard(alert));
 }
 
@@ -500,16 +552,31 @@ function renderTeamStrip() {
 function renderCurrentWork() {
   currentWorkListEl.innerHTML = "";
   const inProgress = Array.isArray(boardState["in-progress"]) ? boardState["in-progress"] : [];
+  currentWorkToggleBtn.hidden = inProgress.length <= 5;
+  currentWorkToggleBtn.textContent = currentWorkExpanded ? "Show less ←" : "View all →";
   if (!inProgress.length) {
     renderRegionState(currentWorkListEl, "Nothing in progress right now.");
     return;
   }
-  for (const task of inProgress.slice(0, 5)) currentWorkListEl.appendChild(renderTaskCard(task));
+  const visible = currentWorkExpanded ? inProgress : inProgress.slice(0, 5);
+  for (const task of visible) currentWorkListEl.appendChild(renderTaskCard(task));
 }
 
 function renderHomeActivity() {
-  renderActivityItems(homeActivityListEl, lastActivityFeed.slice(0, 5));
+  homeActivityToggleBtn.hidden = lastActivityFeed.length <= 5;
+  homeActivityToggleBtn.textContent = homeActivityExpanded ? "Show less ←" : "View all →";
+  renderActivityItems(homeActivityListEl, homeActivityExpanded ? lastActivityFeed : lastActivityFeed.slice(0, 5));
 }
+
+currentWorkToggleBtn.addEventListener("click", () => {
+  currentWorkExpanded = !currentWorkExpanded;
+  renderCurrentWork();
+});
+
+homeActivityToggleBtn.addEventListener("click", () => {
+  homeActivityExpanded = !homeActivityExpanded;
+  renderHomeActivity();
+});
 
 askBar.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -611,6 +678,11 @@ function closeEmployeeProfile() {
   employeeReturnFocus = null;
 }
 
+function chipRow(values, className) {
+  if (!Array.isArray(values) || !values.length) return "";
+  return `<div class="${className}">${values.map((value) => `<span class="employee-chip">${escapeHtml(value)}</span>`).join("")}</div>`;
+}
+
 function openEmployeeProfile(id) {
   const persona = personaById(id);
   const member = roster.find((r) => r.id === id) || persona;
@@ -622,6 +694,8 @@ function openEmployeeProfile(id) {
   const scope = Array.isArray(persona.scope) ? persona.scope : [];
   const scopeLine = !scope.length ? "" : scope.length === 1 && scope[0] === "**" ? "Whole repository" : scope.join(", ");
   const related = lastTeamUpdates.filter((update) => personaForActor(update.agent)?.id === id).slice(0, 5);
+  const inProgress = tasks.filter((task) => task.status === "in-progress").length;
+  const partnerNames = (persona.partnersWith || []).map((partnerId) => personaById(partnerId)?.name ?? partnerId);
 
   employeePanelBody.innerHTML = `
     <div class="employee-profile-head">
@@ -633,13 +707,27 @@ function openEmployeeProfile(id) {
       </div>
     </div>
     ${persona.tagline ? `<p class="employee-tagline">${escapeHtml(persona.tagline)}</p>` : ""}
+    ${persona.bio ? `<p class="employee-bio">${escapeHtml(persona.bio)}</p>` : ""}
+    <div class="employee-workload">
+      <div><span class="employee-workload-value">${tasks.length}</span><span class="employee-workload-label">assigned</span></div>
+      <div><span class="employee-workload-value">${inProgress}</span><span class="employee-workload-label">in progress</span></div>
+    </div>
     <dl class="task-facts">
       <div><dt>Identity</dt><dd>${persona.email ? `<a href="mailto:${escapeHtml(persona.email)}">${escapeHtml(persona.email)}</a>` : "—"}</dd></div>
+      ${persona.workingHours ? `<div><dt>Working hours</dt><dd>${escapeHtml(persona.workingHours)}</dd></div>` : ""}
+      ${persona.startedAt ? `<div><dt>On the team since</dt><dd>${escapeHtml(formatDate(persona.startedAt))}</dd></div>` : ""}
+      ${partnerNames.length ? `<div><dt>Works closely with</dt><dd>${escapeHtml(partnerNames.join(", "))}</dd></div>` : ""}
       ${scopeLine ? `<div><dt>Primarily works in</dt><dd>${escapeHtml(scopeLine)}</dd></div>` : ""}
     </dl>
+    ${persona.focusAreas?.length ? `<section class="employee-section"><h3>Focus areas</h3>${chipRow(persona.focusAreas, "employee-chips")}</section>` : ""}
+    ${persona.tools?.length ? `<section class="employee-section"><h3>Tools they reach for</h3>${chipRow(persona.tools, "employee-chips")}</section>` : ""}
     <section class="employee-section">
       <h3>Current work <span>${tasks.length}</span></h3>
       <div class="employee-task-list" id="employee-task-list"></div>
+    </section>
+    <section class="employee-section">
+      <h3>Work log</h3>
+      <div id="employee-worklog-list"><p class="task-activity-empty">Loading…</p></div>
     </section>
     <section class="employee-section">
       <h3>Recent activity</h3>
@@ -648,6 +736,25 @@ function openEmployeeProfile(id) {
     <div class="employee-actions">
       <button type="button" class="deck-action primary" id="employee-open-chat">Message ${escapeHtml(persona.name)}</button>
     </div>`;
+
+  // Their own work-log history — fetched per profile rather than held in memory, since it's only
+  // needed while this panel is open.
+  void (async () => {
+    const listEl = employeePanelBody.querySelector("#employee-worklog-list");
+    if (!listEl) return;
+    try {
+      const entries = await requestJson(`/api/worklog?personaId=${encodeURIComponent(id)}&limit=5`);
+      if (!listEl.isConnected) return;
+      listEl.innerHTML = "";
+      if (!Array.isArray(entries) || !entries.length) {
+        renderRegionState(listEl, `Nothing logged by ${persona.name} yet.`);
+        return;
+      }
+      for (const entry of entries) listEl.appendChild(workLogCard(entry));
+    } catch {
+      if (listEl.isConnected) renderRegionState(listEl, "Work log unavailable.", "error");
+    }
+  })();
 
   const taskListEl = employeePanelBody.querySelector("#employee-task-list");
   if (!tasks.length) {
@@ -693,23 +800,7 @@ employeeOverlay.addEventListener("click", (event) => {
 });
 document.addEventListener("keydown", (event) => {
   if (employeeOverlay.hidden) return;
-  if (event.key === "Escape") {
-    closeEmployeeProfile();
-    return;
-  }
-  if (event.key !== "Tab") return;
-  const focusable = [...document.getElementById("employee-panel").querySelectorAll('button:not(:disabled), input:not(:disabled), textarea:not(:disabled), select:not(:disabled), [href]')]
-    .filter((element) => element.getClientRects().length > 0);
-  if (!focusable.length) return;
-  const first = focusable[0];
-  const last = focusable[focusable.length - 1];
-  if (event.shiftKey && document.activeElement === first) {
-    event.preventDefault();
-    last.focus();
-  } else if (!event.shiftKey && document.activeElement === last) {
-    event.preventDefault();
-    first.focus();
-  }
+  if (event.key === "Escape") closeEmployeeProfile();
 });
 
 // ---------- task board ----------
@@ -1011,7 +1102,7 @@ function setTaskPanelError(form, message) {
   error.textContent = message;
 }
 
-function openNewTaskPanel() {
+function openNewTaskPanel({ dueDate = "" } = {}) {
   taskPanelTaskId = null;
   taskPanelLoadGeneration += 1;
   const categories = boardCategories();
@@ -1040,7 +1131,7 @@ function openNewTaskPanel() {
       </div>
       <div class="task-field">
         <label for="task-due">Due date</label>
-        <input id="task-due" name="dueDate" type="date">
+        <input id="task-due" name="dueDate" type="date" value="${escapeHtml(dueDate)}">
       </div>
       <div class="task-form-actions task-field-wide"><button type="button" class="task-cancel">Cancel</button><button type="submit" class="task-submit">Create task</button></div>
     </form>`;
@@ -1068,7 +1159,13 @@ function openNewTaskPanel() {
       });
       mergeBoardTask(created);
       closeTaskPanel();
-      await setActiveTab("board", { refresh: false });
+      // Creating from the calendar shouldn't yank you over to the board — stay put and re-render.
+      if (activeTab === "calendar") {
+        renderPlanner();
+        showPlannerNotice(`Added "${created.title}".`, "success");
+      } else {
+        await setActiveTab("board", { refresh: false });
+      }
     } catch (error) {
       setTaskPanelError(form, error instanceof Error ? error.message : "The task could not be created.");
       submit.disabled = false;
@@ -1085,6 +1182,12 @@ function renderTaskActivity(task) {
     <li><span class="task-activity-dot"></span><div><p>${escapeHtml(entry.note)}</p><small>${escapeHtml(actorName(entry.by))} · <time datetime="${escapeHtml(entry.at)}">${escapeHtml(formatDate(entry.at, true))}</time></small></div></li>`).join("")}</ol>`;
 }
 
+function renderTaskWorkLog(entries) {
+  if (!Array.isArray(entries) || !entries.length) return '<p class="task-activity-empty">No work-log entries yet.</p>';
+  return `<ul class="task-worklog-list">${entries.map((entry) => `
+    <li><span class="worklog-kind-badge small">${escapeHtml(WORKLOG_KIND_LABELS[entry.kind] || entry.kind)}</span> <button type="button" class="task-worklog-link" data-id="${escapeHtml(entry.id)}">${escapeHtml(entry.summary)}</button> <small>${escapeHtml(actorName(entry.by))} · ${escapeHtml(formatDate(entry.at))}</small></li>`).join("")}</ul>`;
+}
+
 async function openTaskDetail(taskId, { background = false } = {}) {
   taskPanelTaskId = taskId;
   const loadGeneration = ++taskPanelLoadGeneration;
@@ -1092,7 +1195,10 @@ async function openTaskDetail(taskId, { background = false } = {}) {
   if (taskOverlay.hidden) openTaskPanel("Task detail");
   else taskPanelEyebrow.textContent = "Task detail";
   try {
-    const task = await requestJson(`/api/tasks/${encodeURIComponent(taskId)}`);
+    const [task, linkedWorklog] = await Promise.all([
+      requestJson(`/api/tasks/${encodeURIComponent(taskId)}`),
+      requestJson(`/api/worklog?taskId=${encodeURIComponent(taskId)}`).catch(() => []),
+    ]);
     if (loadGeneration !== taskPanelLoadGeneration || taskPanelTaskId !== taskId || taskOverlay.hidden) return;
     const focusedControl = background && taskPanelBody.contains(document.activeElement)
       ? document.activeElement.matches("#task-note")
@@ -1125,8 +1231,12 @@ async function openTaskDetail(taskId, { background = false } = {}) {
           ${nextStatus ? `<button type="button" class="task-detail-advance">${escapeHtml(NEXT_STATUS_LABEL[task.status])} →</button>` : '<span class="task-complete-label">Complete</span>'}
         </div>
         <section class="task-activity"><h3>Activity</h3>${renderTaskActivity(task)}</section>
+        <section class="task-worklog"><h3>Work log</h3>${renderTaskWorkLog(linkedWorklog)}</section>
         <form class="task-note-form"><label for="task-note">Add a progress note</label><div><input id="task-note" name="note" required maxlength="500" autocomplete="off" placeholder="What changed?"><button type="submit">Add note</button></div></form>
       </article>`;
+    for (const link of taskPanelBody.querySelectorAll(".task-worklog-link")) {
+      link.addEventListener("click", () => void setActiveTab("activity"));
+    }
     const assignment = makeAssigneeSelect(task, "task-detail-assignee");
     taskPanelBody.querySelector("#task-detail-assignee-slot").appendChild(assignment);
     assignment.addEventListener("change", async () => {
@@ -1211,6 +1321,12 @@ function renderActivityItems(container, entries) {
     return;
   }
   for (const entry of entries) {
+    // Work-log entries get their full card treatment (rationale, tag, task link, sign-off)
+    // rather than a one-line row — they're the richest thing in this feed.
+    if (entry.type === "worklog" && entry.entry) {
+      container.appendChild(workLogCard(entry.entry));
+      continue;
+    }
     const item = document.createElement("article");
     item.className = `calendar-item activity-${entry.type || "unknown"}`;
     const body = document.createElement("div");
@@ -1270,6 +1386,46 @@ function renderUpcoming(tasks) {
   }
 }
 
+/**
+ * The Activity feed is a merged stream — work-log entries, completed tasks, and team updates.
+ * The kind/tag selects only mean anything for work-log entries, so setting either implicitly
+ * narrows the feed to work-log items rather than silently showing unfiltered rows alongside.
+ */
+function filteredActivity() {
+  const kind = worklogKindFilterEl.value;
+  const tag = worklogTagFilterEl.value;
+  const worklogOnly = activityFilter === "worklog" || Boolean(kind) || Boolean(tag);
+  return lastActivityFeed.filter((entry) => {
+    if (worklogOnly) {
+      if (entry.type !== "worklog" || !entry.entry) return false;
+      if (kind && entry.entry.kind !== kind) return false;
+      if (tag && entry.entry.tag !== tag) return false;
+      return true;
+    }
+    if (activityFilter === "all") return true;
+    return entry.type === activityFilter;
+  });
+}
+
+function renderFilteredActivity() {
+  for (const chip of activityChipsEl.querySelectorAll("[data-activity-filter]")) {
+    chip.setAttribute("aria-pressed", String(chip.dataset.activityFilter === activityFilter));
+  }
+  const entries = filteredActivity();
+  if (!entries.length && lastActivityFeed.length) {
+    renderRegionState(calendarCompletedEl, "Nothing matches these filters.");
+    return;
+  }
+  renderActivityItems(calendarCompletedEl, entries);
+}
+
+for (const chip of activityChipsEl.querySelectorAll("[data-activity-filter]")) {
+  chip.addEventListener("click", () => {
+    activityFilter = chip.dataset.activityFilter;
+    renderFilteredActivity();
+  });
+}
+
 async function loadCalendar({ silent = false } = {}) {
   const loadGeneration = ++calendarLoadGeneration;
   if (!silent) {
@@ -1287,7 +1443,7 @@ async function loadCalendar({ silent = false } = {}) {
     ].sort((a, b) => String(b.timestamp || "").localeCompare(String(a.timestamp || "")));
     lastActivityFeed = activity;
     lastTeamUpdates = updates;
-    renderActivityItems(calendarCompletedEl, activity);
+    renderFilteredActivity();
     renderUpcoming(Array.isArray(data?.upcoming) ? data.upcoming : []);
     if (activeTab === "home") renderHomeActivity();
   } catch (error) {
@@ -1358,6 +1514,741 @@ document.addEventListener("keydown", (event) => {
     first.focus();
   }
 });
+
+// ---------- work log ----------
+
+function workLogCard(entry) {
+  const card = document.createElement("article");
+  card.className = `worklog-card worklog-kind-${escapeHtml(entry.kind)}`;
+  const who = actorName(entry.by);
+  const rationale = entry.rationale
+    ? `<details class="worklog-why"><summary>Why</summary><p>${escapeHtml(entry.rationale)}</p></details>`
+    : "";
+  const taskLink = entry.taskId ? `<button type="button" class="worklog-task-link">View task →</button>` : "";
+  const tag = entry.tag ? `<button type="button" class="worklog-tag">${escapeHtml(entry.tag)}</button>` : "";
+  const signOff = entry.signOff
+    ? `<p class="worklog-signoff">Signed off by ${escapeHtml(actorName(entry.signOff.by))} · ${escapeHtml(formatDate(entry.signOff.at))}${entry.signOff.note ? ` — ${escapeHtml(entry.signOff.note)}` : ""}</p>`
+    : `<button type="button" class="worklog-signoff-btn">Sign off</button>`;
+  card.innerHTML = `
+    <div class="worklog-card-head">
+      <span class="worklog-kind-badge">${escapeHtml(WORKLOG_KIND_LABELS[entry.kind] || entry.kind)}</span>
+      <span class="worklog-who">${escapeHtml(who)}</span>
+      <time class="worklog-when" datetime="${escapeHtml(entry.at)}">${escapeHtml(formatDate(entry.at, true))}</time>
+    </div>
+    <p class="worklog-summary">${escapeHtml(entry.summary)}</p>
+    ${rationale}
+    <div class="worklog-card-foot">${tag}${taskLink}</div>
+    ${signOff}
+  `;
+  card.querySelector(".worklog-task-link")?.addEventListener("click", () => void openTaskDetail(entry.taskId));
+  card.querySelector(".worklog-tag")?.addEventListener("click", () => {
+    worklogTagFilterEl.value = entry.tag;
+    renderFilteredActivity();
+  });
+  card.querySelector(".worklog-signoff-btn")?.addEventListener("click", async (clickEvent) => {
+    const button = clickEvent.currentTarget;
+    button.disabled = true;
+    try {
+      const updated = await requestJson(`/api/worklog/${encodeURIComponent(entry.id)}/signoff`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      const item = lastActivityFeed.find((candidate) => candidate.type === "worklog" && candidate.entry?.id === updated.id);
+      if (item) item.entry = updated;
+      renderFilteredActivity();
+    } catch {
+      button.disabled = false;
+    }
+  });
+  return card;
+}
+
+async function loadWorkLogTags() {
+  try {
+    worklogTags = await requestJson("/api/worklog/tags");
+  } catch {
+    worklogTags = [];
+  }
+  const current = worklogTagFilterEl.value;
+  worklogTagFilterEl.innerHTML = `<option value="">All tags</option>${worklogTags.map((tag) => `<option value="${escapeHtml(tag)}">${escapeHtml(tag)}</option>`).join("")}`;
+  worklogTagFilterEl.value = worklogTags.includes(current) ? current : "";
+}
+
+worklogKindFilterEl.addEventListener("change", renderFilteredActivity);
+worklogTagFilterEl.addEventListener("change", renderFilteredActivity);
+
+function openNewWorkLogPanel() {
+  taskPanelTaskId = null;
+  taskPanelLoadGeneration += 1;
+  taskPanelBody.innerHTML = `
+    <form class="task-form" id="new-worklog-form">
+      <div class="task-field">
+        <label for="worklog-kind">Kind</label>
+        <select id="worklog-kind" name="kind">
+          <option value="update">Update</option>
+          <option value="add-on">Add-on</option>
+          <option value="decision">Decision</option>
+          <option value="plan">Plan</option>
+          <option value="brainstorm">Brainstorm</option>
+        </select>
+      </div>
+      <div class="task-field">
+        <label for="worklog-tag">Tag</label>
+        <input id="worklog-tag" name="tag" list="worklog-tag-list" autocomplete="off">
+        <datalist id="worklog-tag-list">${worklogTags.map((tag) => `<option value="${escapeHtml(tag)}"></option>`).join("")}</datalist>
+      </div>
+      <div class="task-field task-field-wide">
+        <label for="worklog-summary">Summary</label>
+        <input id="worklog-summary" name="summary" required maxlength="300" autocomplete="off">
+      </div>
+      <div class="task-field task-field-wide">
+        <label for="worklog-rationale">Why (optional)</label>
+        <textarea id="worklog-rationale" name="rationale" rows="3" maxlength="2000"></textarea>
+      </div>
+      <div class="task-form-actions task-field-wide"><button type="button" class="task-cancel">Cancel</button><button type="submit" class="task-submit">Post entry</button></div>
+    </form>`;
+  openTaskPanel("New work-log entry");
+  const form = taskPanelBody.querySelector("#new-worklog-form");
+  form.querySelector(".task-cancel").addEventListener("click", closeTaskPanel);
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const submit = form.querySelector(".task-submit");
+    const values = new FormData(form);
+    const summary = String(values.get("summary") || "").trim();
+    if (!summary) return;
+    submit.disabled = true;
+    submit.textContent = "Posting…";
+    try {
+      await requestJson("/api/worklog", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          kind: String(values.get("kind") || "update"),
+          summary,
+          rationale: String(values.get("rationale") || "").trim() || undefined,
+          tag: String(values.get("tag") || "").trim() || undefined,
+        }),
+      });
+      closeTaskPanel();
+      await setActiveTab("activity", { refresh: false });
+      await Promise.all([loadCalendar({ silent: true }), loadWorkLogTags()]);
+    } catch (error) {
+      setTaskPanelError(form, error instanceof Error ? error.message : "The entry could not be posted.");
+      submit.disabled = false;
+      submit.textContent = "Post entry";
+    }
+  });
+}
+
+newWorklogBtn.addEventListener("click", openNewWorkLogPanel);
+
+// ---------- calendar / planner ----------
+
+/** Local-time YYYY-MM-DD. Task due dates are already date-only strings; schedule run times are ISO timestamps that have to be read in the viewer's zone, not UTC, or an evening run lands on the wrong day. */
+function dateKey(value) {
+  const date = value instanceof Date ? value : validDate(value);
+  if (!date) return "";
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function showPlannerNotice(message, kind = "error") {
+  clearTimeout(plannerNoticeTimer);
+  plannerNoticeEl.className = `board-notice board-notice-${kind}`;
+  plannerNoticeEl.setAttribute("role", kind === "error" ? "alert" : "status");
+  plannerNoticeEl.textContent = message;
+  plannerNoticeEl.hidden = false;
+  plannerNoticeTimer = setTimeout(() => {
+    plannerNoticeEl.hidden = true;
+    plannerNoticeEl.textContent = "";
+  }, 4000);
+}
+
+function plannerTaskChip(task) {
+  const chip = document.createElement("button");
+  chip.type = "button";
+  chip.className = `planner-chip planner-chip-task priority-${escapeHtml(task.priority || "normal")} status-${escapeHtml(task.status)}`;
+  chip.draggable = true;
+  chip.dataset.taskId = task.id;
+  chip.title = `${task.title} — ${STATUS_LABELS[task.status] || task.status}, ${taskAssigneeName(task)}`;
+  chip.innerHTML = `<span class="planner-chip-dot"></span><span class="planner-chip-text">${escapeHtml(task.title)}</span>`;
+  chip.addEventListener("click", () => void openTaskDetail(task.id));
+  chip.addEventListener("dragstart", (event) => {
+    plannerDragTaskId = task.id;
+    chip.classList.add("dragging");
+    event.dataTransfer.effectAllowed = "move";
+    // Firefox refuses to start a drag unless some data is set.
+    event.dataTransfer.setData("text/plain", task.id);
+  });
+  chip.addEventListener("dragend", () => {
+    plannerDragTaskId = null;
+    chip.classList.remove("dragging");
+    for (const cell of plannerGridEl.querySelectorAll(".planner-day.drop-target")) cell.classList.remove("drop-target");
+  });
+  return chip;
+}
+
+function plannerScheduleChip(schedule) {
+  const chip = document.createElement("button");
+  chip.type = "button";
+  chip.className = "planner-chip planner-chip-schedule";
+  const who = personaById(schedule.personaId)?.name ?? schedule.personaId;
+  chip.title = `${schedule.name} — ${who}, ${formatCadence(schedule.cadence)}`;
+  chip.innerHTML = `<span class="planner-chip-dot"></span><span class="planner-chip-text">${escapeHtml(schedule.name)}</span>`;
+  chip.addEventListener("click", () => void setActiveTab("schedules"));
+  return chip;
+}
+
+async function movePlannerTask(taskId, nextDueDate) {
+  const task = allBoardTasks().find((candidate) => candidate.id === taskId);
+  if (!task) return;
+  if ((task.dueDate ?? null) === nextDueDate) return;
+  try {
+    const updated = await requestJson(`/api/tasks/${encodeURIComponent(taskId)}/due-date`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ dueDate: nextDueDate }),
+    });
+    mergeBoardTask(updated);
+    renderPlanner();
+    showPlannerNotice(
+      nextDueDate ? `"${updated.title}" moved to ${formatDate(nextDueDate)}.` : `"${updated.title}" no longer has a due date.`,
+      "success",
+    );
+  } catch (error) {
+    showPlannerNotice(error instanceof Error ? error.message : "That task could not be moved.");
+  }
+}
+
+function attachDayDropTarget(cell, dayKey) {
+  cell.addEventListener("dragover", (event) => {
+    if (!plannerDragTaskId) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+    cell.classList.add("drop-target");
+  });
+  cell.addEventListener("dragleave", () => cell.classList.remove("drop-target"));
+  cell.addEventListener("drop", (event) => {
+    if (!plannerDragTaskId) return;
+    event.preventDefault();
+    cell.classList.remove("drop-target");
+    void movePlannerTask(plannerDragTaskId, dayKey);
+  });
+}
+
+function renderPlanner() {
+  const year = plannerMonth.getFullYear();
+  const month = plannerMonth.getMonth();
+  plannerMonthEl.textContent = `${MONTH_NAMES[month]} ${year}`;
+
+  if (!plannerWeekdaysEl.childElementCount) {
+    for (const label of WEEKDAY_LABELS) {
+      const cell = document.createElement("span");
+      cell.textContent = label;
+      plannerWeekdaysEl.appendChild(cell);
+    }
+  }
+
+  const tasksByDay = new Map();
+  if (plannerLayers.tasks) {
+    for (const task of allBoardTasks()) {
+      if (!task.dueDate) continue;
+      const key = dateKey(task.dueDate);
+      if (!tasksByDay.has(key)) tasksByDay.set(key, []);
+      tasksByDay.get(key).push(task);
+    }
+  }
+  const schedulesByDay = new Map();
+  if (plannerLayers.schedules) {
+    for (const schedule of schedulesList) {
+      if (!schedule.nextRunAt) continue;
+      const key = dateKey(schedule.nextRunAt);
+      if (!schedulesByDay.has(key)) schedulesByDay.set(key, []);
+      schedulesByDay.get(key).push(schedule);
+    }
+  }
+
+  const todayKey = dateKey(new Date());
+  const firstWeekday = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const daysInPrev = new Date(year, month, 0).getDate();
+  // Always six rows, so the grid height doesn't jump between months.
+  const cellCount = 42;
+
+  plannerGridEl.innerHTML = "";
+  for (let i = 0; i < cellCount; i++) {
+    const offset = i - firstWeekday;
+    let cellDate;
+    let outside = false;
+    if (offset < 0) {
+      cellDate = new Date(year, month - 1, daysInPrev + offset + 1);
+      outside = true;
+    } else if (offset >= daysInMonth) {
+      cellDate = new Date(year, month + 1, offset - daysInMonth + 1);
+      outside = true;
+    } else {
+      cellDate = new Date(year, month, offset + 1);
+    }
+    const key = dateKey(cellDate);
+    const cell = document.createElement("div");
+    cell.className = `planner-day${outside ? " outside" : ""}${key === todayKey ? " today" : ""}`;
+    cell.dataset.day = key;
+
+    const header = document.createElement("button");
+    header.type = "button";
+    header.className = "planner-day-num";
+    header.textContent = String(cellDate.getDate());
+    header.title = `Add a task due ${formatDate(key)}`;
+    header.addEventListener("click", () => openNewTaskPanel({ dueDate: key }));
+    cell.appendChild(header);
+
+    const items = document.createElement("div");
+    items.className = "planner-day-items";
+    for (const task of tasksByDay.get(key) ?? []) items.appendChild(plannerTaskChip(task));
+    for (const schedule of schedulesByDay.get(key) ?? []) items.appendChild(plannerScheduleChip(schedule));
+    cell.appendChild(items);
+
+    attachDayDropTarget(cell, key);
+    plannerGridEl.appendChild(cell);
+  }
+
+  const undated = allBoardTasks().filter((task) => !task.dueDate && task.status !== "done");
+  plannerUnscheduledCountEl.textContent = String(undated.length);
+  plannerUnscheduledListEl.innerHTML = "";
+  if (!undated.length) {
+    renderRegionState(plannerUnscheduledListEl, "Everything open has a due date.");
+  } else {
+    for (const task of undated) plannerUnscheduledListEl.appendChild(plannerTaskChip(task));
+  }
+}
+
+async function loadPlanner() {
+  await Promise.all([
+    loadBoard({ silent: allBoardTasks().length > 0 }),
+    // The planner needs each schedule's computed nextRunAt, which only /api/schedules returns.
+    (async () => {
+      try {
+        const data = await requestJson("/api/schedules");
+        schedulesList = Array.isArray(data?.schedules) ? data.schedules : [];
+        schedulesPaused = Boolean(data?.paused);
+      } catch {
+        schedulesList = [];
+      }
+    })(),
+  ]);
+  renderPlanner();
+}
+
+plannerPrevEl.addEventListener("click", () => {
+  plannerMonth = new Date(plannerMonth.getFullYear(), plannerMonth.getMonth() - 1, 1);
+  renderPlanner();
+});
+plannerNextEl.addEventListener("click", () => {
+  plannerMonth = new Date(plannerMonth.getFullYear(), plannerMonth.getMonth() + 1, 1);
+  renderPlanner();
+});
+plannerTodayEl.addEventListener("click", () => {
+  const now = new Date();
+  plannerMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  renderPlanner();
+});
+plannerOptionsToggleEl.addEventListener("click", () => {
+  const open = plannerOptionsEl.hidden;
+  plannerOptionsEl.hidden = !open;
+  plannerOptionsToggleEl.setAttribute("aria-expanded", String(open));
+  plannerOptionsToggleEl.textContent = open ? "Show on calendar ▴" : "Show on calendar ▾";
+});
+plannerLayerTasksEl.addEventListener("change", () => {
+  plannerLayers.tasks = plannerLayerTasksEl.checked;
+  renderPlanner();
+});
+plannerLayerSchedulesEl.addEventListener("change", () => {
+  plannerLayers.schedules = plannerLayerSchedulesEl.checked;
+  renderPlanner();
+});
+plannerNewTaskEl.addEventListener("click", () => openNewTaskPanel({ dueDate: dateKey(new Date()) }));
+plannerNewScheduleEl.addEventListener("click", () => openNewSchedulePanel());
+
+// Dropping a chip back into the unscheduled tray clears its due date.
+plannerUnscheduledListEl.addEventListener("dragover", (event) => {
+  if (!plannerDragTaskId) return;
+  event.preventDefault();
+  plannerUnscheduledListEl.classList.add("drop-target");
+});
+plannerUnscheduledListEl.addEventListener("dragleave", () => plannerUnscheduledListEl.classList.remove("drop-target"));
+plannerUnscheduledListEl.addEventListener("drop", (event) => {
+  if (!plannerDragTaskId) return;
+  event.preventDefault();
+  plannerUnscheduledListEl.classList.remove("drop-target");
+  void movePlannerTask(plannerDragTaskId, null);
+});
+
+// ---------- task templates ----------
+
+async function loadTaskTemplates() {
+  let templates = [];
+  try {
+    templates = await requestJson("/api/task-templates");
+  } catch {
+    templates = [];
+  }
+  taskTemplateChipsEl.innerHTML = "";
+  if (!Array.isArray(templates) || !templates.length) {
+    taskTemplatesEl.hidden = true;
+    return;
+  }
+  taskTemplatesEl.hidden = false;
+  for (const template of templates) {
+    const chip = document.createElement("button");
+    chip.type = "button";
+    chip.className = "task-template-chip";
+    const who = personaById(template.assignee)?.name ?? template.assignee;
+    chip.innerHTML = `<span>${escapeHtml(template.label)}</span><small>${escapeHtml(who)}</small>`;
+    chip.title = template.detail || template.title;
+    chip.addEventListener("click", async () => {
+      chip.disabled = true;
+      try {
+        const created = await requestJson("/api/tasks", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: template.title,
+            detail: template.detail,
+            category: template.category,
+            priority: template.priority,
+            assignee: template.assignee || null,
+          }),
+        });
+        mergeBoardTask(created);
+        renderBoard();
+        showBoardNotice(`Added "${created.title}" to Backlog.`, "success");
+      } catch (error) {
+        showBoardNotice(error instanceof Error ? error.message : "That task could not be added.");
+      } finally {
+        chip.disabled = false;
+      }
+    });
+    taskTemplateChipsEl.appendChild(chip);
+  }
+}
+
+// ---------- sample data ----------
+
+function openSampleDataPanel() {
+  taskPanelTaskId = null;
+  taskPanelLoadGeneration += 1;
+  taskPanelBody.innerHTML = `
+    <div class="sample-data-panel">
+      <p class="sample-data-copy">Fill the board, work log, and team updates with a couple of weeks of realistic sample work, so every page has something to show. Safe to run more than once — it adds, it doesn't replace.</p>
+      <button type="button" class="deck-action primary" id="sample-load">Load sample data</button>
+      <hr>
+      <p class="sample-data-copy sample-data-warn">Clearing removes <strong>everything</strong> in the task board, work log, and team updates — including anything real, not just sample rows. Schedules and chat history are left alone.</p>
+      <button type="button" class="deck-action" id="sample-clear">Clear all board &amp; log data</button>
+    </div>`;
+  openTaskPanel("Sample data");
+
+  const setBusy = (button, label) => {
+    button.disabled = true;
+    button.textContent = label;
+  };
+
+  taskPanelBody.querySelector("#sample-load").addEventListener("click", async (event) => {
+    const button = event.currentTarget;
+    setBusy(button, "Loading…");
+    try {
+      const result = await requestJson("/api/sample-data", { method: "POST" });
+      closeTaskPanel();
+      await refreshWorkViews({ silent: false });
+      await Promise.all([loadWorkLogTags(), loadTaskTemplates()]);
+      showBoardNotice(`Loaded ${result.tasks} tasks, ${result.worklog} work-log entries, ${result.teamUpdates} team updates.`, "success");
+    } catch (error) {
+      setTaskPanelError(taskPanelBody.querySelector(".sample-data-panel"), error instanceof Error ? error.message : "Sample data could not be loaded.");
+      button.disabled = false;
+      button.textContent = "Load sample data";
+    }
+  });
+
+  taskPanelBody.querySelector("#sample-clear").addEventListener("click", async (event) => {
+    if (!window.confirm("Clear ALL tasks, work-log entries, and team updates? This cannot be undone.")) return;
+    const button = event.currentTarget;
+    setBusy(button, "Clearing…");
+    try {
+      await requestJson("/api/sample-data", { method: "DELETE" });
+      closeTaskPanel();
+      await refreshWorkViews({ silent: false });
+      await loadWorkLogTags();
+      showBoardNotice("Cleared the board, work log, and team updates.", "success");
+    } catch (error) {
+      setTaskPanelError(taskPanelBody.querySelector(".sample-data-panel"), error instanceof Error ? error.message : "Data could not be cleared.");
+      button.disabled = false;
+      button.textContent = "Clear all board & log data";
+    }
+  });
+}
+
+sampleDataBtn.addEventListener("click", openSampleDataPanel);
+
+// ---------- schedules ----------
+
+function showScheduleNotice(message, kind = "error") {
+  clearTimeout(scheduleNoticeTimer);
+  scheduleNoticeEl.className = `schedule-notice schedule-notice-${kind}`;
+  scheduleNoticeEl.setAttribute("role", kind === "error" ? "alert" : "status");
+  scheduleNoticeEl.textContent = message;
+  scheduleNoticeEl.hidden = false;
+  scheduleNoticeTimer = setTimeout(() => {
+    scheduleNoticeEl.hidden = true;
+    scheduleNoticeEl.textContent = "";
+  }, 5000);
+}
+
+function formatCadence(cadence) {
+  if (!cadence) return "—";
+  const pad = (value) => String(value).padStart(2, "0");
+  if (cadence.kind === "daily") return `Daily at ${pad(cadence.hour)}:${pad(cadence.minute)}`;
+  if (cadence.kind === "weekly") {
+    const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    return `${days[cadence.dayOfWeek] || "Weekly"} at ${pad(cadence.hour)}:${pad(cadence.minute)}`;
+  }
+  if (cadence.kind === "interval") return `Every ${cadence.minutes} minutes`;
+  return "—";
+}
+
+function scheduleCard(schedule) {
+  const card = document.createElement("article");
+  card.className = "schedule-card";
+  const who = personaById(schedule.personaId)?.name ?? schedule.personaId;
+  const nextRun = schedule.nextRunAt ? formatDate(schedule.nextRunAt, true) : "—";
+  const lastRun = schedule.lastRunAt ? `${formatDate(schedule.lastRunAt, true)}${schedule.lastRunOutcome ? ` · ${schedule.lastRunOutcome}` : ""}` : "Never run yet";
+  card.innerHTML = `
+    <div class="schedule-card-head">
+      <div><strong>${escapeHtml(schedule.name)}</strong><p class="schedule-persona">${escapeHtml(who)} · ${escapeHtml(formatCadence(schedule.cadence))}${schedule.readOnly ? " · read-only" : ""}</p></div>
+      <span class="schedule-status-badge ${schedule.enabled ? "on" : "off"}">${schedule.enabled ? "Active" : "Paused"}</span>
+    </div>
+    <dl class="schedule-facts">
+      <div><dt>Next run</dt><dd>${escapeHtml(nextRun)}</dd></div>
+      <div><dt>Last run</dt><dd>${escapeHtml(lastRun)}</dd></div>
+    </dl>
+    <div class="schedule-card-actions">
+      <button type="button" class="schedule-toggle">${schedule.enabled ? "Pause" : "Resume"}</button>
+      <button type="button" class="schedule-run-now" ${schedule.inFlight ? "disabled" : ""}>${schedule.inFlight ? "Running…" : "Run now"}</button>
+      <button type="button" class="schedule-delete">Delete</button>
+    </div>
+  `;
+  card.querySelector(".schedule-toggle").addEventListener("click", async () => {
+    try {
+      await requestJson(`/api/schedules/${encodeURIComponent(schedule.id)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ enabled: !schedule.enabled }),
+      });
+      await loadSchedules();
+    } catch (error) {
+      showScheduleNotice(error instanceof Error ? error.message : "Could not update this schedule.");
+    }
+  });
+  card.querySelector(".schedule-run-now").addEventListener("click", async (clickEvent) => {
+    clickEvent.currentTarget.disabled = true;
+    try {
+      await requestJson(`/api/schedules/${encodeURIComponent(schedule.id)}/run-now`, { method: "POST" });
+    } catch (error) {
+      showScheduleNotice(error instanceof Error ? error.message : "Could not start this run.");
+    }
+    await loadSchedules();
+  });
+  card.querySelector(".schedule-delete").addEventListener("click", async () => {
+    if (!window.confirm(`Delete "${schedule.name}"? This can't be undone.`)) return;
+    try {
+      await requestJson(`/api/schedules/${encodeURIComponent(schedule.id)}`, { method: "DELETE" });
+      await loadSchedules();
+    } catch (error) {
+      showScheduleNotice(error instanceof Error ? error.message : "Could not delete this schedule.");
+    }
+  });
+  return card;
+}
+
+function renderSchedules() {
+  schedulesListEl.innerHTML = "";
+  if (!schedulesList.length) {
+    renderRegionState(schedulesListEl, "No schedules yet — create one to let the team work on a cadence.");
+    return;
+  }
+  for (const schedule of schedulesList) schedulesListEl.appendChild(scheduleCard(schedule));
+}
+
+async function loadSchedules() {
+  const loadGeneration = ++schedulesLoadGeneration;
+  renderRegionState(schedulesListEl, "Loading schedules…", "loading");
+  try {
+    const data = await requestJson("/api/schedules");
+    if (loadGeneration !== schedulesLoadGeneration) return;
+    schedulesPaused = Boolean(data?.paused);
+    schedulesList = Array.isArray(data?.schedules) ? data.schedules : [];
+    schedulesPauseCheckbox.checked = schedulesPaused;
+    renderSchedules();
+  } catch (error) {
+    if (loadGeneration !== schedulesLoadGeneration) return;
+    renderRegionState(schedulesListEl, error instanceof Error ? error.message : "Schedules could not be loaded.", "error", () => void loadSchedules());
+  }
+}
+
+schedulesPauseCheckbox.addEventListener("change", async () => {
+  const paused = schedulesPauseCheckbox.checked;
+  schedulesPauseCheckbox.disabled = true;
+  try {
+    await requestJson("/api/schedules/pause", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ paused }),
+    });
+  } catch (error) {
+    schedulesPauseCheckbox.checked = !paused;
+    showScheduleNotice(error instanceof Error ? error.message : "Could not update automation pause state.");
+  } finally {
+    schedulesPauseCheckbox.disabled = false;
+  }
+});
+
+function openNewSchedulePanel() {
+  taskPanelTaskId = null;
+  taskPanelLoadGeneration += 1;
+  taskPanelBody.innerHTML = `
+    <form class="task-form" id="new-schedule-form">
+      <div class="task-field task-field-wide">
+        <label for="schedule-name">Name</label>
+        <input id="schedule-name" name="name" required maxlength="120" autocomplete="off">
+      </div>
+      <div class="task-field">
+        <label for="schedule-persona">Persona</label>
+        <select id="schedule-persona" name="personaId">${personas.map((persona) => `<option value="${escapeHtml(persona.id)}">${escapeHtml(persona.name)}</option>`).join("")}</select>
+      </div>
+      <div class="task-field">
+        <label for="schedule-cadence-kind">Cadence</label>
+        <select id="schedule-cadence-kind" name="cadenceKind">
+          <option value="daily">Daily</option>
+          <option value="weekly">Weekly</option>
+          <option value="interval">Every N minutes</option>
+        </select>
+      </div>
+      <div class="task-field" id="schedule-cadence-weekday-field">
+        <label for="schedule-cadence-weekday">Day</label>
+        <select id="schedule-cadence-weekday" name="dayOfWeek">
+          <option value="0">Sunday</option><option value="1" selected>Monday</option><option value="2">Tuesday</option><option value="3">Wednesday</option><option value="4">Thursday</option><option value="5">Friday</option><option value="6">Saturday</option>
+        </select>
+      </div>
+      <div class="task-field" id="schedule-cadence-time-field">
+        <label for="schedule-cadence-time">Time</label>
+        <input id="schedule-cadence-time" name="time" type="time" value="08:00">
+      </div>
+      <div class="task-field" id="schedule-cadence-minutes-field" hidden>
+        <label for="schedule-cadence-minutes">Minutes between runs</label>
+        <input id="schedule-cadence-minutes" name="minutes" type="number" min="60" step="1" value="60">
+      </div>
+      <div class="task-field task-field-wide">
+        <label for="schedule-prompt">Prompt</label>
+        <textarea id="schedule-prompt" name="prompt" rows="3" required maxlength="2000" placeholder="What should they do each time this runs?"></textarea>
+      </div>
+      <label class="task-field task-field-wide schedule-readonly-field"><input type="checkbox" id="schedule-readonly" name="readOnly"> Read-only (idle/brainstorm — no file or shell changes allowed)</label>
+      <div class="task-form-actions task-field-wide"><button type="button" class="task-cancel">Cancel</button><button type="submit" class="task-submit">Create schedule</button></div>
+    </form>`;
+  openTaskPanel("New schedule");
+  const form = taskPanelBody.querySelector("#new-schedule-form");
+  const kindSelect = form.querySelector("#schedule-cadence-kind");
+  const weekdayField = form.querySelector("#schedule-cadence-weekday-field");
+  const timeField = form.querySelector("#schedule-cadence-time-field");
+  const minutesField = form.querySelector("#schedule-cadence-minutes-field");
+  const syncCadenceFields = () => {
+    const kind = kindSelect.value;
+    weekdayField.hidden = kind !== "weekly";
+    timeField.hidden = kind === "interval";
+    minutesField.hidden = kind !== "interval";
+  };
+  kindSelect.addEventListener("change", syncCadenceFields);
+  syncCadenceFields();
+  form.querySelector(".task-cancel").addEventListener("click", closeTaskPanel);
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const submit = form.querySelector(".task-submit");
+    const values = new FormData(form);
+    const kind = String(values.get("cadenceKind") || "daily");
+    let cadence;
+    if (kind === "interval") {
+      cadence = { kind: "interval", minutes: Number(values.get("minutes") || 60) };
+    } else {
+      const [hourStr, minuteStr] = String(values.get("time") || "08:00").split(":");
+      const hour = Number(hourStr || 8);
+      const minute = Number(minuteStr || 0);
+      cadence = kind === "weekly"
+        ? { kind: "weekly", dayOfWeek: Number(values.get("dayOfWeek") || 1), hour, minute }
+        : { kind: "daily", hour, minute };
+    }
+    submit.disabled = true;
+    submit.textContent = "Creating…";
+    try {
+      await requestJson("/api/schedules", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: String(values.get("name") || "").trim(),
+          personaId: String(values.get("personaId") || ""),
+          prompt: String(values.get("prompt") || "").trim(),
+          cadence,
+          readOnly: values.get("readOnly") === "on",
+        }),
+      });
+      closeTaskPanel();
+      await setActiveTab("schedules", { refresh: false });
+      await loadSchedules();
+    } catch (error) {
+      setTaskPanelError(form, error instanceof Error ? error.message : "The schedule could not be created.");
+      submit.disabled = false;
+      submit.textContent = "Create schedule";
+    }
+  });
+}
+
+newScheduleBtn.addEventListener("click", openNewSchedulePanel);
+
+// ---------- sidenav collapse ----------
+// Collapsed state is a pin: the panel stays narrow until toggled back, but hovering it slides it
+// open temporarily (CSS-only, see .sidenav:hover) so you can still read labels without unpinning.
+// Below the 980px breakpoint the sidenav is already a horizontal icon strip, so collapsing is
+// meaningless there — the toggle hides itself and the pinned state is ignored until the window grows.
+
+const NARROW_QUERY = window.matchMedia("(max-width: 980px)");
+
+function applySidenavCollapsed(collapsed) {
+  shellEl.dataset.nav = collapsed ? "collapsed" : "expanded";
+  sidenavToggleEl.setAttribute("aria-expanded", String(!collapsed));
+  sidenavToggleEl.title = collapsed ? "Expand the menu" : "Collapse the menu";
+}
+
+function setSidenavCollapsed(collapsed, { persist = true } = {}) {
+  if (persist) localStorage.setItem("gui-nav-collapsed", collapsed ? "1" : "0");
+  applySidenavCollapsed(collapsed);
+}
+
+function sidenavPinnedCollapsed() {
+  return localStorage.getItem("gui-nav-collapsed") === "1";
+}
+
+function syncSidenavForViewport() {
+  // Narrow viewports always show the full horizontal strip, regardless of the pinned preference.
+  applySidenavCollapsed(NARROW_QUERY.matches ? false : sidenavPinnedCollapsed());
+}
+
+sidenavToggleEl.addEventListener("click", (event) => {
+  const collapsing = shellEl.dataset.nav !== "collapsed";
+  setSidenavCollapsed(collapsing);
+  // A mouse click leaves this button focused, and :focus-within holds the panel in its peeked-open
+  // state — so collapsing would look like it did nothing until you clicked somewhere else. Drop
+  // focus for pointer activation only; keyboard activation (detail === 0) keeps it so Tab order
+  // isn't lost mid-navigation.
+  if (collapsing && event.detail > 0) sidenavToggleEl.blur();
+});
+NARROW_QUERY.addEventListener("change", syncSidenavForViewport);
+syncSidenavForViewport();
 
 // ---------- theme ----------
 
@@ -1475,21 +2366,10 @@ previewToggle.addEventListener("click", () => {
 previewStartBtn.addEventListener("click", async () => {
   previewStartBtn.disabled = true;
   previewStartBtn.textContent = "Starting…";
-  try {
-    const result = await requestJson("/api/preview/start", { method: "POST" });
-    if (!result?.ok) {
-      throw new Error(result?.message || "The local preview could not be started.");
-    }
-    await refreshPreviewStatus();
-  } catch (error) {
-    const message = previewOffline.querySelector("p");
-    if (message) message.textContent = error instanceof Error ? error.message : "The local preview could not be started.";
-    previewOffline.hidden = false;
-    previewFrame.hidden = true;
-  } finally {
-    previewStartBtn.disabled = false;
-    previewStartBtn.textContent = "Start preview";
-  }
+  await fetch("/api/preview/start", { method: "POST" });
+  await refreshPreviewStatus();
+  previewStartBtn.disabled = false;
+  previewStartBtn.textContent = "Start preview";
 });
 
 previewRefreshBtn.addEventListener("click", () => {
@@ -1538,8 +2418,6 @@ function renderProfile(observations) {
 
 async function openProfile() {
   profileOverlay.hidden = false;
-  document.body.classList.add("modal-open");
-  requestAnimationFrame(() => profileClose.focus());
   try {
     const res = await fetch("/api/profile");
     renderProfile(await res.json());
@@ -1551,9 +2429,6 @@ async function openProfile() {
 
 function closeProfile() {
   profileOverlay.hidden = true;
-  document.body.classList.remove("modal-open");
-  profileToggle.setAttribute("aria-pressed", "false");
-  profileToggle.focus();
 }
 
 profileToggle.addEventListener("click", () => {
@@ -1563,33 +2438,14 @@ profileToggle.addEventListener("click", () => {
 });
 
 profileClose.addEventListener("click", () => {
+  profileToggle.setAttribute("aria-pressed", "false");
   closeProfile();
 });
 
 profileOverlay.addEventListener("click", (e) => {
   if (e.target === profileOverlay) {
+    profileToggle.setAttribute("aria-pressed", "false");
     closeProfile();
-  }
-});
-
-document.addEventListener("keydown", (event) => {
-  if (profileOverlay.hidden) return;
-  if (event.key === "Escape") {
-    closeProfile();
-    return;
-  }
-  if (event.key !== "Tab") return;
-  const focusable = [...profileOverlay.querySelectorAll('button:not(:disabled), input:not(:disabled), textarea:not(:disabled), select:not(:disabled), [href]')]
-    .filter((element) => element.getClientRects().length > 0);
-  if (!focusable.length) return;
-  const first = focusable[0];
-  const last = focusable[focusable.length - 1];
-  if (event.shiftKey && document.activeElement === first) {
-    event.preventDefault();
-    last.focus();
-  } else if (!event.shiftKey && document.activeElement === last) {
-    event.preventDefault();
-    first.focus();
   }
 });
 
@@ -1668,11 +2524,110 @@ function insertMention(persona) {
   updateRecipientsPreview();
 }
 
+// ---------- move to a specific person ----------
+
+function closeMovePopover() {
+  movePopover.hidden = true;
+  movePopover.innerHTML = "";
+}
+
+function renderMovePopover() {
+  movePopover.innerHTML = `<p class="move-popover-hint">Continue this conversation with…</p>`;
+  const targets = activeChannel === TEAM_CHANNEL ? personas : personas.filter((p) => p.id !== activeChannel);
+  if (activeChannel !== TEAM_CHANNEL) {
+    const teamRow = document.createElement("button");
+    teamRow.type = "button";
+    teamRow.className = "mention-row";
+    teamRow.innerHTML = `
+      <span class="avatar" style="background:var(--accent)">◆</span>
+      <span class="mention-info"><span class="mention-name">Team</span><span class="mention-role">Group channel</span></span>
+    `;
+    teamRow.addEventListener("click", () => {
+      closeMovePopover();
+      switchChannel(TEAM_CHANNEL);
+    });
+    movePopover.appendChild(teamRow);
+  }
+  for (const p of targets) {
+    const row = document.createElement("button");
+    row.type = "button";
+    row.className = "mention-row";
+    row.innerHTML = `
+      <span class="avatar" style="background:${p.color}">${avatarInner(p)}</span>
+      <span class="mention-info"><span class="mention-name">${escapeHtml(p.name)}</span><span class="mention-role">${escapeHtml(p.role)}</span></span>
+    `;
+    row.addEventListener("click", () => {
+      closeMovePopover();
+      switchChannel(p.id);
+    });
+    movePopover.appendChild(row);
+  }
+}
+
+moveToBtn.addEventListener("click", () => {
+  if (!movePopover.hidden) {
+    closeMovePopover();
+    return;
+  }
+  closeMentionPopover();
+  renderMovePopover();
+  movePopover.hidden = false;
+});
+
+// ---------- incognito ----------
+
+function updateIncognitoUI() {
+  const eligible = activeChannel !== TEAM_CHANNEL;
+  const active = eligible && incognitoChannels.has(activeChannel);
+  incognitoBtn.hidden = !eligible || active;
+  moveToBtn.hidden = active;
+  incognitoBanner.hidden = !active;
+  logEl.classList.toggle("incognito", active);
+  if (active) {
+    const persona = personaById(activeChannel);
+    incognitoBannerNote.textContent = persona?.id === "ryder" ? " — they'll review it privately and suggest content once you end it" : "";
+  }
+}
+
+async function startIncognitoChat() {
+  incognitoBtn.disabled = true;
+  try {
+    const res = await fetch(`/api/incognito/${encodeURIComponent(activeChannel)}/start`, { method: "POST" });
+    if (!res.ok) throw new Error();
+    incognitoChannels.add(activeChannel);
+    updateIncognitoUI();
+  } catch {
+    setComposerError("Could not start an incognito conversation.");
+  } finally {
+    incognitoBtn.disabled = false;
+  }
+}
+
+async function endIncognitoChat() {
+  incognitoEndBtn.disabled = true;
+  const channel = activeChannel;
+  try {
+    const res = await fetch(`/api/incognito/${encodeURIComponent(channel)}/end`, { method: "POST" });
+    if (!res.ok) throw new Error();
+    incognitoChannels.delete(channel);
+    if (channel === activeChannel) updateIncognitoUI();
+    if (channel === "ryder") setAgentStatus("ryder", "working", "Reviewing your private conversation.");
+  } catch {
+    setComposerError("Could not end the incognito conversation.");
+  } finally {
+    incognitoEndBtn.disabled = false;
+  }
+}
+
+incognitoBtn.addEventListener("click", startIncognitoChat);
+incognitoEndBtn.addEventListener("click", endIncognitoChat);
+
 mentionBtn.addEventListener("click", () => {
   if (!mentionPopover.hidden) {
     closeMentionPopover();
     return;
   }
+  closeMovePopover();
   const pos = input.selectionStart;
   input.focus();
   openMentionPopover(matchPersonas(""), { start: pos, end: pos });
@@ -1712,18 +2667,31 @@ function updateRecipientsPreview() {
 
 // ---------- chat log ----------
 
+// Consecutive messages from the same sender, close together in time, collapse into one
+// visual cluster (avatar/name/time shown once) — the grouping every real chat app does.
+let lastMessageSenderKey = null;
+let lastMessageAt = 0;
+const GROUP_WINDOW_MS = 3 * 60 * 1000;
+
 function addMessage(kind, who, persona, when) {
   const color = persona?.color;
   const avatar = persona ? `<span class="msg-avatar" style="background:${color}">${avatarInner(persona)}</span>` : "";
+  const at = (when ?? new Date()).getTime();
+  const senderKey = persona?.id ?? (kind === "user" ? "user" : who);
+  const grouped = kind !== "error" && senderKey === lastMessageSenderKey && at - lastMessageAt < GROUP_WINDOW_MS;
+  lastMessageSenderKey = senderKey;
+  lastMessageAt = at;
+
   const div = document.createElement("div");
-  div.className = `msg ${kind}`;
+  div.className = `msg ${kind}${grouped ? " grouped" : ""}`;
+  div.setAttribute("aria-label", `${who}, ${formatTime(when ?? new Date())}`);
   div.innerHTML = `
     <div class="head">
       ${avatar}
       <span class="who" style="${color ? `color:${color}` : ""}">${who}</span>
       <span class="time">${formatTime(when ?? new Date())}</span>
     </div>
-    <div class="text"></div>
+    <div class="text" style="--msg-accent:${color || "var(--rule)"}"></div>
   `;
   logEl.appendChild(div);
   logEl.scrollTop = logEl.scrollHeight;
@@ -1804,6 +2772,28 @@ function addChainBanner(chain, routed) {
   setEmptyState();
 }
 
+function addHandoffBanner(fromPersonaId, toPersonaId) {
+  const fromName = personaById(fromPersonaId)?.name ?? fromPersonaId;
+  const toName = personaById(toPersonaId)?.name ?? toPersonaId;
+  const div = document.createElement("div");
+  div.className = "msg chain-banner handoff-banner";
+  div.innerHTML = `<span class="team-note-icon">⇄</span> ${escapeHtml(fromName)} handed off to ${escapeHtml(toName)}`;
+  logEl.appendChild(div);
+  logEl.scrollTop = logEl.scrollHeight;
+  setEmptyState();
+}
+
+function addHandoffLimitNotice(chain, blockedPersonaId) {
+  const names = chain.map((id) => personaById(id)?.name ?? id);
+  const blockedName = personaById(blockedPersonaId)?.name ?? blockedPersonaId;
+  const div = document.createElement("div");
+  div.className = "msg chain-banner handoff-limit-notice";
+  div.innerHTML = `<span class="team-note-icon">⚠</span> Hand-off chain stopped after ${names.length} hop${names.length === 1 ? "" : "s"} (${names.map(escapeHtml).join(" → ")}) before reaching ${escapeHtml(blockedName)} — the task is assigned and waiting.`;
+  logEl.appendChild(div);
+  logEl.scrollTop = logEl.scrollHeight;
+  setEmptyState();
+}
+
 function showHopIndicator(personaId) {
   const persona = personaById(personaId);
   const div = document.createElement("div");
@@ -1854,24 +2844,16 @@ function clearLog() {
   logEl.innerHTML = "";
   logEl.appendChild(emptyState);
   setEmptyState();
+  lastMessageSenderKey = null;
+  lastMessageAt = 0;
 }
 
 function historyActionLabel() {
-  return activeChannel === TEAM_CHANNEL
-    ? "all conversation history (Team and every agent)"
-    : `${personaById(activeChannel)?.name ?? activeChannel}'s conversation history`;
-}
-
-function syncHistoryActions() {
-  clearChatBtn.textContent = activeChannel === TEAM_CHANNEL ? "Clear all channels" : "Clear this conversation";
-  reconcileChatBtn.textContent = activeChannel === TEAM_CHANNEL ? "Reconcile & clear all" : "Reconcile & clear";
-  const disabled = !activeHistoryLoaded || reconcileJobActive;
-  clearChatBtn.disabled = disabled;
-  reconcileChatBtn.disabled = disabled;
+  return activeChannel === TEAM_CHANNEL ? "team chat" : `${personaById(activeChannel)?.name ?? activeChannel} chat`;
 }
 
 async function clearChat() {
-  if (!window.confirm(`Clear ${historyActionLabel()}? This cannot be undone.`)) return;
+  if (!window.confirm(`Clear ${historyActionLabel()} history? This cannot be undone.`)) return;
   clearChatBtn.disabled = true;
   reconcileChatBtn.disabled = true;
   try {
@@ -1881,27 +2863,29 @@ async function clearChat() {
   } catch (err) {
     setComposerError(err instanceof Error ? err.message : "The chat history could not be cleared.");
   } finally {
-    syncHistoryActions();
+    clearChatBtn.disabled = false;
+    reconcileChatBtn.disabled = false;
   }
 }
 
 async function reconcileAndClearChat() {
-  if (!window.confirm(`Ask Archie to reconcile ${historyActionLabel()} against the current repository, then clear it?`)) return;
+  if (!window.confirm(`Ask Archie to reconcile ${historyActionLabel()} against the current repository, then clear the history?`)) return;
   clearChatBtn.disabled = true;
   reconcileChatBtn.disabled = true;
-  reconcileJobActive = true;
   studioStatusEl.textContent = "Archie is reconciling history";
   reconcileChatBtn.textContent = "Starting…";
   try {
-    const data = await requestJson("/api/transcript/reconcile", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ channel: activeChannel }) });
-    if (!data?.job?.id) throw new Error("Archie did not return a reconciliation job.");
+    const res = await fetch("/api/transcript/reconcile", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ channel: activeChannel }) });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Archie could not reconcile this history.");
     await watchReconcile(data.job.id);
   } catch (err) {
     setComposerError(err instanceof Error ? err.message : "Archie could not reconcile this history.");
     studioStatusEl.textContent = "Reconciliation needs attention";
-    reconcileJobActive = false;
-    syncHistoryActions();
+    reconcileChatBtn.textContent = "Reconcile & clear";
   } finally {
+    clearChatBtn.disabled = false;
+    if (!reconcilePollTimer) reconcileChatBtn.disabled = false;
     updatePulse();
   }
 }
@@ -1910,25 +2894,22 @@ async function watchReconcile(jobId) {
   const started = Date.now();
   const finish = (success, message) => {
     reconcilePollTimer = null;
-    reconcileJobActive = false;
-    syncHistoryActions();
+    clearChatBtn.disabled = false;
+    reconcileChatBtn.disabled = false;
+    reconcileChatBtn.textContent = "Reconcile & clear";
     studioStatusEl.textContent = message;
     if (success) clearLog();
     else setComposerError(message);
   };
   const poll = async () => {
     try {
-      const job = await requestJson(`/api/transcript/reconcile/${encodeURIComponent(jobId)}`);
-      if (!["queued", "working", "waiting", "complete", "error"].includes(job?.state)) {
-        throw new Error("Archie returned an unknown reconciliation status.");
-      }
-      const jobMessage = typeof job.message === "string" && job.message ? job.message : `Reconciliation is ${job.state}.`;
+      const res = await fetch(`/api/transcript/reconcile/${encodeURIComponent(jobId)}`);
+      const job = await res.json();
       const elapsed = Math.max(1, Math.round((Date.now() - started) / 1000));
-      const progressLabel = job.state === "queued" ? "Queued" : job.state === "waiting" ? "Waiting" : "Working";
-      reconcileChatBtn.textContent = `${progressLabel}… ${elapsed}s`;
-      studioStatusEl.textContent = jobMessage;
-      if (job.state === "complete") return finish(true, jobMessage);
-      if (job.state === "error") return finish(false, jobMessage);
+      reconcileChatBtn.textContent = `${job.state === "waiting" ? "Waiting" : "Working"}… ${elapsed}s`;
+      studioStatusEl.textContent = job.message;
+      if (job.state === "complete") return finish(true, job.message);
+      if (job.state === "error") return finish(false, job.message);
       reconcilePollTimer = setTimeout(poll, 1000);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Could not read reconciliation status.";
@@ -1957,45 +2938,43 @@ function applyChannelAccent(id) {
 }
 
 async function switchChannel(id) {
-  const loadGeneration = ++channelLoadGeneration;
   if (id !== activeChannel) {
     activeChannel = id;
     localStorage.setItem("gui-active-channel", id);
   }
   const channelPersona = personaById(id);
-  chatChannelEyebrow.textContent = id === TEAM_CHANNEL ? "Automatically routed" : "Direct conversation";
+  chatChannelEyebrow.textContent = id === TEAM_CHANNEL ? "Team channel" : "Direct channel";
   chatChannelTitle.textContent = id === TEAM_CHANNEL ? "Team" : (channelPersona?.name || actorName(id));
-  const emptyTitle = emptyState.querySelector("strong");
-  const emptyCopy = emptyState.querySelector("p");
-  if (emptyTitle) emptyTitle.textContent = id === TEAM_CHANNEL ? "What should the team work on?" : `What do you want ${channelPersona?.name ?? "this agent"} to handle?`;
-  if (emptyCopy) emptyCopy.textContent = id === TEAM_CHANNEL
-    ? "Team will route your request to the right agent, or choose a specialist above."
-    : `${channelPersona?.name ?? "This agent"} is ready for a direct request.`;
-  activeHistoryLoaded = false;
-  syncHistoryActions();
-  clearChatBtn.closest("details")?.removeAttribute("open");
   unreadChannels.delete(id);
   streaming.clear();
   hopIndicators.clear();
   toolCards.clear();
   closeMentionPopover();
+  closeMovePopover();
   clearLog();
   applyChannelAccent(id);
   updateComposerState();
   renderChannelList();
 
+  if (id !== TEAM_CHANNEL) {
+    try {
+      const res = await fetch(`/api/incognito/${encodeURIComponent(id)}/status`);
+      const data = await res.json();
+      if (data.active) incognitoChannels.add(id);
+      else incognitoChannels.delete(id);
+    } catch {
+      // server hiccup; assume not incognito
+    }
+  }
+  updateIncognitoUI();
+
   try {
-    const lines = await requestJson(`/api/transcript?channel=${encodeURIComponent(id)}`);
-    if (loadGeneration !== channelLoadGeneration || id !== activeChannel) return;
-    if (!Array.isArray(lines)) throw new Error("The dashboard returned invalid conversation history.");
+    const isIncognitoChannel = id !== TEAM_CHANNEL && incognitoChannels.has(id);
+    const res = await fetch(isIncognitoChannel ? `/api/incognito/${encodeURIComponent(id)}/transcript` : `/api/transcript?channel=${encodeURIComponent(id)}`);
+    const lines = await res.json();
     for (const line of lines) applyHistoryEvent(line.channel, line.event, line.ts);
-    activeHistoryLoaded = true;
-    syncHistoryActions();
-  } catch (error) {
-    if (loadGeneration !== channelLoadGeneration || id !== activeChannel) return;
-    const message = error instanceof Error ? error.message : "Conversation history could not be loaded.";
-    setComposerError(`${message} History actions are disabled until this channel loads successfully.`);
-    addMessage("error", "Dashboard", null).textContent = "Conversation history is unavailable. Refresh this channel before relying on or clearing its history.";
+  } catch {
+    // server hiccup; channel just opens empty
   }
 }
 
@@ -2020,27 +2999,10 @@ function renderQuickReplies() {
 function renderApprovalsFull() {
   approvalsFullEl.innerHTML = "";
   if (!approvalsList.length) {
-    renderRegionState(approvalsFullEl, "No approval requests are currently pending.");
+    renderRegionState(approvalsFullEl, "No approvals pending. Agents will surface anything sensitive or externally visible here before acting.");
     return;
   }
   for (const approval of approvalsList) approvalsFullEl.appendChild(approvalCard(approval));
-}
-
-function renderApprovalsUnavailable() {
-  if (approvalsList.length) renderApprovalsFull();
-  else approvalsFullEl.innerHTML = "";
-  const notice = document.createElement("div");
-  notice.className = "view-state view-state-error";
-  const message = document.createElement("p");
-  message.textContent = approvalsList.length
-    ? "Approval status could not be refreshed. Showing the last known requests."
-    : "Approval status is unavailable. Retry before assuming nothing needs approval.";
-  const retry = document.createElement("button");
-  retry.type = "button";
-  retry.textContent = "Retry";
-  retry.addEventListener("click", () => void loadApprovals());
-  notice.append(message, retry);
-  approvalsFullEl.prepend(notice);
 }
 
 function reconcileApprovalAlerts() {
@@ -2074,31 +3036,13 @@ function approvalCard(approval) {
       <button type="button" class="deny">Deny</button>
     </div>
   `;
-  const approveButton = card.querySelector(".approve");
-  const denyButton = card.querySelector(".deny");
-  const handleDecision = async (approved) => {
-    approveButton.disabled = true;
-    denyButton.disabled = true;
-    card.querySelector(".approval-card-error")?.remove();
-    try {
-      await respond(approval.id, approved);
-    } catch (error) {
-      const message = document.createElement("p");
-      message.className = "approval-card-error";
-      message.setAttribute("role", "alert");
-      message.textContent = error instanceof Error ? error.message : "That decision could not be saved.";
-      card.appendChild(message);
-      approveButton.disabled = false;
-      denyButton.disabled = false;
-    }
-  };
-  approveButton.addEventListener("click", () => void handleDecision(true));
-  denyButton.addEventListener("click", () => void handleDecision(false));
+  card.querySelector(".approve").addEventListener("click", () => respond(approval.id, true));
+  card.querySelector(".deny").addEventListener("click", () => respond(approval.id, false));
   return card;
 }
 
 async function respond(id, approve) {
-  await requestJson(`/api/approvals/${id}`, {
+  await fetch(`/api/approvals/${id}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ approve }),
@@ -2119,17 +3063,15 @@ function setComposerError(message) {
 
 function updateComposerState() {
   const busy = isBusy(activeChannel);
-  input.disabled = busy || eventsDisconnected;
-  sendBtn.disabled = busy || eventsDisconnected;
+  input.disabled = busy;
+  sendBtn.disabled = busy;
   mentionBtn.style.display = activeChannel === TEAM_CHANNEL ? "" : "none";
-  if (eventsDisconnected) {
-    input.placeholder = "Reconnecting live updates…";
-  } else if (busy) {
+  if (busy) {
     input.placeholder = "Replying…";
   } else if (activeChannel === TEAM_CHANNEL) {
-    input.placeholder = "Describe what you want done — Team will route it…";
+    input.placeholder = "Tag someone with @, or just ask…";
   } else {
-    input.placeholder = `Ask ${personaById(activeChannel)?.name ?? "this agent"} to help…`;
+    input.placeholder = `Message ${personaById(activeChannel)?.name ?? "agent"}…`;
   }
 }
 
@@ -2185,6 +3127,9 @@ document.addEventListener("click", (e) => {
   if (!mentionPopover.hidden && !mentionPopover.contains(e.target) && e.target !== input && e.target !== mentionBtn) {
     closeMentionPopover();
   }
+  if (!movePopover.hidden && !movePopover.contains(e.target) && !moveToBtn.contains(e.target)) {
+    closeMovePopover();
+  }
 });
 
 composer.addEventListener("submit", async (e) => {
@@ -2201,15 +3146,15 @@ composer.addEventListener("submit", async (e) => {
     input.placeholder = "Finding the right person to answer…";
   }
 
-  let data;
-  try {
-    data = await requestJson("/api/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message, channel }),
-    });
-  } catch (error) {
-    setComposerError(error instanceof Error ? error.message : "Couldn't send that.");
+  const res = await fetch("/api/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message, channel }),
+  });
+  const data = await res.json();
+
+  if (!res.ok) {
+    setComposerError(data.error || "Couldn't send that.");
     updateComposerState();
     return;
   }
@@ -2272,8 +3217,7 @@ async function loadApprovals() {
     renderAttention();
     updatePulse();
   } catch {
-    renderApprovalsUnavailable();
-    studioStatusEl.textContent = "Approval status unavailable";
+    // The event stream will still deliver new approvals if the first read fails.
   } finally {
     approvalsLoadInFlight = false;
     if (approvalsLoadQueued) {
@@ -2293,26 +3237,6 @@ function scheduleApprovalsRefresh() {
 
 function connectEvents() {
   const source = new EventSource("/api/events");
-  source.onopen = () => {
-    if (!eventsDisconnected) return;
-    eventsDisconnected = false;
-    hopsRemainingByChannel.clear();
-    for (const indicator of hopIndicators.values()) indicator.remove();
-    hopIndicators.clear();
-    for (const entry of streaming.values()) entry.textEl.classList.remove("streaming-cursor");
-    streaming.clear();
-    updateComposerState();
-    setComposerError("Live updates reconnected. The conversation has been refreshed.");
-    void switchChannel(activeChannel);
-    void refreshWorkViews({ silent: true });
-    void loadApprovals();
-  };
-  source.onerror = () => {
-    eventsDisconnected = true;
-    studioStatusEl.textContent = "Reconnecting live updates";
-    setComposerError("Live updates were interrupted. The dashboard is reconnecting automatically.");
-    updateComposerState();
-  };
   source.onmessage = (evt) => {
     try {
       handleEvent(JSON.parse(evt.data));
@@ -2384,16 +3308,41 @@ function handleEvent(event, when) {
     scheduleApprovalsRefresh();
     return;
   }
+  if (event.type === "worklog_updated") {
+    scheduleWorkRefresh();
+    if (activeTab === "activity") void loadWorkLogTags();
+    return;
+  }
+  if (event.type === "schedule_updated" || event.type === "schedule_run_started" || event.type === "schedule_run_finished") {
+    if (activeTab === "schedules") void loadSchedules();
+    return;
+  }
+  if (event.type === "schedule_paused") {
+    schedulesPaused = event.paused;
+    if (activeTab === "schedules") schedulesPauseCheckbox.checked = event.paused;
+    return;
+  }
+  if (event.type === "incognito_state") {
+    if (event.active) incognitoChannels.add(event.personaId);
+    else incognitoChannels.delete(event.personaId);
+    if (event.personaId === activeChannel) updateIncognitoUI();
+    return;
+  }
 
   // Team is the union view (everything, not just multi-agent chains), so any
   // channel's events are visible there — only a persona channel is exclusive
   // to its own events.
   const ch = event.channel;
+  if (event.type === "handoff_start" && ch) {
+    // A dynamic hand-off is an extra turn nobody pre-counted when the message was sent —
+    // without this, the composer could re-enable while a delegated hop is still running.
+    hopsRemainingByChannel.set(ch, (hopsRemainingByChannel.get(ch) || 0) + 1);
+  }
   const visible = activeChannel === TEAM_CHANNEL || ch === activeChannel;
   if (ch && !visible) {
     // Off-screen from here — keep busy-state bookkeeping honest, but don't render.
     if (event.type === "done" || event.type === "error") endHop(ch);
-    if (event.type !== "hop_start" && event.type !== "mention_chain") {
+    if (event.type !== "hop_start" && event.type !== "mention_chain" && event.type !== "handoff_start" && event.type !== "handoff_limit_reached") {
       unreadChannels.add(ch);
       renderChannelList();
     }
@@ -2413,11 +3362,17 @@ function handleEvent(event, when) {
     }
     if (event.type === "error") setAgentAlert(event.personaId, "help", event.message || "The agent encountered an error.");
   }
+  if (event.type === "handoff_start") setAgentStatus(event.toPersonaId, "working", "Working on a hand-off.");
 
   if (event.type === "mention_chain") {
     addChainBanner(event.chain, event.routed);
   } else if (event.type === "hop_start") {
     showHopIndicator(event.personaId);
+  } else if (event.type === "handoff_start") {
+    showHopIndicator(event.toPersonaId);
+    addHandoffBanner(event.fromPersonaId, event.toPersonaId);
+  } else if (event.type === "handoff_limit_reached") {
+    addHandoffLimitNotice(event.chain, event.blockedPersonaId);
   } else if (event.type === "text") {
     clearHopIndicator(event.personaId);
     let entry = streaming.get(event.personaId);
@@ -2464,9 +3419,11 @@ async function bootstrap() {
   renderQuickReplies();
   await switchChannel(activeChannel);
   await setActiveTab(activeTab, { refresh: false });
+  // refreshWorkViews first: the topbar pulse counts and nav badges read board/roster state and
+  // are visible on every tab. Then hydrate whichever tab was restored from localStorage.
   await refreshWorkViews({ silent: false });
   void loadApprovals();
-  if (activeTab === "home") renderHome();
+  await loadTabData(activeTab);
   connectEvents();
 }
 

@@ -8,12 +8,19 @@ import { getHistory, setHistory } from "./sessions.js";
 
 export type { ApprovalRequester };
 
+/** A persona's `delegate_to` tool call, detected mid-turn — see handoff.ts for what consumes this. */
+export interface HandoffRequest {
+  targetPersonaId: string;
+  instructions: string;
+  taskId?: string;
+}
+
 export type PersonaEvent =
   | { type: "text"; personaId: string; text: string }
   | { type: "tool_use"; personaId: string; id: string; tool: string; input: unknown; reasoning?: string }
   | { type: "tool_result"; personaId: string; id: string; result: string }
   | { type: "team_update"; personaId: string; agent: string; message: string; affects?: string[] }
-  | { type: "done"; personaId: string; subtype: string; result?: string; reasoning?: string }
+  | { type: "done"; personaId: string; subtype: string; result?: string; reasoning?: string; handoffs?: HandoffRequest[] }
   | { type: "error"; personaId: string; message: string };
 
 export interface RunPersonaTurnOptions {
@@ -21,6 +28,14 @@ export interface RunPersonaTurnOptions {
   message: string;
   onEvent: (event: PersonaEvent) => void;
   requestApproval: ApprovalRequester;
+  /** Idle/brainstorm turns only — strips Write/Edit/Bash from the tool set entirely so no real change can happen. */
+  readOnly?: boolean;
+  /**
+   * Runs this turn against an isolated history bucket (`<personaId>::incognito`) instead of the
+   * persona's normal one, so nothing said stays in their ambient memory for unrelated later
+   * work — see mcp/gui/server/incognito.ts for the transcript side of the same isolation.
+   */
+  incognito?: boolean;
 }
 
 /**
@@ -32,17 +47,19 @@ export interface RunPersonaTurnOptions {
  * terminal-prompt approvals + console output) so both drive the exact same
  * agent behavior and safety rules.
  */
-export async function runPersonaTurn({ personaId, message, onEvent, requestApproval }: RunPersonaTurnOptions): Promise<void> {
+export async function runPersonaTurn({ personaId, message, onEvent, requestApproval, readOnly, incognito }: RunPersonaTurnOptions): Promise<void> {
   const persona = getPersona(personaId);
   if (!persona) throw new Error(`Unknown persona: ${personaId}`);
+  const historyKey = incognito ? `${personaId}::incognito` : personaId;
 
   let reasoning = "";
   let assistantText = "";
   let finalSubtype = "success";
+  const handoffs: HandoffRequest[] = [];
 
   try {
     const model = resolveModel(persona);
-    const hostTools = buildHostTools({ personaId, requestApproval });
+    const hostTools = buildHostTools({ personaId, requestApproval, readOnly });
     const siteTools = await getSiteTools();
 
     const agent = new ToolLoopAgent({
@@ -52,7 +69,7 @@ export async function runPersonaTurn({ personaId, message, onEvent, requestAppro
       stopWhen: isStepCount(40),
     });
 
-    const history = getHistory(personaId);
+    const history = getHistory(historyKey);
     const messages: ModelMessage[] = [...history, { role: "user", content: message }];
 
     const result = await agent.stream({ messages });
@@ -71,6 +88,11 @@ export async function runPersonaTurn({ personaId, message, onEvent, requestAppro
           if (input?.agent && input?.message) {
             onEvent({ type: "team_update", personaId, agent: input.agent, message: input.message, affects: input.affects });
           }
+        } else if (part.toolName === "mcp__site__delegate_to") {
+          const input = part.input as { personaId?: string; instructions?: string; taskId?: string };
+          if (input?.personaId && input?.instructions) {
+            handoffs.push({ targetPersonaId: input.personaId, instructions: input.instructions, taskId: input.taskId });
+          }
         }
       } else if (part.type === "tool-result") {
         const text = typeof part.output === "string" ? part.output : JSON.stringify(part.output);
@@ -86,14 +108,21 @@ export async function runPersonaTurn({ personaId, message, onEvent, requestAppro
     }
 
     const responseMessages = await result.responseMessages;
-    setHistory(personaId, [...messages, ...responseMessages]);
+    setHistory(historyKey, [...messages, ...responseMessages]);
   } catch (error) {
     const messageText = error instanceof Error ? error.message : String(error);
     onEvent({ type: "error", personaId, message: messageText });
     finalSubtype = "error";
   }
 
-  onEvent({ type: "done", personaId, subtype: finalSubtype, result: assistantText || undefined, reasoning: reasoning || undefined });
+  onEvent({
+    type: "done",
+    personaId,
+    subtype: finalSubtype,
+    result: assistantText || undefined,
+    reasoning: reasoning || undefined,
+    handoffs: handoffs.length ? handoffs : undefined,
+  });
 
   const summary = assistantText ? assistantText.slice(0, 500) : `Session ended: ${finalSubtype}`;
   appendMemoryNote(persona.name, summary);

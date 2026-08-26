@@ -1,4 +1,5 @@
-import { runPersonaTurn as runShared, type PersonaEvent } from "../../agents/src/run.js";
+import { runPersonaChain as runChainShared, type HandoffChainEvent } from "../../agents/src/handoff.js";
+import type { PersonaEvent } from "../../agents/src/run.js";
 import { getPersona } from "../../agents/src/personas.js";
 import { requestApproval } from "./approvals.js";
 
@@ -6,11 +7,22 @@ export type { PersonaEvent };
 
 export type ChainEvent =
   | PersonaEvent
+  | HandoffChainEvent
   | { type: "mention_chain"; chain: string[]; message: string; routed?: boolean }
   | { type: "hop_start"; personaId: string; index: number; total: number };
 
-export async function runPersonaTurn(personaId: string, message: string, emit: (event: PersonaEvent) => void): Promise<void> {
-  await runShared({ personaId, message, onEvent: emit, requestApproval });
+/**
+ * The GUI's single entry point for starting a persona turn — routes through the shared
+ * delegate_to hand-off orchestrator, so a 1:1 chat, an @mention chain hop, and a
+ * schedule-triggered run all get the same automatic in-session hand-off behavior.
+ */
+export async function runPersonaTurn(
+  personaId: string,
+  message: string,
+  emit: (event: ChainEvent) => void,
+  options?: { incognito?: boolean },
+): Promise<void> {
+  await runChainShared({ personaId, message, onEvent: emit, requestApproval, incognito: options?.incognito });
 }
 
 function buildHandoffPrompt(originalMessage: string, fromPersonaId: string, fromReply: string): string {

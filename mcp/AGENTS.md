@@ -26,7 +26,8 @@ of all references to their original project before use here — see "Scope" belo
 Two ways in, same agents, same rules, same shared session/memory either way:
 
 - **Dashboard**: `pnpm mcp:start`, then open `http://127.0.0.1:4405`. Team roster,
-  shared Kanban board, completed/planned calendar, chat, approvals, and live preview.
+  shared Kanban board, completed/planned calendar, chat, approvals, a work log, schedules,
+  and live preview.
 - **CLI** (works from any terminal, and is what a non-GUI AI tool should use):
   ```bash
   pnpm agent <name> "<message>"
@@ -129,6 +130,16 @@ than polish here.
     reasoning is in `get_guardrails`'s `supersededFacts`.
 - No fabricated placeholder content passed off as real — a photo, résumé, or contact
   detail either comes from Jerry or stays a visible, honest placeholder.
+- The Dashboard's chat can go **incognito** on any 1:1 channel (never Team — there's no
+  such thing as a private group conversation). While it's on, nothing said is written
+  to the shared transcript, broadcast to other personas, or added to that persona's
+  normal working memory — it's isolated to `.remember/incognito/<personaId>.jsonl`
+  until Jerry ends it. Ending it with Ryder specifically triggers an automatic review
+  turn: he reads back what was just said and proposes possible content angles in his
+  own regular channel, never quoting personal specifics directly — same "anything
+  personal goes back to Jerry first" rule as everywhere else, just applied to his own
+  private notes instead of someone else's. No other persona sees incognito content
+  unless Jerry brings it up himself.
 
 ## Scope boundaries
 
@@ -169,6 +180,15 @@ than polish here.
   Don't post routine, self-contained work; the point is signal, not noise.
 - This is informational, not a trigger — posting an update doesn't start another
   agent's session. Jerry decides when the next agent runs.
+- The one exception is `delegate_to` (distinct from `assign_task`): it hands execution to a
+  named persona *within a session that is already running* — human-started or
+  schedule-started. When called, it continues that same running session into the named
+  persona's turn once the calling persona's own turn ends, under the same 40-step budget and
+  the same approval gate as any other turn, up to a hard cap of automatic hand-off hops per
+  session (currently 6). Past that cap the chain just stops — logged, not an error — and the
+  task sits assigned and waiting, exactly like an ordinary `assign_task` call. `delegate_to`
+  never starts a session out of nothing: called with no session already running, it behaves
+  exactly like `assign_task` (bookkeeping only).
 
 ## Shared task board
 
@@ -183,6 +203,8 @@ than polish here.
   for progress that does not change status. Done timestamps drive recent activity;
   `get_recent_activity` and `get_upcoming_work` expose the same derived views used by
   the Dashboard calendar.
+- `assign_task` on its own is still just board metadata — it never starts a session by
+  itself. Use `delegate_to` when the intent is "run their turn now, in this session."
 
 ## Change safety
 
@@ -200,8 +222,23 @@ than polish here.
   let alone committed.
 - Every job leaves an audit trail (files touched, commands run) visible in the Dashboard
   and folded into `.remember/` via `append_memory_note`.
-- No scheduled or unattended jobs that write or push without Jerry actively driving
-  the session that started them.
+- Scheduled, unattended runs are allowed now, but only inside narrow limits: a schedule
+  is something Jerry explicitly created from the Dashboard's Schedules view, it triggers
+  exactly one persona's turn at the cadence he set, and he can pause or delete it at any
+  time. A global "pause all automation" switch also stops every schedule from firing its
+  next run — checked before anything starts. It can't interrupt a run already underway;
+  that's a known limitation, not a promise, so pausing mid-run only prevents what comes
+  after it.
+- A scheduled turn runs under exactly the same rules as one Jerry starts himself: the
+  same step cap, the same risk checks on every Bash command and file write, and the same
+  approval gate. If it hits something risky it pauses and waits for Jerry from the
+  Dashboard, and auto-denies if nobody answers within the usual timeout — same as a
+  chat-triggered run. Nothing from a scheduled run is ever pushed without Jerry's explicit
+  confirmation in chat, regardless of how the session started; the push rule above is
+  absolute and this creates no exception to it.
+- Every scheduled run's outcome — success, error, or timed out waiting on an approval —
+  is recorded in the work log, so Jerry can review what happened even though he wasn't
+  watching live.
 
 ## Memory
 

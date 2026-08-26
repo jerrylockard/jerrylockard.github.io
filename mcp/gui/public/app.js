@@ -74,17 +74,21 @@ const homeGreetingEl = document.getElementById("home-greeting");
 const askBar = document.getElementById("ask-bar");
 const askInput = document.getElementById("ask-input");
 let reconcilePollTimer = null;
+let reconcileJobActive = false;
+let activeHistoryLoaded = false;
+let channelLoadGeneration = 0;
+let eventsDisconnected = false;
 
 const TEAM_CHANNEL = "team";
 const QUICK_REPLIES = ["Yes, go ahead", "Looks good", "Not yet — hold off", "What's the status?", "Can you explain more?", "No, stop."];
-const TAB_IDS = ["home", "employees", "board", "calendar", "chat", "approvals"];
+const TAB_IDS = ["employees", "board", "calendar", "chat", "approvals"];
 const PAGE_META = {
-  home: { eyebrow: "Overview", title: "Command Center" },
-  employees: { eyebrow: "Directory", title: "Employees" },
-  chat: { eyebrow: "Internal comms", title: "Messages" },
-  board: { eyebrow: "Work", title: "Tasks" },
-  calendar: { eyebrow: "Activity", title: "Activity" },
-  approvals: { eyebrow: "Approval Center", title: "Approvals" },
+  home: { eyebrow: "Overview", title: "Today" },
+  employees: { eyebrow: "Your agent team", title: "Team" },
+  chat: { eyebrow: "Agent workspace", title: "Workroom" },
+  board: { eyebrow: "Shared work", title: "Work" },
+  calendar: { eyebrow: "Shared work", title: "Activity" },
+  approvals: { eyebrow: "Needs your call", title: "Decisions" },
 };
 const STATUS_ORDER = ["backlog", "in-progress", "done"];
 const STATUS_LABELS = { backlog: "Backlog", "in-progress": "In progress", done: "Done" };
@@ -94,7 +98,10 @@ const NEXT_STATUS_LABEL = { backlog: "Start task", "in-progress": "Mark done" };
 let personas = [];
 let activeChannel = localStorage.getItem("gui-active-channel") || TEAM_CHANNEL;
 const savedTab = localStorage.getItem("gui-active-tab");
-let activeTab = TAB_IDS.includes(savedTab) ? savedTab : "home";
+const workspaceRevision = "workroom-v1";
+const isNewWorkspace = localStorage.getItem("gui-workspace-revision") !== workspaceRevision;
+let activeTab = isNewWorkspace ? "chat" : (TAB_IDS.includes(savedTab) ? savedTab : "chat");
+if (isNewWorkspace) localStorage.setItem("gui-workspace-revision", workspaceRevision);
 let roster = [];
 let boardState = { backlog: [], "in-progress": [], done: [], categories: [] };
 let approvalsList = [];
@@ -130,7 +137,7 @@ function isBusy(channel) {
 }
 
 function channelEntries() {
-  return [{ id: TEAM_CHANNEL, name: "Team", role: "Group channel", color: "var(--accent)" }, ...personas];
+  return [{ id: TEAM_CHANNEL, name: "Team", role: "Automatic routing", color: "var(--accent)" }, ...personas];
 }
 
 function statusFor(id) {
@@ -141,9 +148,15 @@ function statusLabel(status) {
   return { available: "Available", working: "Working", attention: "Needs attention", question: "Has a question", "hand-raised": "Hand raised", help: "Immediate help" }[status] || "Available";
 }
 
+function pendingDecisionCount() {
+  const agentAlertCount = [...agentAlerts.values()].filter((alert) => alert.source !== "approval").length;
+  return approvalsList.length + agentAlertCount;
+}
+
 function updateBadges() {
-  badgeApprovalsEl.hidden = approvalsList.length === 0;
-  badgeApprovalsEl.textContent = String(approvalsList.length);
+  const decisionCount = pendingDecisionCount();
+  badgeApprovalsEl.hidden = decisionCount === 0;
+  badgeApprovalsEl.textContent = String(decisionCount);
   badgeChatEl.hidden = unreadChannels.size === 0;
   badgeChatEl.textContent = String(unreadChannels.size);
 }
@@ -154,7 +167,7 @@ function updatePulse() {
   activeCountEl.textContent = String(activeCount);
   boardProgressCountEl.textContent = String(boardState["in-progress"].length);
   boardBacklogCountEl.textContent = String(boardState.backlog.length);
-  approvalCountEl.textContent = String(approvalsList.length);
+  approvalCountEl.textContent = String(pendingDecisionCount());
   const urgent = [...agentStatuses.values()].some((status) => status === "help");
   const hasQuestion = [...agentStatuses.values()].some((status) => status === "question");
   const handRaised = [...agentStatuses.values()].some((status) => status === "hand-raised");
@@ -165,6 +178,9 @@ function updatePulse() {
 
 function setAgentStatus(id, status, message = "") {
   if (!id) return;
+  const previousStatus = agentStatuses.get(id);
+  const previousMessage = agentStatusMessages.get(id);
+  if (previousStatus === status && (!message || previousMessage === message)) return;
   agentStatuses.set(id, status);
   if (message) agentStatusMessages.set(id, message);
   renderChannelList();
@@ -392,11 +408,13 @@ function initialiseNav() {
 }
 
 async function setActiveTab(tab, { refresh = true } = {}) {
-  if (!TAB_IDS.includes(tab)) tab = "home";
+  if (!TAB_IDS.includes(tab)) tab = "chat";
   activeTab = tab;
   localStorage.setItem("gui-active-tab", tab);
   for (const button of navButtons) {
-    button.setAttribute("aria-pressed", String(button.dataset.tab === tab));
+    const buttonTab = button.dataset.tab;
+    const active = buttonTab === tab || (buttonTab === "board" && tab === "calendar");
+    button.setAttribute("aria-pressed", String(active));
   }
   for (const view of views) view.hidden = view.id !== `view-${tab}`;
   const meta = PAGE_META[tab] || PAGE_META.home;
@@ -417,7 +435,7 @@ async function setActiveTab(tab, { refresh = true } = {}) {
   if (tab === "employees") await loadRoster({ silent: roster.length > 0 });
   if (tab === "board") await loadBoard({ silent: allBoardTasks().length > 0 });
   if (tab === "calendar") await loadCalendar({ silent: true });
-  if (tab === "approvals") renderApprovalsFull();
+  if (tab === "approvals") await loadApprovals();
 }
 
 // ---------- home / command center ----------
@@ -448,14 +466,13 @@ function signalCard(alert) {
 
 function renderAttention() {
   const signals = [...agentAlerts.values()].filter((alert) => alert.source !== "approval");
-  const total = approvalsList.length + signals.length;
+  const total = signals.length;
   attentionCountEl.textContent = String(total);
   attentionListEl.innerHTML = "";
   if (!total) {
-    renderRegionState(attentionListEl, "All caught up — nothing needs you right now.");
+    renderRegionState(attentionListEl, "No agent alerts right now.");
     return;
   }
-  for (const approval of approvalsList) attentionListEl.appendChild(approvalCard(approval));
   for (const alert of signals) attentionListEl.appendChild(signalCard(alert));
 }
 
@@ -676,7 +693,23 @@ employeeOverlay.addEventListener("click", (event) => {
 });
 document.addEventListener("keydown", (event) => {
   if (employeeOverlay.hidden) return;
-  if (event.key === "Escape") closeEmployeeProfile();
+  if (event.key === "Escape") {
+    closeEmployeeProfile();
+    return;
+  }
+  if (event.key !== "Tab") return;
+  const focusable = [...document.getElementById("employee-panel").querySelectorAll('button:not(:disabled), input:not(:disabled), textarea:not(:disabled), select:not(:disabled), [href]')]
+    .filter((element) => element.getClientRects().length > 0);
+  if (!focusable.length) return;
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  }
 });
 
 // ---------- task board ----------
@@ -1442,10 +1475,21 @@ previewToggle.addEventListener("click", () => {
 previewStartBtn.addEventListener("click", async () => {
   previewStartBtn.disabled = true;
   previewStartBtn.textContent = "Starting…";
-  await fetch("/api/preview/start", { method: "POST" });
-  await refreshPreviewStatus();
-  previewStartBtn.disabled = false;
-  previewStartBtn.textContent = "Start preview";
+  try {
+    const result = await requestJson("/api/preview/start", { method: "POST" });
+    if (!result?.ok) {
+      throw new Error(result?.message || "The local preview could not be started.");
+    }
+    await refreshPreviewStatus();
+  } catch (error) {
+    const message = previewOffline.querySelector("p");
+    if (message) message.textContent = error instanceof Error ? error.message : "The local preview could not be started.";
+    previewOffline.hidden = false;
+    previewFrame.hidden = true;
+  } finally {
+    previewStartBtn.disabled = false;
+    previewStartBtn.textContent = "Start preview";
+  }
 });
 
 previewRefreshBtn.addEventListener("click", () => {
@@ -1494,6 +1538,8 @@ function renderProfile(observations) {
 
 async function openProfile() {
   profileOverlay.hidden = false;
+  document.body.classList.add("modal-open");
+  requestAnimationFrame(() => profileClose.focus());
   try {
     const res = await fetch("/api/profile");
     renderProfile(await res.json());
@@ -1505,6 +1551,9 @@ async function openProfile() {
 
 function closeProfile() {
   profileOverlay.hidden = true;
+  document.body.classList.remove("modal-open");
+  profileToggle.setAttribute("aria-pressed", "false");
+  profileToggle.focus();
 }
 
 profileToggle.addEventListener("click", () => {
@@ -1514,14 +1563,33 @@ profileToggle.addEventListener("click", () => {
 });
 
 profileClose.addEventListener("click", () => {
-  profileToggle.setAttribute("aria-pressed", "false");
   closeProfile();
 });
 
 profileOverlay.addEventListener("click", (e) => {
   if (e.target === profileOverlay) {
-    profileToggle.setAttribute("aria-pressed", "false");
     closeProfile();
+  }
+});
+
+document.addEventListener("keydown", (event) => {
+  if (profileOverlay.hidden) return;
+  if (event.key === "Escape") {
+    closeProfile();
+    return;
+  }
+  if (event.key !== "Tab") return;
+  const focusable = [...profileOverlay.querySelectorAll('button:not(:disabled), input:not(:disabled), textarea:not(:disabled), select:not(:disabled), [href]')]
+    .filter((element) => element.getClientRects().length > 0);
+  if (!focusable.length) return;
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
   }
 });
 
@@ -1789,11 +1857,21 @@ function clearLog() {
 }
 
 function historyActionLabel() {
-  return activeChannel === TEAM_CHANNEL ? "team chat" : `${personaById(activeChannel)?.name ?? activeChannel} chat`;
+  return activeChannel === TEAM_CHANNEL
+    ? "all conversation history (Team and every agent)"
+    : `${personaById(activeChannel)?.name ?? activeChannel}'s conversation history`;
+}
+
+function syncHistoryActions() {
+  clearChatBtn.textContent = activeChannel === TEAM_CHANNEL ? "Clear all channels" : "Clear this conversation";
+  reconcileChatBtn.textContent = activeChannel === TEAM_CHANNEL ? "Reconcile & clear all" : "Reconcile & clear";
+  const disabled = !activeHistoryLoaded || reconcileJobActive;
+  clearChatBtn.disabled = disabled;
+  reconcileChatBtn.disabled = disabled;
 }
 
 async function clearChat() {
-  if (!window.confirm(`Clear ${historyActionLabel()} history? This cannot be undone.`)) return;
+  if (!window.confirm(`Clear ${historyActionLabel()}? This cannot be undone.`)) return;
   clearChatBtn.disabled = true;
   reconcileChatBtn.disabled = true;
   try {
@@ -1803,29 +1881,27 @@ async function clearChat() {
   } catch (err) {
     setComposerError(err instanceof Error ? err.message : "The chat history could not be cleared.");
   } finally {
-    clearChatBtn.disabled = false;
-    reconcileChatBtn.disabled = false;
+    syncHistoryActions();
   }
 }
 
 async function reconcileAndClearChat() {
-  if (!window.confirm(`Ask Archie to reconcile ${historyActionLabel()} against the current repository, then clear the history?`)) return;
+  if (!window.confirm(`Ask Archie to reconcile ${historyActionLabel()} against the current repository, then clear it?`)) return;
   clearChatBtn.disabled = true;
   reconcileChatBtn.disabled = true;
+  reconcileJobActive = true;
   studioStatusEl.textContent = "Archie is reconciling history";
   reconcileChatBtn.textContent = "Starting…";
   try {
-    const res = await fetch("/api/transcript/reconcile", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ channel: activeChannel }) });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "Archie could not reconcile this history.");
+    const data = await requestJson("/api/transcript/reconcile", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ channel: activeChannel }) });
+    if (!data?.job?.id) throw new Error("Archie did not return a reconciliation job.");
     await watchReconcile(data.job.id);
   } catch (err) {
     setComposerError(err instanceof Error ? err.message : "Archie could not reconcile this history.");
     studioStatusEl.textContent = "Reconciliation needs attention";
-    reconcileChatBtn.textContent = "Reconcile & clear";
+    reconcileJobActive = false;
+    syncHistoryActions();
   } finally {
-    clearChatBtn.disabled = false;
-    if (!reconcilePollTimer) reconcileChatBtn.disabled = false;
     updatePulse();
   }
 }
@@ -1834,22 +1910,25 @@ async function watchReconcile(jobId) {
   const started = Date.now();
   const finish = (success, message) => {
     reconcilePollTimer = null;
-    clearChatBtn.disabled = false;
-    reconcileChatBtn.disabled = false;
-    reconcileChatBtn.textContent = "Reconcile & clear";
+    reconcileJobActive = false;
+    syncHistoryActions();
     studioStatusEl.textContent = message;
     if (success) clearLog();
     else setComposerError(message);
   };
   const poll = async () => {
     try {
-      const res = await fetch(`/api/transcript/reconcile/${encodeURIComponent(jobId)}`);
-      const job = await res.json();
+      const job = await requestJson(`/api/transcript/reconcile/${encodeURIComponent(jobId)}`);
+      if (!["queued", "working", "waiting", "complete", "error"].includes(job?.state)) {
+        throw new Error("Archie returned an unknown reconciliation status.");
+      }
+      const jobMessage = typeof job.message === "string" && job.message ? job.message : `Reconciliation is ${job.state}.`;
       const elapsed = Math.max(1, Math.round((Date.now() - started) / 1000));
-      reconcileChatBtn.textContent = `${job.state === "waiting" ? "Waiting" : "Working"}… ${elapsed}s`;
-      studioStatusEl.textContent = job.message;
-      if (job.state === "complete") return finish(true, job.message);
-      if (job.state === "error") return finish(false, job.message);
+      const progressLabel = job.state === "queued" ? "Queued" : job.state === "waiting" ? "Waiting" : "Working";
+      reconcileChatBtn.textContent = `${progressLabel}… ${elapsed}s`;
+      studioStatusEl.textContent = jobMessage;
+      if (job.state === "complete") return finish(true, jobMessage);
+      if (job.state === "error") return finish(false, jobMessage);
       reconcilePollTimer = setTimeout(poll, 1000);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Could not read reconciliation status.";
@@ -1878,13 +1957,23 @@ function applyChannelAccent(id) {
 }
 
 async function switchChannel(id) {
+  const loadGeneration = ++channelLoadGeneration;
   if (id !== activeChannel) {
     activeChannel = id;
     localStorage.setItem("gui-active-channel", id);
   }
   const channelPersona = personaById(id);
-  chatChannelEyebrow.textContent = id === TEAM_CHANNEL ? "Team channel" : "Direct channel";
+  chatChannelEyebrow.textContent = id === TEAM_CHANNEL ? "Automatically routed" : "Direct conversation";
   chatChannelTitle.textContent = id === TEAM_CHANNEL ? "Team" : (channelPersona?.name || actorName(id));
+  const emptyTitle = emptyState.querySelector("strong");
+  const emptyCopy = emptyState.querySelector("p");
+  if (emptyTitle) emptyTitle.textContent = id === TEAM_CHANNEL ? "What should the team work on?" : `What do you want ${channelPersona?.name ?? "this agent"} to handle?`;
+  if (emptyCopy) emptyCopy.textContent = id === TEAM_CHANNEL
+    ? "Team will route your request to the right agent, or choose a specialist above."
+    : `${channelPersona?.name ?? "This agent"} is ready for a direct request.`;
+  activeHistoryLoaded = false;
+  syncHistoryActions();
+  clearChatBtn.closest("details")?.removeAttribute("open");
   unreadChannels.delete(id);
   streaming.clear();
   hopIndicators.clear();
@@ -1896,11 +1985,17 @@ async function switchChannel(id) {
   renderChannelList();
 
   try {
-    const res = await fetch(`/api/transcript?channel=${encodeURIComponent(id)}`);
-    const lines = await res.json();
+    const lines = await requestJson(`/api/transcript?channel=${encodeURIComponent(id)}`);
+    if (loadGeneration !== channelLoadGeneration || id !== activeChannel) return;
+    if (!Array.isArray(lines)) throw new Error("The dashboard returned invalid conversation history.");
     for (const line of lines) applyHistoryEvent(line.channel, line.event, line.ts);
-  } catch {
-    // server hiccup; channel just opens empty
+    activeHistoryLoaded = true;
+    syncHistoryActions();
+  } catch (error) {
+    if (loadGeneration !== channelLoadGeneration || id !== activeChannel) return;
+    const message = error instanceof Error ? error.message : "Conversation history could not be loaded.";
+    setComposerError(`${message} History actions are disabled until this channel loads successfully.`);
+    addMessage("error", "Dashboard", null).textContent = "Conversation history is unavailable. Refresh this channel before relying on or clearing its history.";
   }
 }
 
@@ -1925,10 +2020,27 @@ function renderQuickReplies() {
 function renderApprovalsFull() {
   approvalsFullEl.innerHTML = "";
   if (!approvalsList.length) {
-    renderRegionState(approvalsFullEl, "No approvals pending. Agents will surface anything sensitive or externally visible here before acting.");
+    renderRegionState(approvalsFullEl, "No approval requests are currently pending.");
     return;
   }
   for (const approval of approvalsList) approvalsFullEl.appendChild(approvalCard(approval));
+}
+
+function renderApprovalsUnavailable() {
+  if (approvalsList.length) renderApprovalsFull();
+  else approvalsFullEl.innerHTML = "";
+  const notice = document.createElement("div");
+  notice.className = "view-state view-state-error";
+  const message = document.createElement("p");
+  message.textContent = approvalsList.length
+    ? "Approval status could not be refreshed. Showing the last known requests."
+    : "Approval status is unavailable. Retry before assuming nothing needs approval.";
+  const retry = document.createElement("button");
+  retry.type = "button";
+  retry.textContent = "Retry";
+  retry.addEventListener("click", () => void loadApprovals());
+  notice.append(message, retry);
+  approvalsFullEl.prepend(notice);
 }
 
 function reconcileApprovalAlerts() {
@@ -1962,13 +2074,31 @@ function approvalCard(approval) {
       <button type="button" class="deny">Deny</button>
     </div>
   `;
-  card.querySelector(".approve").addEventListener("click", () => respond(approval.id, true));
-  card.querySelector(".deny").addEventListener("click", () => respond(approval.id, false));
+  const approveButton = card.querySelector(".approve");
+  const denyButton = card.querySelector(".deny");
+  const handleDecision = async (approved) => {
+    approveButton.disabled = true;
+    denyButton.disabled = true;
+    card.querySelector(".approval-card-error")?.remove();
+    try {
+      await respond(approval.id, approved);
+    } catch (error) {
+      const message = document.createElement("p");
+      message.className = "approval-card-error";
+      message.setAttribute("role", "alert");
+      message.textContent = error instanceof Error ? error.message : "That decision could not be saved.";
+      card.appendChild(message);
+      approveButton.disabled = false;
+      denyButton.disabled = false;
+    }
+  };
+  approveButton.addEventListener("click", () => void handleDecision(true));
+  denyButton.addEventListener("click", () => void handleDecision(false));
   return card;
 }
 
 async function respond(id, approve) {
-  await fetch(`/api/approvals/${id}`, {
+  await requestJson(`/api/approvals/${id}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ approve }),
@@ -1989,15 +2119,17 @@ function setComposerError(message) {
 
 function updateComposerState() {
   const busy = isBusy(activeChannel);
-  input.disabled = busy;
-  sendBtn.disabled = busy;
+  input.disabled = busy || eventsDisconnected;
+  sendBtn.disabled = busy || eventsDisconnected;
   mentionBtn.style.display = activeChannel === TEAM_CHANNEL ? "" : "none";
-  if (busy) {
+  if (eventsDisconnected) {
+    input.placeholder = "Reconnecting live updates…";
+  } else if (busy) {
     input.placeholder = "Replying…";
   } else if (activeChannel === TEAM_CHANNEL) {
-    input.placeholder = "Tag someone with @, or just ask…";
+    input.placeholder = "Describe what you want done — Team will route it…";
   } else {
-    input.placeholder = `Message ${personaById(activeChannel)?.name ?? "agent"}…`;
+    input.placeholder = `Ask ${personaById(activeChannel)?.name ?? "this agent"} to help…`;
   }
 }
 
@@ -2069,15 +2201,15 @@ composer.addEventListener("submit", async (e) => {
     input.placeholder = "Finding the right person to answer…";
   }
 
-  const res = await fetch("/api/chat", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message, channel }),
-  });
-  const data = await res.json();
-
-  if (!res.ok) {
-    setComposerError(data.error || "Couldn't send that.");
+  let data;
+  try {
+    data = await requestJson("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message, channel }),
+    });
+  } catch (error) {
+    setComposerError(error instanceof Error ? error.message : "Couldn't send that.");
     updateComposerState();
     return;
   }
@@ -2140,7 +2272,8 @@ async function loadApprovals() {
     renderAttention();
     updatePulse();
   } catch {
-    // The event stream will still deliver new approvals if the first read fails.
+    renderApprovalsUnavailable();
+    studioStatusEl.textContent = "Approval status unavailable";
   } finally {
     approvalsLoadInFlight = false;
     if (approvalsLoadQueued) {
@@ -2160,6 +2293,26 @@ function scheduleApprovalsRefresh() {
 
 function connectEvents() {
   const source = new EventSource("/api/events");
+  source.onopen = () => {
+    if (!eventsDisconnected) return;
+    eventsDisconnected = false;
+    hopsRemainingByChannel.clear();
+    for (const indicator of hopIndicators.values()) indicator.remove();
+    hopIndicators.clear();
+    for (const entry of streaming.values()) entry.textEl.classList.remove("streaming-cursor");
+    streaming.clear();
+    updateComposerState();
+    setComposerError("Live updates reconnected. The conversation has been refreshed.");
+    void switchChannel(activeChannel);
+    void refreshWorkViews({ silent: true });
+    void loadApprovals();
+  };
+  source.onerror = () => {
+    eventsDisconnected = true;
+    studioStatusEl.textContent = "Reconnecting live updates";
+    setComposerError("Live updates were interrupted. The dashboard is reconnecting automatically.");
+    updateComposerState();
+  };
   source.onmessage = (evt) => {
     try {
       handleEvent(JSON.parse(evt.data));

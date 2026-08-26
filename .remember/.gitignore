@@ -1,0 +1,24 @@
+*
+!.gitignore
+
+# Hand-authored planning docs — tracked source of truth, not runtime output.
+!RULES.md
+!GUARDRAILS.md
+!FACTS.md
+!PROFILE.md
+!MEMORY.md
+!AGENTS.md
+!PERSONAS.md
+!TOOLS.md
+!CONFIG.md
+!STRUCTURE.md
+!ROLES.md
+!SCHEDULE.md
+!CHANGELOG.md
+!README.md
+
+# Mayor's Academy material: the extracted ACADEMY_*.md notes are tracked source of
+# truth; the two source PDFs (~67MB combined, scanned/image-heavy) stay local-only.
+!academy-material/
+academy-material/*.pdf
+!academy-material/*.md

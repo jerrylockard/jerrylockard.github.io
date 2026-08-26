@@ -3,7 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Command Center — jerrylockard.me</title>
+<title>Agent Workroom — jerrylockard.me</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Public+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -12,73 +13,64 @@
 <body>
 <div class="shell">
 
-  <aside class="sidenav" id="sidenav">
-    <div class="brand">
+  <header class="app-header" id="sidenav">
+    <button class="brand brand-button" type="button" data-goto="chat" aria-label="Open the Workroom">
       <span class="brand-mark" aria-hidden="true">◆</span>
-      <div class="brand-copy">
+      <span class="brand-copy">
         <span class="brand-name">Lockard.tech</span>
-        <span class="brand-domain">jerrylockard.me</span>
-      </div>
-    </div>
+        <span class="brand-domain">Agent workspace</span>
+      </span>
+    </button>
 
-    <nav class="sidenav-nav" id="sidenav-nav" aria-label="Dashboard sections">
-      <button type="button" class="nav-btn" data-tab="home" aria-pressed="false" aria-label="Command Center" title="Command Center">
-        <svg class="nav-icon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11.5 12 4l8 7.5"/><path d="M6 10v9.5h12V10"/><path d="M10 19.5v-6h4v6"/></svg>
-        <span>Command Center</span>
-      </button>
-      <button type="button" class="nav-btn" data-tab="employees" aria-pressed="false" aria-label="Employees" title="Employees">
-        <svg class="nav-icon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8.5" cy="8" r="3"/><circle cx="16" cy="9.2" r="2.4"/><path d="M3.3 19c.5-3 2.6-4.8 5.2-4.8s4.7 1.8 5.2 4.8"/><path d="M14.5 14.6c2.1.2 3.7 1.7 4.2 4.4"/></svg>
-        <span>Employees</span>
-      </button>
-      <button type="button" class="nav-btn" data-tab="chat" aria-pressed="false" aria-label="Messages" title="Messages">
+    <nav class="topnav" id="sidenav-nav" aria-label="Primary workspace">
+      <button type="button" class="nav-btn" data-tab="chat" aria-pressed="false" aria-label="Workroom">
         <svg class="nav-icon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5h16v10.5H9l-4 3.5v-3.5H4z"/></svg>
-        <span>Messages</span>
+        <span>Workroom</span>
         <span class="nav-badge" id="badge-chat" hidden></span>
       </button>
-      <button type="button" class="nav-btn" data-tab="board" aria-pressed="false" aria-label="Tasks" title="Tasks">
+      <button type="button" class="nav-btn" data-tab="board" aria-pressed="false" aria-label="Work">
         <svg class="nav-icon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4.5" width="16" height="15" rx="1.5"/><path d="M8 4.5v15M8 9.5h8M8 14h5"/></svg>
-        <span>Tasks</span>
+        <span>Work</span>
       </button>
-      <button type="button" class="nav-btn" data-tab="calendar" aria-pressed="false" aria-label="Activity" title="Activity">
-        <svg class="nav-icon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 7.5V12l3 2"/></svg>
-        <span>Activity</span>
-      </button>
-      <button type="button" class="nav-btn" data-tab="approvals" aria-pressed="false" aria-label="Approvals" title="Approvals">
-        <svg class="nav-icon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4.2 19 7v5.3c0 4-2.9 6.9-7 8.5-4.1-1.6-7-4.5-7-8.5V7z"/><path d="M8.6 12.2l2.2 2.2 4.4-4.6"/></svg>
-        <span>Approvals</span>
-        <span class="nav-badge nav-badge-warn" id="badge-approvals" hidden></span>
+      <button type="button" class="nav-btn" data-tab="employees" aria-pressed="false" aria-label="Team">
+        <svg class="nav-icon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8.5" cy="8" r="3"/><circle cx="16" cy="9.2" r="2.4"/><path d="M3.3 19c.5-3 2.6-4.8 5.2-4.8s4.7 1.8 5.2 4.8"/><path d="M14.5 14.6c2.1.2 3.7 1.7 4.2 4.4"/></svg>
+        <span>Team</span>
       </button>
     </nav>
 
-    <div class="sidenav-foot">
-      <button id="preview-toggle" class="foot-btn" type="button" aria-pressed="false" title="Live site preview">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="13" rx="1.5"/><path d="M3.5 9.5h17"/></svg>
-        <span>Preview</span>
+    <div class="header-tools">
+      <button type="button" class="nav-btn decision-btn" data-tab="approvals" aria-pressed="false" aria-label="Decisions" title="Decisions">
+        <svg class="nav-icon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4.2 19 7v5.3c0 4-2.9 6.9-7 8.5-4.1-1.6-7-4.5-7-8.5V7z"/><path d="M8.6 12.2l2.2 2.2 4.4-4.6"/></svg>
+        <span>Decisions</span>
+        <span class="nav-badge nav-badge-warn" id="badge-approvals" hidden></span>
       </button>
-      <button id="profile-toggle" class="foot-btn" type="button" aria-pressed="false" title="What the team has learned about Jerry">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8.3" r="3.3"/><path d="M5 19c.7-3.6 3.2-5.6 7-5.6s6.3 2 7 5.6"/></svg>
-        <span>Jerry's profile</span>
+      <span class="header-divider" aria-hidden="true"></span>
+      <button id="preview-toggle" class="utility-btn" type="button" aria-pressed="false" aria-label="Open local site preview" title="Local site preview">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="13" rx="1.5"/><path d="M3.5 9.5h17"/></svg>
       </button>
-      <button id="theme-btn" class="foot-btn" type="button" aria-live="polite" title="Toggle dark mode">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4.3"/><path d="M12 3v2M12 19v2M4.6 4.6l1.4 1.4M18 18l1.4 1.4M3 12h2M19 12h2M4.6 19.4l1.4-1.4M18 6l1.4-1.4"/></svg>
-        <span id="theme-btn-label">Dark mode</span>
+      <button id="profile-toggle" class="utility-btn" type="button" aria-pressed="false" aria-label="Open Jerry's working profile" title="Jerry's working profile">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8.3" r="3.3"/><path d="M5 19c.7-3.6 3.2-5.6 7-5.6s6.3 2 7 5.6"/></svg>
+      </button>
+      <button id="theme-btn" class="utility-btn" type="button" aria-live="polite" aria-label="Toggle color theme" title="Toggle color theme">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4.3"/><path d="M12 3v2M12 19v2M4.6 4.6l1.4 1.4M18 18l1.4 1.4M3 12h2M19 12h2M4.6 19.4l1.4-1.4M18 6l1.4-1.4"/></svg>
+        <span class="sr-only" id="theme-btn-label">Dark mode</span>
       </button>
     </div>
-  </aside>
+  </header>
 
   <div class="main-col">
-    <header class="topbar">
+    <header class="topbar" aria-label="Workspace status">
       <div class="topbar-title">
-        <p class="eyebrow" id="page-eyebrow">Overview</p>
-        <h1 id="page-title">Command Center</h1>
+        <p class="eyebrow" id="page-eyebrow">Workspace</p>
+        <h1 id="page-title">Workroom</h1>
       </div>
       <div class="pulse-strip" aria-label="Organization status">
-        <div class="pulse-stat"><span class="pulse-value" id="agent-count">0</span><span class="pulse-label">team</span></div>
+        <div class="pulse-status"><span class="status-light"></span><span id="studio-status">Ready for direction</span></div>
+        <div class="pulse-stat pulse-stat-secondary"><span class="pulse-value" id="agent-count">0</span><span class="pulse-label">agents</span></div>
         <div class="pulse-stat"><span class="pulse-value" id="active-count">0</span><span class="pulse-label">working</span></div>
         <div class="pulse-stat"><span class="pulse-value" id="board-progress-count">0</span><span class="pulse-label">in progress</span></div>
-        <div class="pulse-stat"><span class="pulse-value" id="board-backlog-count">0</span><span class="pulse-label">backlog</span></div>
-        <div class="pulse-stat pulse-stat-warn"><span class="pulse-value" id="approval-count">0</span><span class="pulse-label">need you</span></div>
-        <div class="pulse-status"><span class="status-light"></span><span id="studio-status">Ready for direction</span></div>
+        <div class="pulse-stat pulse-stat-secondary"><span class="pulse-value" id="board-backlog-count">0</span><span class="pulse-label">queued</span></div>
+        <div class="pulse-stat pulse-stat-warn"><span class="pulse-value" id="approval-count">0</span><span class="pulse-label">decisions</span></div>
       </div>
     </header>
 
@@ -92,19 +84,12 @@
 
         <form class="ask-bar" id="ask-bar">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4.3-4.3"/></svg>
+          <label class="sr-only" for="ask-input">Ask the agent team</label>
           <input id="ask-input" type="text" placeholder="Ask Lockard.tech — tell the team what you want done…" autocomplete="off">
           <button type="submit">Send</button>
         </form>
 
         <div class="home-grid">
-          <section class="home-col home-col-wide">
-            <div class="home-section-head">
-              <h2>Needs your attention</h2>
-              <span class="home-section-count" id="attention-count">0</span>
-            </div>
-            <div class="attention-list" id="attention-list"></div>
-          </section>
-
           <section class="home-col">
             <div class="home-section-head"><h2>Team</h2></div>
             <div class="team-strip" id="team-strip"></div>
@@ -122,13 +107,13 @@
         </div>
       </section>
 
-      <!-- ---------- EMPLOYEES ---------- -->
+      <!-- ---------- TEAM ---------- -->
       <section class="view" id="view-employees" hidden>
         <div class="view-head">
           <div>
-            <p class="eyebrow">Directory</p>
-            <h1>Employees</h1>
-            <p class="view-sub">Who's on the team, what they own, and what they're doing right now.</p>
+            <p class="eyebrow">Your agent team</p>
+            <h1>Team</h1>
+            <p class="view-sub">Choose the right specialist, see what they own, or open a direct conversation.</p>
           </div>
         </div>
         <div class="roster-grid" id="roster-grid"></div>
@@ -138,12 +123,16 @@
       <section class="view" id="view-board" hidden>
         <div class="view-head">
           <div>
-            <p class="eyebrow">Work</p>
-            <h1>Tasks</h1>
-            <p class="view-sub">Backlog, in progress, done. Assign work or use a card's action to move it forward.</p>
+            <p class="eyebrow">Shared work</p>
+            <h1>Work</h1>
+            <p class="view-sub">See what's moving, decide what comes next, and give the team new work.</p>
           </div>
           <button type="button" class="deck-action primary" id="new-task-btn">New task</button>
         </div>
+        <nav class="section-tabs" aria-label="Work views">
+          <button type="button" class="section-tab active" aria-current="page">Tasks</button>
+          <button type="button" class="section-tab" data-goto="calendar">Activity</button>
+        </nav>
         <p class="board-notice" id="board-notice" aria-live="polite" hidden></p>
         <div class="board-filters" id="board-filters"></div>
         <div class="board-columns" id="board-columns">
@@ -166,11 +155,15 @@
       <section class="view" id="view-calendar" hidden>
         <div class="view-head">
           <div>
-            <p class="eyebrow">Activity</p>
-            <h1>Activity</h1>
-            <p class="view-sub">What shipped, what's next, and what the team's been telling each other.</p>
+            <p class="eyebrow">Shared work</p>
+            <h1>Work</h1>
+            <p class="view-sub">Review what shipped, what's planned, and the updates agents have shared.</p>
           </div>
         </div>
+        <nav class="section-tabs" aria-label="Work views">
+          <button type="button" class="section-tab" data-goto="board">Tasks</button>
+          <button type="button" class="section-tab active" aria-current="page">Activity</button>
+        </nav>
         <div class="calendar-columns">
           <section class="calendar-col" aria-labelledby="calendar-heading-activity">
             <h2 class="calendar-col-label" id="calendar-heading-activity">Recent activity</h2>
@@ -187,20 +180,38 @@
       <section class="view" id="view-approvals" hidden>
         <div class="view-head">
           <div>
-            <p class="eyebrow">Approval Center</p>
-            <h1>Approvals</h1>
-            <p class="view-sub">Nothing sensitive or externally visible ships without your OK.</p>
+            <p class="eyebrow">Needs your call</p>
+            <h1>Decisions</h1>
+            <p class="view-sub">Review actions agents have paused before they continue with sensitive or externally visible work.</p>
           </div>
         </div>
-        <div class="approvals-full" id="approvals-full"></div>
+        <div class="decisions-layout">
+          <section aria-labelledby="approval-requests-title">
+            <div class="home-section-head"><h2 id="approval-requests-title">Approval requests</h2></div>
+            <div class="approvals-full" id="approvals-full"></div>
+          </section>
+          <section aria-labelledby="agent-alerts-title">
+            <div class="home-section-head">
+              <h2 id="agent-alerts-title">Agent alerts</h2>
+              <span class="home-section-count" id="attention-count">0</span>
+            </div>
+            <div class="attention-list" id="attention-list"></div>
+          </section>
+        </div>
       </section>
 
-      <!-- ---------- CHAT / MESSAGES ---------- -->
+      <!-- ---------- WORKROOM ---------- -->
       <section class="view" id="view-chat" hidden>
         <div class="body" id="body-layout">
           <aside class="chat-sidebar" id="sidebar">
             <section class="panel" id="channel-panel">
-              <p class="eyebrow">Channels</p>
+              <div class="channel-picker-heading">
+                <div>
+                  <p class="eyebrow">Choose who to work with</p>
+                  <p class="channel-picker-copy">Start with Team for automatic routing, or pick a specialist.</p>
+                </div>
+                <button type="button" class="home-link" data-goto="employees">Meet the team →</button>
+              </div>
               <div id="channel-list" class="channel-list"></div>
             </section>
           </aside>
@@ -208,17 +219,25 @@
           <div class="chat">
             <section class="command-deck" aria-label="Channel actions">
               <div class="command-deck-heading">
-                <p class="eyebrow" id="chat-channel-eyebrow">Team channel</p>
-                <h2 id="chat-channel-title">Team</h2>
+                <p class="eyebrow" id="chat-channel-eyebrow">Automatically routed</p>
+                <h1 id="chat-channel-title">Team</h1>
               </div>
               <div class="deck-actions" aria-label="Chat history actions">
-                <button id="reconcile-chat" class="deck-action primary" type="button" title="Ask the Ops &amp; Docs Lead to reconcile this history, then clear it">Reconcile &amp; clear</button>
-                <button id="clear-chat" class="deck-action" type="button" title="Clear this channel's chat history">Clear chat</button>
+                <details class="history-menu">
+                  <summary class="deck-action">History</summary>
+                  <div class="history-menu-popover">
+                    <button id="reconcile-chat" class="history-action" type="button">Reconcile &amp; clear</button>
+                    <button id="clear-chat" class="history-action history-action-danger" type="button">Clear chat</button>
+                  </div>
+                </details>
               </div>
             </section>
             <div id="log" class="log">
               <div class="empty-state" id="empty-state">
-                <p>Pick a channel on the left, or say hello to Team.</p>
+                <div>
+                  <strong>What should the team work on?</strong>
+                  <p>Team will route your request to the right agent, or choose a specialist above.</p>
+                </div>
               </div>
             </div>
             <div class="quick-replies" id="quick-replies"></div>
@@ -228,7 +247,8 @@
               <div class="composer-inner">
                 <div class="mention-popover" id="mention-popover" hidden></div>
                 <button type="button" id="mention-btn" class="icon-btn mention-btn" aria-label="Tag a teammate" title="Tag a teammate">@</button>
-                <textarea id="input" placeholder="Tag someone with @, then say hello…" rows="1"></textarea>
+                <label class="sr-only" for="input">Message the selected agent or team</label>
+                <textarea id="input" placeholder="Describe what you want done…" rows="1"></textarea>
                 <button type="submit" id="send-btn" aria-label="Send">
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 8h11M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 </button>
@@ -236,35 +256,39 @@
             </form>
           </div>
 
-          <aside class="preview-pane" id="preview-pane" hidden>
-            <div class="preview-header" id="preview-drag-handle">
-              <p class="eyebrow" style="margin:0">Live preview</p>
-              <div class="preview-controls">
-                <button type="button" id="preview-refresh" class="icon-btn" title="Refresh">⟳</button>
-                <a href="http://localhost:4321/" target="_blank" rel="noopener" class="icon-btn" title="Open in new tab">↗</a>
-                <button type="button" id="preview-close" class="icon-btn close-btn" title="Close">✕</button>
-              </div>
-            </div>
-            <div class="preview-body">
-              <div class="preview-offline" id="preview-offline">
-                <p>Preview server isn't running.</p>
-                <button type="button" id="preview-start-btn">Start preview</button>
-              </div>
-              <iframe id="preview-frame" class="preview-frame" title="Live site preview" hidden></iframe>
-            </div>
-          </aside>
         </div>
       </section>
 
     </main>
   </div>
 
+  <aside class="preview-pane" id="preview-pane" hidden>
+    <div class="preview-header" id="preview-drag-handle">
+      <div>
+        <p class="eyebrow" style="margin:0">Local site</p>
+        <strong>Preview</strong>
+      </div>
+      <div class="preview-controls">
+        <button type="button" id="preview-refresh" class="icon-btn" title="Refresh" aria-label="Refresh preview">⟳</button>
+        <a href="http://localhost:4321/" target="_blank" rel="noopener" class="icon-btn" title="Open in new tab" aria-label="Open preview in a new tab">↗</a>
+        <button type="button" id="preview-close" class="icon-btn close-btn" title="Close" aria-label="Close preview">✕</button>
+      </div>
+    </div>
+    <div class="preview-body">
+      <div class="preview-offline" id="preview-offline">
+        <p>The local site preview is not running.</p>
+        <button type="button" id="preview-start-btn">Start preview</button>
+      </div>
+      <iframe id="preview-frame" class="preview-frame" title="Local site preview" hidden></iframe>
+    </div>
+  </aside>
+
   <!-- ---------- task detail / new task modal ---------- -->
   <div class="task-overlay" id="task-overlay" hidden>
     <div class="task-panel" id="task-panel">
       <div class="task-panel-header">
         <p class="eyebrow" style="margin:0" id="task-panel-eyebrow">Task</p>
-        <button type="button" id="task-panel-close" class="icon-btn close-btn" title="Close">✕</button>
+        <button type="button" id="task-panel-close" class="icon-btn close-btn" title="Close" aria-label="Close task panel">✕</button>
       </div>
       <div class="task-panel-body" id="task-panel-body"></div>
     </div>
@@ -272,20 +296,20 @@
 
   <!-- ---------- employee profile ---------- -->
   <div class="task-overlay" id="employee-overlay" hidden>
-    <div class="task-panel" id="employee-panel">
+    <div class="task-panel" id="employee-panel" role="dialog" aria-modal="true" aria-labelledby="employee-panel-title">
       <div class="task-panel-header">
-        <p class="eyebrow" style="margin:0">Employee profile</p>
-        <button type="button" id="employee-panel-close" class="icon-btn close-btn" title="Close">✕</button>
+        <p class="eyebrow" style="margin:0" id="employee-panel-title">Agent profile</p>
+        <button type="button" id="employee-panel-close" class="icon-btn close-btn" title="Close" aria-label="Close agent profile">✕</button>
       </div>
       <div class="task-panel-body" id="employee-panel-body"></div>
     </div>
   </div>
 
   <div class="profile-overlay" id="profile-overlay" hidden>
-    <div class="profile-panel">
+    <div class="profile-panel" role="dialog" aria-modal="true" aria-labelledby="working-profile-title">
       <div class="profile-header">
-        <p class="eyebrow" style="margin:0">What the team has learned</p>
-        <button type="button" id="profile-close" class="icon-btn close-btn" title="Close">✕</button>
+        <p class="eyebrow" style="margin:0" id="working-profile-title">What the team has learned</p>
+        <button type="button" id="profile-close" class="icon-btn close-btn" title="Close" aria-label="Close Jerry's working profile">✕</button>
       </div>
       <div class="profile-body" id="profile-body">
         <p class="profile-empty" id="profile-empty">Nothing learned yet — this fills in as the team notices real, recurring patterns.</p>

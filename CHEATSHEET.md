@@ -21,10 +21,10 @@ pnpm agent list              # see the roster
 pnpm agent <name> "<msg>"    # talk to one agent from any terminal, no Dashboard needed
 ```
 
-Dashboard sections (left sidebar): **Command Center** (home — needs-your-attention,
-team status, current work, recent activity), **Employees** (directory + full profile
-pages), **Messages** (chat, channels, @mentions), **Tasks** (Backlog/In progress/Done),
-**Activity** (completed work, planned work, team updates), and **Approvals**.
+The Dashboard opens in the **Workroom**, where Team can route a request automatically or
+you can choose a specialist. The top navigation keeps the workflow to **Workroom**,
+**Work** (Tasks + Activity), and **Team**; requests that require your approval appear as
+**Decisions**. Local preview, Jerry's working profile, and theme are utility controls.
 
 Agent turns need one env var to actually run (Dashboard and CLI both start fine without
 it — a turn just reports this clearly instead of running, and `pnpm mcp:doctor` flags it

@@ -10,7 +10,19 @@ const sessionsPath = join(rememberDir, "sessions.json");
 /** Keep conversations bounded — the model still sees plenty of context without growing forever. */
 const MAX_HISTORY_MESSAGES = 60;
 
-function readAll(): Record<string, ModelMessage[]> {
+type SessionStore = Record<string, unknown>;
+
+function isModelMessage(value: unknown): value is ModelMessage {
+  if (!value || typeof value !== "object") return false;
+
+  const message = value as { role?: unknown; content?: unknown };
+  return (
+    ["system", "user", "assistant", "tool"].includes(String(message.role)) &&
+    Object.prototype.hasOwnProperty.call(message, "content")
+  );
+}
+
+function readAll(): SessionStore {
   if (!existsSync(sessionsPath)) return {};
   try {
     return JSON.parse(readFileSync(sessionsPath, "utf-8"));
@@ -25,7 +37,9 @@ function readAll(): Record<string, ModelMessage[]> {
  * persona conversation instead of starting fresh each time.
  */
 export function getHistory(personaId: string): ModelMessage[] {
-  return readAll()[personaId] ?? [];
+  const history = readAll()[personaId];
+  if (!Array.isArray(history)) return [];
+  return history.filter(isModelMessage);
 }
 
 export function setHistory(personaId: string, history: ModelMessage[]): void {

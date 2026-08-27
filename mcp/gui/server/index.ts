@@ -1,7 +1,7 @@
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
-import { timingSafeEqual } from "node:crypto";
 import express, { type NextFunction, type Request, type Response } from "express";
+import { loadSecurityConfig, assertSafeExposure, installSecurity } from "./security.js";
 import { PERSONAS, getPersona } from "../../agents/src/personas.js";
 import { runMentionChain, runPersonaTurn, type ChainEvent } from "./run-persona.js";
 import { parseMentions } from "./mentions.js";
@@ -34,38 +34,12 @@ const publicDir = join(__dirname, "..", "public");
 
 const app = express();
 
-// Opt-in HTTP Basic Auth — inert unless DASHBOARD_PASSWORD is set, so the
-// existing localhost-only workflow is unaffected. This gates the whole app,
-// including /api/events (SSE): the browser challenges once on the initial
-// page load, then attaches the cached credential to every same-origin
-// request after that, EventSource included.
-const DASHBOARD_PASSWORD = process.env.DASHBOARD_PASSWORD;
-const DASHBOARD_USER = process.env.DASHBOARD_USER || "jerry";
-
-function safeEqual(a: string, b: string): boolean {
-  const bufA = Buffer.from(a);
-  const bufB = Buffer.from(b);
-  if (bufA.length !== bufB.length) return false;
-  return timingSafeEqual(bufA, bufB);
-}
-
-if (DASHBOARD_PASSWORD) {
-  app.use((req: Request, res: Response, next: NextFunction) => {
-    const [scheme, encoded] = (req.headers.authorization || "").split(" ");
-    if (scheme === "Basic" && encoded) {
-      const decoded = Buffer.from(encoded, "base64").toString("utf8");
-      const sep = decoded.indexOf(":");
-      const user = sep === -1 ? decoded : decoded.slice(0, sep);
-      const pass = sep === -1 ? "" : decoded.slice(sep + 1);
-      if (safeEqual(user, DASHBOARD_USER) && safeEqual(pass, DASHBOARD_PASSWORD)) {
-        next();
-        return;
-      }
-    }
-    res.setHeader("WWW-Authenticate", 'Basic realm="Lockard.tech Command Center"');
-    res.status(401).send("Authentication required.");
-  });
-}
+// Auth, rate limiting, security headers, and the access audit log all live in
+// security.ts. assertSafeExposure() is the important call: it refuses to boot if
+// this is configured to listen anywhere but loopback without a password set.
+const security = loadSecurityConfig();
+assertSafeExposure(security);
+installSecurity(app, security);
 
 app.use(express.json());
 app.use(express.static(publicDir));
@@ -477,8 +451,8 @@ app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {
   res.status(status).json({ error: status === 400 ? "Request body must be valid JSON." : "The request could not be completed safely." });
 });
 
-const PORT = Number(process.env.PORT ?? 4405);
-const HOST = process.env.HOST || "127.0.0.1";
-app.listen(PORT, HOST, () => {
-  console.log(`mcp-gui listening on http://${HOST}:${PORT}`);
+app.listen(security.port, security.host, () => {
+  console.log(`mcp-gui listening on http://${security.host}:${security.port}`);
+  if (security.publicOrigin) console.log(`  public origin  ${security.publicOrigin}`);
+  console.log(security.password ? "  auth           password + session cookie" : "  auth           none (loopback only)");
 });

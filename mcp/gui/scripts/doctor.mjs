@@ -90,6 +90,30 @@ check("AI_GATEWAY_API_KEY", () => {
   return "not set — chat/agent turns will show a clear in-app error until you add one";
 });
 
+// ---- dashboard exposure ----
+// These are informational on a laptop-only setup and load-bearing the moment the
+// dashboard is published at dashboard.jerrylockard.me. See mcp/gui/server/security.ts.
+const envText = existsSync(join(repoRoot, ".env")) ? readFileSync(join(repoRoot, ".env"), "utf-8") : "";
+const hasVar = (name) => Boolean(process.env[name]) || new RegExp(`^${name}=.+$`, "m").test(envText);
+
+check("dashboard auth configured", () => {
+  if (hasVar("DASHBOARD_PASSWORD")) return "DASHBOARD_PASSWORD set — remote access possible";
+  return "not set — loopback-only mode (the server refuses to expose itself without it)";
+});
+
+check("dashboard session secret", () => {
+  if (hasVar("DASHBOARD_SESSION_SECRET")) return "pinned — sessions survive a restart";
+  return "unset — a new one is generated per boot, so restarting signs you out";
+});
+
+check("dashboard not misconfigured for exposure", () => {
+  const exposed = (process.env.HOST && !["127.0.0.1", "::1", "localhost"].includes(process.env.HOST)) || hasVar("DASHBOARD_PUBLIC_ORIGIN");
+  if (exposed && !hasVar("DASHBOARD_PASSWORD")) {
+    throw new Error("configured to listen off-localhost with no password — the server will refuse to start");
+  }
+  return "ok";
+});
+
 console.log("\nDoctor report");
 console.log("=".repeat(44));
 let failures = 0;
@@ -103,5 +127,6 @@ if (failures === 0) {
   console.log(`All ${checks.length} checks passed. The agent system is ready to work.\n`);
 } else {
   console.log(`${failures}/${checks.length} checks failed — fix the above before starting agent work.\n`);
+  console.log("For remote access at dashboard.jerrylockard.me, run: pnpm dashboard:tunnel:doctor\n");
   process.exitCode = 1;
 }

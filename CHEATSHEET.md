@@ -120,6 +120,73 @@ project's Domains settings. Moved off GitHub Pages 2026-08-23.
 | Dashboard (Team, Board, Calendar, Chat) | `mcp/gui/` |
 | Session memory / team log / shared task board / Jerry's planning docs | `.remember/` (entirely local and gitignored — nothing under it is tracked in this repo) |
 
+## Moving memory between machines
+
+**This repository is public.** Runtime memory in `.remember/` is gitignored on
+purpose and moves by `scp`, never by git. A scan against `get_guardrails` on
+2026-08-26 found `JOURNAL.md` matching every hard-excluded category (GPA,
+student ID, SSN, home address, middle name, the marriage); `recent.md` and
+`team.jsonl` are flagged too. Committing them would publish that permanently —
+git history keeps it after a delete.
+
+What travels, and how:
+
+| What | How | Why |
+| --- | --- | --- |
+| Everything in `src/`, `mcp/`, the docs | `git clone` | Public code, already tracked |
+| `.remember/*.md`, `*.json`, `*.jsonl` | `scp` | Private memory — never commit |
+| `.env` | retype by hand | Never leaves a machine in a file transfer |
+
+Clone the code, then bring the memory across:
+
+```bash
+ssh pi@<host> 'git clone https://github.com/jerrylockard/jerrylockard.github.io.git ~/jerrylockard.github.io'
+```
+
+```bash
+scp .remember/{JOURNAL.md,archive.md,now.md,recent.md,profile.json,sessions.json,tasks.json,team.jsonl,today-*.md} pi@<host>:~/jerrylockard.github.io/.remember/
+```
+
+Then create `.env` on the Pi by hand — do not copy it:
+
+```bash
+ssh pi@<host> 'cd ~/jerrylockard.github.io && printf "AI_GATEWAY_API_KEY=\nDASHBOARD_PASSWORD=\nDASHBOARD_SESSION_SECRET=%s\n" "$(openssl rand -hex 32)" > .env && chmod 600 .env && nano .env'
+```
+
+Verify the Pi came up correctly before trusting it:
+
+```bash
+ssh pi@<host> 'cd ~/jerrylockard.github.io && pnpm install && pnpm mcp:doctor'
+```
+
+### If the Pi boots from a microSD card
+
+The agents write constantly — transcripts, sessions, memory notes, the task
+board, the access log. Sustained small writes are what kills SD cards, usually
+in months. Move the write-heavy directory to attached storage and symlink it:
+
+```bash
+ssh pi@<host> 'sudo mkdir -p /mnt/ssd/remember && sudo chown pi:pi /mnt/ssd/remember && cd ~/jerrylockard.github.io && cp -a .remember/. /mnt/ssd/remember/ && rm -rf .remember && ln -s /mnt/ssd/remember .remember'
+```
+
+Booting the whole Pi from a USB SSD is the better fix if you have the option.
+
+### Also worth knowing on a Pi
+
+- **Keep the public site on Vercel.** The Pi is the workshop; `jerrylockard.me`
+  should never depend on a box at home being awake, on the home IP, or on the
+  ISP's view of hosting.
+- **ARM64 Chromium.** The screenshot tooling in
+  `.claude/skills/run-jerrylockard-github-io/` drives headless Chromium, and
+  Playwright's ARM support needs its own setup — it will not just work.
+- **cloudflared has ARM64 builds**, so the tunnel runs on the Pi rather than a
+  laptop. That is the whole point: always-on means the dashboard is actually
+  reachable.
+- **Always-on means always exposed.** A sleeping laptop was accidental
+  security. Set `DASHBOARD_PASSWORD` before the tunnel ever starts — the server
+  refuses to boot exposed without it, and `pnpm dashboard:tunnel:doctor` will
+  tell you what is still missing.
+
 ## Settled facts (so nobody has to re-ask)
 
 - Personal site domain: `jerrylockard.me` (moved from `jerry.lockard.me` on 2026-08-21,

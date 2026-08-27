@@ -22,7 +22,8 @@
     "dashboard:tunnel:quick": "node mcp/gui/scripts/tunnel.mjs quick",
     "dashboard:tunnel:start": "node mcp/gui/scripts/tunnel.mjs start",
     "dashboard:tunnel:stop": "node mcp/gui/scripts/tunnel.mjs stop",
-    "dashboard:tunnel:status": "node mcp/gui/scripts/tunnel.mjs status"
+    "dashboard:tunnel:status": "node mcp/gui/scripts/tunnel.mjs status",
+    "prepare": "git config core.hooksPath .githooks || true"
   },
   "dependencies": {
     "@vercel/analytics": "^2.0.1",

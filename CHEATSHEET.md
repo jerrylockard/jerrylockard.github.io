@@ -140,52 +140,60 @@ What travels, and how:
 Clone the code, then bring the memory across:
 
 ```bash
-ssh pi@<host> 'git clone https://github.com/jerrylockard/jerrylockard.github.io.git ~/jerrylockard.github.io'
+ssh lockard-tech 'git clone https://github.com/jerrylockard/jerrylockard.github.io.git ~/jerrylockard.github.io'
 ```
 
 ```bash
-scp .remember/{JOURNAL.md,archive.md,now.md,recent.md,profile.json,sessions.json,tasks.json,team.jsonl,today-*.md} pi@<host>:~/jerrylockard.github.io/.remember/
+scp .remember/{JOURNAL.md,archive.md,now.md,recent.md,profile.json,sessions.json,tasks.json,team.jsonl,today-*.md} lockard-tech:~/jerrylockard.github.io/.remember/
 ```
 
 Then create `.env` on the Pi by hand — do not copy it:
 
 ```bash
-ssh pi@<host> 'cd ~/jerrylockard.github.io && printf "AI_GATEWAY_API_KEY=\nDASHBOARD_PASSWORD=\nDASHBOARD_SESSION_SECRET=%s\n" "$(openssl rand -hex 32)" > .env && chmod 600 .env && nano .env'
+ssh lockard-tech 'cd ~/jerrylockard.github.io && printf "AI_GATEWAY_API_KEY=\nDASHBOARD_PASSWORD=\nDASHBOARD_SESSION_SECRET=%s\n" "$(openssl rand -hex 32)" > .env && chmod 600 .env && nano .env'
 ```
 
 Verify the Pi came up correctly before trusting it:
 
 ```bash
-ssh pi@<host> 'cd ~/jerrylockard.github.io && pnpm install && pnpm mcp:doctor'
+ssh lockard-tech 'cd ~/jerrylockard.github.io && pnpm install && pnpm mcp:doctor'
 ```
 
-### If the Pi boots from a microSD card
+### Storage on the Pi — measured 2026-08-27
 
-The agents write constantly — transcripts, sessions, memory notes, the task
-board, the access log. Sustained small writes are what kills SD cards, usually
-in months. Move the write-heavy directory to attached storage and symlink it:
+The Pi boots from a **USB flash drive** (`/dev/sda2`, 238 GB, 223 GB free) and
+has **no SD card at all**, so the usual SD-write-death problem does not apply.
+
+A USB flash drive is still consumer NAND, though — better than SD, well short
+of an SSD. If the agents ever run heavily enough to matter, moving `.remember/`
+to an SSD is the upgrade:
 
 ```bash
-ssh pi@<host> 'sudo mkdir -p /mnt/ssd/remember && sudo chown pi:pi /mnt/ssd/remember && cd ~/jerrylockard.github.io && cp -a .remember/. /mnt/ssd/remember/ && rm -rf .remember && ln -s /mnt/ssd/remember .remember'
+ssh lockard-tech 'sudo mkdir -p /mnt/ssd/remember && sudo chown jerry:jerry /mnt/ssd/remember && cd ~/jerrylockard.github.io && cp -a .remember/. /mnt/ssd/remember/ && rm -rf .remember && ln -s /mnt/ssd/remember .remember'
 ```
 
-Booting the whole Pi from a USB SSD is the better fix if you have the option.
+### The Pi, as actually measured
 
-### Also worth knowing on a Pi
+`lockard-tech` = `192.168.1.90`, user `jerry`. `ssh lockard-tech` works from
+both WSL and Windows PowerShell.
 
-- **Keep the public site on Vercel.** The Pi is the workshop; `jerrylockard.me`
-  should never depend on a box at home being awake, on the home IP, or on the
-  ISP's view of hosting.
-- **ARM64 Chromium.** The screenshot tooling in
-  `.claude/skills/run-jerrylockard-github-io/` drives headless Chromium, and
-  Playwright's ARM support needs its own setup — it will not just work.
-- **cloudflared has ARM64 builds**, so the tunnel runs on the Pi rather than a
-  laptop. That is the whole point: always-on means the dashboard is actually
-  reachable.
-- **Always-on means always exposed.** A sleeping laptop was accidental
-  security. Set `DASHBOARD_PASSWORD` before the tunnel ever starts — the server
-  refuses to boot exposed without it, and `pnpm dashboard:tunnel:doctor` will
-  tell you what is still missing.
+- **Raspberry Pi 4 Model B, aarch64, Debian 13 (trixie), 4 CPUs, 3.7 GiB RAM.**
+  That is the 4 GB model. Enough for the MCP server, agents, dashboard and
+  tunnel — but not all of that plus an Astro build plus Chromium at once.
+- **sshd is publickey-only; password auth is disabled.** `ssh-copy-id` cannot
+  work. Install new keys over an already-working key.
+- **Nothing is installed yet** — no node, npm, pnpm, git, jq, cloudflared or
+  claude. Only curl. Setup is real work, not just a clone.
+- **aarch64 changes what transfers.** Never copy `node_modules` (233 MB of
+  x86-64 binaries) or `~/.cache/ms-playwright` (656 MB of x86 Chromium) from
+  the laptop — reinstall both natively or the first build crashes on esbuild.
+- **Keep the public site on Vercel.** The Pi is the workshop;
+  `jerrylockard.me` must never depend on a box at home being awake.
+- **cloudflared has aarch64 builds**, so the tunnel belongs here rather than on
+  the laptop. That is the whole point: always-on means actually reachable.
+- **Always-on means always exposed.** Set `DASHBOARD_PASSWORD` before the
+  tunnel ever starts; the server refuses to boot exposed without it, and
+  `pnpm dashboard:tunnel:doctor` reports what is still missing.
 
 ## Settled facts (so nobody has to re-ask)
 

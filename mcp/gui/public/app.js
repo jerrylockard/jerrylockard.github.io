@@ -2291,8 +2291,96 @@ function scheduleApprovalsRefresh() {
   }, 80);
 }
 
+/**
+ * Live-update transport.
+ *
+ * EventSource is the fast path and the only one used on localhost. But the
+ * dashboard is also reachable through a Cloudflare Tunnel, and proxies commonly
+ * buffer an open-ended response until it closes: the stream "connects", headers
+ * arrive, onopen fires — and then no event ever does. Nothing errors, so the UI
+ * would sit silently stale while agents worked, which is worse than an outage
+ * because it looks fine.
+ *
+ * So liveness is measured, not assumed. The server sends a typed heartbeat every
+ * 25s; if we hear nothing for long enough we stop trusting the stream and poll
+ * instead, and switch straight back the moment a real event lands.
+ */
+const SSE_FIRST_EVENT_MS = 8000;   // dashboard_sync is sent on connect — this is generous.
+const SSE_SILENCE_MS = 70000;      // ~3 missed heartbeats.
+const POLL_INTERVAL_MS = 5000;
+
+let eventTransport = "connecting";
+let livenessTimer = null;
+let pollTimer = null;
+
+/**
+ * Where the poll has read up to, per channel. switchChannel() is deliberately not
+ * reused here: it clears the log and rebuilds the transcript from scratch, which
+ * on a 5s timer would throw away scroll position and in-flight streaming state.
+ * Appending only what is new is both cheaper and invisible when nothing happened.
+ */
+let pollCursor = { channel: null, ts: null };
+
+async function pollTranscript() {
+  const channel = activeChannel;
+  const lines = await requestJson(`/api/transcript?channel=${encodeURIComponent(channel)}`);
+  if (!Array.isArray(lines) || !lines.length) return;
+  if (channel !== activeChannel) return; // switched mid-request
+
+  // First poll on this channel: adopt the tail rather than replaying history the
+  // page has already rendered.
+  if (pollCursor.channel !== channel) {
+    pollCursor = { channel, ts: lines[lines.length - 1].ts };
+    return;
+  }
+
+  const fresh = lines.filter((line) => line.ts > pollCursor.ts);
+  if (!fresh.length) return;
+  for (const line of fresh) applyHistoryEvent(line.channel, line.event, line.ts);
+  pollCursor = { channel, ts: fresh[fresh.length - 1].ts };
+}
+
+async function pollOnce() {
+  await Promise.allSettled([
+    refreshWorkViews({ silent: true }),
+    loadApprovals(),
+    pollTranscript(),
+  ]);
+}
+
+function startPolling(reason) {
+  if (eventTransport === "polling") return;
+  eventTransport = "polling";
+  console.warn(`[dashboard] live stream unavailable (${reason}) — falling back to polling every ${POLL_INTERVAL_MS / 1000}s`);
+  setComposerError("Live streaming is blocked on this connection. The dashboard is refreshing on a timer instead.");
+  void pollOnce();
+  clearInterval(pollTimer);
+  pollTimer = setInterval(() => void pollOnce(), POLL_INTERVAL_MS);
+}
+
+function stopPolling() {
+  clearInterval(pollTimer);
+  pollTimer = null;
+}
+
+/** Restart the silence countdown. Called on every event, heartbeat included. */
+function noteStreamAlive() {
+  clearTimeout(livenessTimer);
+  livenessTimer = setTimeout(() => startPolling("no heartbeat"), SSE_SILENCE_MS);
+  if (eventTransport === "polling") {
+    stopPolling();
+    pollCursor = { channel: null, ts: null };
+    setComposerError("");
+  }
+  eventTransport = "live";
+}
+
 function connectEvents() {
   const source = new EventSource("/api/events");
+  // Armed before onopen: a buffering proxy lets the connection open and then
+  // delivers nothing, so "opened" is not evidence of anything.
+  clearTimeout(livenessTimer);
+  livenessTimer = setTimeout(() => startPolling("no first event"), SSE_FIRST_EVENT_MS);
   source.onopen = () => {
     if (!eventsDisconnected) return;
     eventsDisconnected = false;
@@ -2314,6 +2402,7 @@ function connectEvents() {
     updateComposerState();
   };
   source.onmessage = (evt) => {
+    noteStreamAlive();
     try {
       handleEvent(JSON.parse(evt.data));
     } catch {
@@ -2329,6 +2418,7 @@ function endHop(channel) {
 }
 
 function handleEvent(event, when) {
+  if (event.type === "heartbeat") return; // liveness only — noteStreamAlive already ran
   if (event.type === "dashboard_sync") {
     scheduleWorkRefresh();
     scheduleTaskPanelRefresh();

@@ -49,6 +49,7 @@ type StreamEvent =
   | { type: "approval_requested"; approval: PendingApproval }
   | { type: "approval_resolved"; id: string; approved: boolean; timedOut: boolean }
   | { type: "dashboard_sync" }
+  | { type: "heartbeat" }
   | { type: "board_updated"; reason: "sync" }
   | { type: "calendar_updated" };
 
@@ -95,14 +96,38 @@ onApprovalResolved((id, approved, timedOut) => {
   broadcast({ type: "approval_resolved", id, approved, timedOut });
 });
 
+/**
+ * A real event rather than an SSE comment. A comment would keep the socket warm,
+ * but comments do not fire `onmessage`, so the client could not tell a healthy
+ * idle stream apart from one a proxy is silently swallowing. Sending a typed
+ * heartbeat gives the browser something observable to time out against.
+ */
+const SSE_KEEPALIVE_MS = 25_000;
+
 app.get("/api/events", (req: Request, res: Response) => {
   res.setHeader("Content-Type", "text/event-stream");
-  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Cache-Control", "no-cache, no-transform");
   res.setHeader("Connection", "keep-alive");
+  // Proxies buffer a response until they consider it worth forwarding. This
+  // stream sends ~30 bytes and then waits for an agent to say something, so
+  // through Cloudflare it arrived as nothing at all and the dashboard looked
+  // frozen. X-Accel-Buffering opts out where it is honoured; the padding
+  // comment below pushes past the byte threshold where it is not.
+  res.setHeader("X-Accel-Buffering", "no");
   res.flushHeaders();
+  res.write(`:${" ".repeat(2048)}\n\n`);
+
   clients.add(res);
   res.write(`data: ${JSON.stringify({ type: "dashboard_sync" })}\n\n`);
-  req.on("close", () => clients.delete(res));
+
+  const keepalive = setInterval(
+    () => res.write(`data: ${JSON.stringify({ type: "heartbeat" })}\n\n`),
+    SSE_KEEPALIVE_MS,
+  );
+  req.on("close", () => {
+    clearInterval(keepalive);
+    clients.delete(res);
+  });
 });
 
 app.get("/api/personas", (_req: Request, res: Response) => {

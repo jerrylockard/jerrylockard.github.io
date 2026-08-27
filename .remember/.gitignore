@@ -1,3 +1,28 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# THIS REPOSITORY IS PUBLIC. Everything committed here is world-readable and
+# permanent — git history keeps it even after a later delete.
+#
+# The blanket `*` below is the safety mechanism, not an inconvenience. Runtime
+# memory is allowed OUT of git on purpose:
+#
+#   JOURNAL.md      Ryder's private biographical journal. A scan against
+#                   get_guardrails on 2026-08-26 matched every hard-excluded
+#                   category — GPA, student ID, SSN, home address, middle name,
+#                   and the marriage. This file must never be committed.
+#   recent.md       flagged: GPA
+#   team.jsonl      flagged: GPA, marriage
+#   sessions.json   full model conversation history — unbounded, unreviewed
+#   gui-transcript  full dashboard chat log — same
+#   profile.json    a behavioural profile of Jerry; this repo is read by people
+#                   hiring him, and an AI's read on how he thinks isn't for them
+#
+# To move this state to another machine (the Pi), use scp — NOT git.
+# See CHEATSHEET.md "Moving memory between machines".
+#
+# If you need memory under version control, put it in a SEPARATE PRIVATE repo.
+# Do not relax the rules below to get it into this one.
+# ─────────────────────────────────────────────────────────────────────────────
+
 *
 !.gitignore
 

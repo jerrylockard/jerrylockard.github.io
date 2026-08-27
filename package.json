@@ -16,7 +16,13 @@
     "mcp:logs": "pnpm --filter mcp-gui logs",
     "agent": "pnpm --filter mcp-agents run agent",
     "gateway-check": "pnpm --filter mcp-agents run gateway-check",
-    "mcp:doctor": "node mcp/gui/scripts/doctor.mjs"
+    "mcp:doctor": "node mcp/gui/scripts/doctor.mjs",
+    "dashboard:tunnel": "node mcp/gui/scripts/tunnel.mjs",
+    "dashboard:tunnel:doctor": "node mcp/gui/scripts/tunnel.mjs doctor",
+    "dashboard:tunnel:quick": "node mcp/gui/scripts/tunnel.mjs quick",
+    "dashboard:tunnel:start": "node mcp/gui/scripts/tunnel.mjs start",
+    "dashboard:tunnel:stop": "node mcp/gui/scripts/tunnel.mjs stop",
+    "dashboard:tunnel:status": "node mcp/gui/scripts/tunnel.mjs status"
   },
   "dependencies": {
     "@vercel/analytics": "^2.0.1",

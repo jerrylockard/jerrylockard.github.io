@@ -1,0 +1,31 @@
+# Line endings, settled once.
+#
+# This repo drifted into mixed endings: twelve tracked text files were CRLF and
+# the rest LF, with no rule saying which was right. That turned any tool doing a
+# read-modify-write into a hazard — a four-line edit to mcp/AGENTS.md landed as a
+# 474-line diff purely because the write normalised its endings, which buries the
+# real change in review and in `git log -p` permanently. It happened four times.
+#
+# LF everywhere in the repository. This is a Linux-hosted Node/Astro project built
+# on a Pi and deployed by Vercel; nothing here needs CRLF, and the CRLF files were
+# an accident of which editor touched them, not a decision.
+#
+# Applied to the existing history with:  git add --renormalize .
+* text=auto eol=lf
+
+# Binary: never touch, never diff as text.
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.pdf  binary
+*.woff binary
+*.woff2 binary
+
+# Generated. Diffing it is noise, and it is rebuilt by `pnpm --filter mcp-gui build:css`.
+mcp/gui/public/app.css linguist-generated=true
+mcp/gui/styles/icons.css linguist-generated=true
+
+# Lockfile: keep it out of diffs and merge conflicts you would hand-resolve.
+pnpm-lock.yaml -diff linguist-generated=true

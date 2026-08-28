@@ -30,22 +30,25 @@
     </div>
 
     <nav class="ml-2 flex items-center gap-0.5 rounded-xl bg-sunken p-0.5" aria-label="Primary">
-      <button class="nav-btn" type="button" data-view="workroom" aria-current="page">
-        <span class="icon icon-sm i-terminal" aria-hidden="true"></span><span>Workroom</span>
-      </button>
+      <!-- Workroom, Team and Decisions are one group: all three are about the
+           agents themselves — talking to them, seeing who they are, answering
+           what they have stopped to ask. Board and Calendar are about the work,
+           and stay top level. -->
+      <div class="relative">
+        <button class="nav-btn" type="button" id="group-btn" aria-expanded="false" aria-haspopup="menu">
+          <span class="icon icon-sm i-terminal" aria-hidden="true" id="group-icon"></span>
+          <span id="group-label">Workroom</span>
+          <span class="chip chip-warn px-1.5 py-0" id="badge-decisions" hidden>0</span>
+          <span class="icon icon-sm i-chevron-down opacity-60" aria-hidden="true"></span>
+        </button>
+        <div id="group-menu" class="absolute left-0 top-full z-40 mt-1 w-64 overflow-hidden rounded-xl border border-line bg-surface shadow-lg" role="menu" hidden></div>
+      </div>
       <button class="nav-btn" type="button" data-view="board">
         <span class="icon icon-sm i-kanban" aria-hidden="true"></span><span>Board</span>
         <span class="chip chip-brand px-1.5 py-0" id="badge-board" hidden>0</span>
       </button>
       <button class="nav-btn" type="button" data-view="calendar">
         <span class="icon icon-sm i-calendar-days" aria-hidden="true"></span><span>Calendar</span>
-      </button>
-      <button class="nav-btn" type="button" data-view="team">
-        <span class="icon icon-sm i-users" aria-hidden="true"></span><span>Team</span>
-      </button>
-      <button class="nav-btn" type="button" data-view="decisions">
-        <span class="icon icon-sm i-shield-check" aria-hidden="true"></span><span>Decisions</span>
-        <span class="chip chip-warn px-1.5 py-0" id="badge-decisions" hidden>0</span>
       </button>
     </nav>
 
@@ -341,13 +344,60 @@
 </div>
 
 <div id="profile-overlay" class="overlay" hidden>
-  <div class="card flex max-h-[80vh] w-full max-w-lg flex-col p-5" role="dialog" aria-modal="true" aria-labelledby="profile-title">
-    <div class="flex items-center justify-between">
-      <h2 class="font-serif text-base font-semibold" id="profile-title">Working profile</h2>
-      <button class="icon-btn" type="button" data-close-overlay="profile-overlay" aria-label="Close"><span class="icon icon-sm i-x" aria-hidden="true"></span></button>
+  <div class="card flex max-h-[86vh] w-full max-w-2xl flex-col overflow-hidden p-0" role="dialog" aria-modal="true" aria-labelledby="profile-title">
+    <div class="flex items-center gap-2 border-b border-line px-5 py-3">
+      <span class="avatar h-8 w-8 text-[11px] font-bold" style="background:#1D6F68" aria-hidden="true">JL</span>
+      <div>
+        <h2 class="font-serif text-base font-semibold" id="profile-title">Your profile</h2>
+        <p class="text-[11px] text-ink-3">Read by every agent at the start of a session. Never leaves this machine.</p>
+      </div>
+      <button class="icon-btn ml-auto" type="button" data-close-overlay="profile-overlay" aria-label="Close">
+        <span class="icon icon-sm i-x" aria-hidden="true"></span>
+      </button>
     </div>
-    <p class="mt-1 text-[12px] text-ink-3">What the agents have picked up about how you work. Stays on this machine.</p>
-    <div id="profile-body" class="mt-4 min-h-0 flex-1 space-y-3 overflow-y-auto text-[13px]"></div>
+
+    <div class="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+      <section>
+        <div class="flex items-baseline gap-2">
+          <h3 class="label">Facts about you</h3>
+          <p class="text-[11px] text-ink-3">Reused verbatim in forms and drafts, so nobody re-asks or guesses.</p>
+        </div>
+        <div id="profile-fields" class="mt-3 space-y-4"></div>
+
+        <details class="mt-4 rounded-xl border border-line-soft bg-raised p-3" id="add-field-details">
+          <summary class="cursor-pointer select-none text-[13px] font-medium">Add a fact</summary>
+          <form id="field-form" class="mt-3 space-y-2.5">
+            <div class="grid grid-cols-2 gap-2.5">
+              <div>
+                <label class="label mb-1" for="field-label">Name</label>
+                <input id="field-label" class="field" required maxlength="80" placeholder="Short bio">
+              </div>
+              <div>
+                <label class="label mb-1" for="field-category">Section</label>
+                <select id="field-category" class="field"></select>
+              </div>
+            </div>
+            <div>
+              <label class="label mb-1" for="field-value">Value</label>
+              <textarea id="field-value" class="field resize-none" rows="3" required
+                placeholder="Written so it can be pasted straight into a form."></textarea>
+            </div>
+            <p id="field-error" class="text-[12px] text-err" hidden></p>
+            <div class="flex justify-end">
+              <button class="btn btn-primary" type="submit">Save fact</button>
+            </div>
+          </form>
+        </details>
+      </section>
+
+      <section class="mt-6 border-t border-line-soft pt-4">
+        <div class="flex items-baseline gap-2">
+          <h3 class="label">What the team has worked out</h3>
+          <p class="text-[11px] text-ink-3">Patterns, not facts. Strike anything they got wrong.</p>
+        </div>
+        <div id="profile-observations" class="mt-3 space-y-2"></div>
+      </section>
+    </div>
   </div>
 </div>
 

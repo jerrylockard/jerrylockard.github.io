@@ -1,0 +1,62 @@
+;; ---------------------------------------------------------------------------
+;; jerrylockard.me — DNS zone for Cloudflare
+;;
+;; Import: Cloudflare dashboard -> jerrylockard.me -> DNS -> Records ->
+;;         "Import and Export" -> Import DNS records -> upload this file.
+;;
+;; AFTER IMPORTING, DO TWO THINGS:
+;;
+;;   1. Set the apex A record and the www CNAME to DNS only (grey cloud), not
+;;      proxied (orange cloud). Vercel has to complete its own TLS challenge on
+;;      these names, and Cloudflare's proxy intercepts it. You can turn the
+;;      proxy back on later once the certificate is issued, but only with
+;;      SSL/TLS mode set to Full (strict) — "Flexible" forces plain HTTP to
+;;      Vercel and produces an endless redirect loop.
+;;
+;;   2. Check the A record value below against Vercel: project -> Settings ->
+;;      Domains -> the jerrylockard.me card. 76.76.21.21 is Vercel's
+;;      general-purpose apex address, but newer projects are issued a different
+;;      one from their anycast pool (216.198.79.1 is another). If the card shows
+;;      something else, the card wins — edit the record after import.
+;;
+;; Deliberately NOT in this file:
+;;
+;;   MX      Nothing receives mail at @jerrylockard.me. Published contact is
+;;           jerry@lockard.tech, a separate domain. Adding an MX record with no
+;;           mailbox behind it makes mail bounce in a more confusing way than
+;;           having none. Add one only when a real mail provider exists.
+;;
+;;   CAA     No CAA record is intentional. An absent CAA means any CA may
+;;           issue, which is what both Vercel (Let's Encrypt) and Cloudflare
+;;           (Google Trust Services) need. A restrictive CAA is a common cause
+;;           of stuck certificates.
+;;
+;; Last reviewed: 2026-08-28
+;; ---------------------------------------------------------------------------
+
+$TTL 300
+
+;; --- the site, on Vercel -------------------------------------------------
+;; Apex must be an A record: a CNAME cannot coexist with other records at the
+;; zone root. Cloudflare would flatten one, but the import file has to be valid.
+jerrylockard.me.	300	IN	A	76.76.21.21
+
+;; www points at the apex rather than a Vercel hostname, so there is only one
+;; Vercel-specific value in this file to keep correct. Add www.jerrylockard.me
+;; as a domain in the Vercel project too, or Vercel answers that Host with a
+;; 404 — then let Vercel redirect www to the apex.
+www.jerrylockard.me.	300	IN	CNAME	jerrylockard.me.
+
+;; --- mail: this domain sends and receives nothing ------------------------
+;; SPF with -all and no senders: any message claiming to be from
+;; @jerrylockard.me fails authentication outright.
+jerrylockard.me.	300	IN	TXT	"v=spf1 -all"
+
+;; DKIM wildcard with an empty key: no selector can ever validate a signature.
+*._domainkey.jerrylockard.me.	300	IN	TXT	"v=DKIM1; p="
+
+;; DMARC set to reject, applied to subdomains as well. No rua= on purpose:
+;; sending reports to an address at another domain (lockard.tech) needs an
+;; authorisation record published over there first, and a broken rua is worse
+;; than none.
+_dmarc.jerrylockard.me.	300	IN	TXT	"v=DMARC1; p=reject; sp=reject; adkim=s; aspf=s"

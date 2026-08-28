@@ -35,7 +35,7 @@ const ICONS = [
   "square-check", "book-open", "megaphone", "radar",
   // actions + state
   "plus", "x", "check", "circle-check", "triangle-alert", "activity",
-  "arrow-right", "more-horizontal", "trash-2", "refresh-cw",
+  "arrow-right", "chevron-down", "more-horizontal", "trash-2", "refresh-cw",
   "send-horizontal", "clock", "sliders-horizontal", "bot",
 ];
 

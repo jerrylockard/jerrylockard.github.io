@@ -215,15 +215,65 @@ function initTheme() {
 
 // ---------------------------------------------------------------- views
 
+/**
+ * The three agent-facing views share one nav slot. The button shows whichever of
+ * them is current rather than a fixed group name, so the header still answers
+ * "where am I" at a glance — a dropdown labelled only "Workroom" while you are
+ * looking at Decisions reads as a bug.
+ */
+const GROUPED = [
+  { view: "workroom", label: "Workroom", icon: "terminal", blurb: "Talk to the team" },
+  { view: "team", label: "Team", icon: "users", blurb: "Who they are and what they own" },
+  { view: "decisions", label: "Decisions", icon: "shield-check", blurb: "Requests waiting on you" },
+];
+
+function renderGroupMenu() {
+  const menu = $("group-menu");
+  clear(menu);
+  menu.append(
+    ...GROUPED.map((item) =>
+      el("button", {
+        type: "button",
+        role: "menuitem",
+        class: `flex w-full items-center gap-2.5 px-3 py-2 text-left hover:bg-sunken ${state.view === item.view ? "bg-brand-soft" : ""}`.trim(),
+        onclick: () => { closeGroupMenu(); showView(item.view); },
+      }, [
+        icon(item.icon, "icon-sm text-ink-3"),
+        el("span", { class: "min-w-0 flex-1" }, [
+          el("span", { class: "block text-[13px] font-medium", text: item.label }),
+          el("span", { class: "block text-[11px] text-ink-3", text: item.blurb }),
+        ]),
+        item.view === "decisions" && state.approvals.length
+          ? el("span", { class: "chip chip-warn px-1.5 py-0", text: String(state.approvals.length) })
+          : state.view === item.view ? icon("check", "icon-sm text-brand") : null,
+      ]),
+    ),
+  );
+}
+
+function closeGroupMenu() {
+  $("group-menu").hidden = true;
+  $("group-btn").setAttribute("aria-expanded", "false");
+}
+
 function showView(name) {
   state.view = name;
   for (const section of document.querySelectorAll("main > section")) {
     section.hidden = section.id !== `view-${name}`;
   }
-  for (const btn of document.querySelectorAll(".nav-btn")) {
+
+  const grouped = GROUPED.find((g) => g.view === name);
+  const groupBtn = $("group-btn");
+  setText($("group-label"), (grouped || GROUPED[0]).label);
+  $("group-icon").className = `icon icon-sm i-${(grouped || GROUPED[0]).icon}`;
+  if (grouped) groupBtn.setAttribute("aria-current", "page");
+  else groupBtn.removeAttribute("aria-current");
+
+  for (const btn of document.querySelectorAll(".nav-btn[data-view]")) {
     if (btn.dataset.view === name) btn.setAttribute("aria-current", "page");
     else btn.removeAttribute("aria-current");
   }
+
   if (name === "board") loadBoard();
   if (name === "calendar") loadCalendar();
   if (name === "team") renderTeamGrid();
@@ -894,6 +944,8 @@ function renderApprovals() {
   badge.hidden = state.approvals.length === 0;
   setText(badge, String(state.approvals.length));
 
+  if (!$("group-menu").hidden) renderGroupMenu();
+
   if (!state.approvals.length) {
     host.append(el("p", { class: "text-[13px] text-ink-3", text: "Nothing waiting." }));
     return;
@@ -944,32 +996,203 @@ function renderAlerts() {
 
 // ---------------------------------------------------------------- overlays
 
+const FIELD_SECTIONS = {
+  identity: "Identity",
+  contact: "Contact",
+  civic: "Civic",
+  background: "Background",
+  positions: "Positions",
+  logistics: "Logistics",
+  assets: "Assets",
+};
+
+let profileCategories = Object.keys(FIELD_SECTIONS);
+
 async function openProfile() {
   $("profile-overlay").hidden = false;
-  const body = $("profile-body");
-  clear(body);
-  body.append(el("p", { class: "text-ink-3", text: "Loading…" }));
+  await loadProfile();
+}
+
+async function loadProfile() {
+  const fieldHost = $("profile-fields");
+  const obsHost = $("profile-observations");
+  clear(fieldHost);
+  fieldHost.append(el("p", { class: "text-[13px] text-ink-3", text: "Loading…" }));
   try {
-    const profile = await api("/api/profile");
-    clear(body);
-    const entries = Object.entries(profile || {}).filter(([, v]) => v != null && (!Array.isArray(v) || v.length));
-    if (!entries.length) {
-      body.append(el("p", { class: "text-ink-3", text: "Nothing recorded yet. The agents add to this as you work." }));
-      return;
-    }
-    for (const [key, value] of entries) {
-      body.append(
-        el("div", {}, [
-          el("p", { class: "label mb-1", text: key.replace(/([A-Z])/g, " $1").trim() }),
-          Array.isArray(value)
-            ? el("ul", { class: "list-disc space-y-1 pl-5" }, value.map((v) => el("li", { text: typeof v === "string" ? v : JSON.stringify(v) })))
-            : el("p", { class: "text-ink-2", text: typeof value === "string" ? value : JSON.stringify(value, null, 2) }),
-        ]),
-      );
-    }
+    const doc = await api("/api/profile");
+    profileCategories = doc.categories?.length ? doc.categories : profileCategories;
+    renderProfileFields(doc.fields || []);
+    renderObservations(doc.observations || []);
+    populateFieldCategories();
   } catch (err) {
-    clear(body);
-    body.append(el("p", { class: "text-err", text: err.message }));
+    clear(fieldHost);
+    fieldHost.append(el("p", { class: "text-[13px] text-err", text: err.message }));
+    clear(obsHost);
+  }
+}
+
+function populateFieldCategories() {
+  const select = $("field-category");
+  if (select.options.length) return;
+  select.append(...profileCategories.map((c) => el("option", { value: c, text: FIELD_SECTIONS[c] || c })));
+}
+
+function renderProfileFields(fields) {
+  const host = $("profile-fields");
+  clear(host);
+  if (!fields.length) {
+    host.append(el("p", { class: "text-[13px] text-ink-3", text: "Nothing yet. Add a fact below, or just tell an agent in chat and it will save one." }));
+    return;
+  }
+  const grouped = new Map();
+  for (const f of fields) {
+    if (!grouped.has(f.category)) grouped.set(f.category, []);
+    grouped.get(f.category).push(f);
+  }
+  for (const [category, items] of grouped) {
+    host.append(
+      el("div", {}, [
+        el("p", { class: "mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-brand-ink", text: FIELD_SECTIONS[category] || category }),
+        el("div", { class: "space-y-1.5" }, items.map(fieldRow)),
+      ]),
+    );
+  }
+}
+
+function fieldRow(field) {
+  const value = el("p", { class: "whitespace-pre-wrap text-[13px]", text: field.value });
+  return el("div", { class: "rounded-lg border border-line-soft bg-surface p-2.5" }, [
+    el("div", { class: "flex items-start gap-2" }, [
+      el("div", { class: "min-w-0 flex-1" }, [
+        el("p", { class: "text-[11px] font-medium text-ink-3", text: field.label }),
+        value,
+      ]),
+      el("button", {
+        type: "button",
+        class: "icon-btn h-6 w-6",
+        "aria-label": `Edit ${field.label}`,
+        title: "Edit",
+        onclick: () => editField(field, value),
+      }, [icon("square-pen", "icon-sm")]),
+      el("button", {
+        type: "button",
+        class: "icon-btn h-6 w-6",
+        "aria-label": `Remove ${field.label}`,
+        title: "Remove",
+        onclick: () => removeField(field),
+      }, [icon("trash-2", "icon-sm")]),
+    ]),
+    el("p", { class: "mt-1.5 font-mono text-[10px] text-ink-3", text: `${field.source === "jerry" ? "you" : field.source} · ${relative(field.updatedAt)}` }),
+  ]);
+}
+
+/** Inline edit. Saving reuses the same key, so the field is updated not duplicated. */
+function editField(field, valueNode) {
+  const input = el("textarea", { class: "field resize-none text-[13px]", rows: "3" });
+  input.value = field.value;
+  const error = el("p", { class: "mt-1 text-[12px] text-err", hidden: true });
+  const save = async () => {
+    try {
+      await api("/api/profile/fields", {
+        method: "POST",
+        body: JSON.stringify({ key: field.key, label: field.label, value: input.value, category: field.category }),
+      });
+      await loadProfile();
+      toast("Saved");
+    } catch (err) {
+      setText(error, profileError(err));
+      error.hidden = false;
+    }
+  };
+  const editor = el("div", {}, [
+    input,
+    error,
+    el("div", { class: "mt-1.5 flex gap-1.5" }, [
+      el("button", { type: "button", class: "btn btn-primary py-1 text-[12px]", text: "Save", onclick: save }),
+      el("button", { type: "button", class: "btn btn-quiet py-1 text-[12px]", text: "Cancel", onclick: () => editor.replaceWith(valueNode) }),
+    ]),
+  ]);
+  valueNode.replaceWith(editor);
+  input.focus();
+}
+
+async function removeField(field) {
+  try {
+    await api(`/api/profile/fields/${encodeURIComponent(field.key)}`, { method: "DELETE" });
+    await loadProfile();
+    toast(`Removed “${field.label}”`);
+  } catch (err) {
+    toast(err.message, "err");
+  }
+}
+
+function renderObservations(observations) {
+  const host = $("profile-observations");
+  clear(host);
+  if (!observations.length) {
+    host.append(el("p", { class: "text-[13px] text-ink-3", text: "Nothing worked out yet. These build up as you work with the team." }));
+    return;
+  }
+  host.append(...observations.map((o) =>
+    el("div", { class: "rounded-lg border border-line-soft p-2.5" }, [
+      el("div", { class: "flex items-start gap-2" }, [
+        el("div", { class: "min-w-0 flex-1" }, [
+          el("p", { class: "text-[13px]", text: o.text }),
+          o.evidence ? el("p", { class: "mt-1 border-l-2 border-line pl-2 text-[12px] italic text-ink-3", text: o.evidence }) : null,
+        ]),
+        el("button", {
+          type: "button",
+          class: "icon-btn h-6 w-6",
+          "aria-label": "Strike this observation",
+          title: "That's not right — forget it",
+          onclick: async () => {
+            try {
+              await api(`/api/profile/observations/${encodeURIComponent(o.id)}`, { method: "DELETE" });
+              await loadProfile();
+              toast("Struck from the profile");
+            } catch (err) { toast(err.message, "err"); }
+          },
+        }, [icon("x", "icon-sm")]),
+      ]),
+      el("div", { class: "mt-1.5 flex flex-wrap items-center gap-1.5" }, [
+        el("span", { class: "chip", text: o.category.replace(/-/g, " ") }),
+        // Confirmation count is the honest confidence signal: a pattern seen once
+        // is a guess, one seen repeatedly by several agents is established.
+        el("span", { class: `chip ${o.timesConfirmed >= 3 ? "chip-ok" : ""}`.trim(), text: `seen ${o.timesConfirmed}×` }),
+        el("span", { class: "font-mono text-[10px] text-ink-3", text: `${o.notedBy.join(", ")} · ${relative(o.lastConfirmed)}` }),
+      ]),
+    ]),
+  ));
+}
+
+/** A guardrail refusal comes back as 422 with the categories that matched. */
+function profileError(err) {
+  if (err.status === 422 && err.data?.violations?.length) {
+    return `Not saved — that looks like ${err.data.violations.map((v) => v.label).join(" and ")}, which is on the excluded list.`;
+  }
+  return err.message;
+}
+
+async function submitField(ev) {
+  ev.preventDefault();
+  const label = $("field-label").value.trim();
+  const body = {
+    key: label,          // the server slugifies this; editing reuses the slug
+    label,
+    value: $("field-value").value.trim(),
+    category: $("field-category").value,
+  };
+  try {
+    await api("/api/profile/fields", { method: "POST", body: JSON.stringify(body) });
+    $("field-form").reset();
+    $("add-field-details").open = false;
+    $("field-error").hidden = true;
+    await loadProfile();
+    toast("Fact saved");
+  } catch (err) {
+    const box = $("field-error");
+    setText(box, profileError(err));
+    box.hidden = false;
   }
 }
 
@@ -1146,6 +1369,7 @@ function wireEvents() {
   }
   document.addEventListener("keydown", (ev) => {
     if (ev.key !== "Escape") return;
+    closeGroupMenu();
     for (const overlay of document.querySelectorAll(".overlay")) overlay.hidden = true;
   });
 
@@ -1156,6 +1380,18 @@ function wireEvents() {
   $("calendar-days").addEventListener("change", loadCalendar);
 
   $("profile-toggle").addEventListener("click", openProfile);
+  $("field-form").addEventListener("submit", submitField);
+
+  $("group-btn").addEventListener("click", () => {
+    const menu = $("group-menu");
+    const open = menu.hidden;
+    if (open) renderGroupMenu();
+    menu.hidden = !open;
+    $("group-btn").setAttribute("aria-expanded", String(open));
+  });
+  document.addEventListener("click", (ev) => {
+    if (!$("group-menu").hidden && !ev.target.closest("#group-menu, #group-btn")) closeGroupMenu();
+  });
   $("preview-toggle").addEventListener("click", openPreview);
   $("preview-start").addEventListener("click", async () => {
     $("preview-start").disabled = true;

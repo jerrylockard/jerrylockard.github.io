@@ -1,0 +1,1286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lockard.tech — Agent Workspace</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Google Fonts: Inter & Newsreader / Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            serif: ['Newsreader', 'serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#f0f9f8',
+              100: '#d7f0ed',
+              200: '#b1e1dc',
+              500: '#1d6f68',
+              600: '#155752',
+              700: '#114642',
+              800: '#0e3835',
+              900: '#0b2e2b',
+            },
+            warm: {
+              50: '#FAF9F6',
+              100: '#F4F2EB',
+              200: '#E9E6DB',
+              300: '#D6D1C2',
+              800: '#2C2B28',
+              900: '#1C1B19',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom subtle scrollbars */
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(150, 150, 150, 0.25);
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(150, 150, 150, 0.4);
+    }
+    .badge-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+    }
+    .pulse-glow {
+      box-shadow: 0 0 0 0 rgba(29, 111, 104, 0.5);
+      animation: pulseAnim 2s infinite cubic-bezier(0.66, 0, 0, 1);
+    }
+    @keyframes pulseAnim {
+      to {
+        box-shadow: 0 0 0 8px rgba(29, 111, 104, 0);
+      }
+    }
+  </style>
+</head>
+<body class="bg-warm-50 text-slate-800 antialiased font-sans h-screen flex flex-col overflow-hidden selection:bg-brand-500 selection:text-white">
+
+  <header class="h-14 border-b border-warm-200/90 bg-white/95 backdrop-blur px-4 flex items-center justify-between shrink-0 z-30">
+    <!-- Brand / Workspace Switcher -->
+    <div class="flex items-center space-x-3">
+      <div class="w-8 h-8 rounded-lg bg-brand-700 flex items-center justify-center text-white font-serif font-bold text-lg shadow-sm">
+        ◆
+      </div>
+      <div>
+        <div class="flex items-center space-x-1.5">
+          <span class="font-semibold tracking-tight text-slate-900 text-sm">Lockard.tech</span>
+          <span class="px-1.5 py-0.5 text-[10px] font-mono uppercase tracking-wider bg-brand-50 text-brand-700 border border-brand-200/60 rounded">Agentic</span>
+        </div>
+        <div class="text-[11px] text-slate-400 font-mono leading-none">Covington Core • Workspace v2.4</div>
+      </div>
+    </div>
+
+    <!-- Center Navigation Tabs -->
+    <nav class="hidden md:flex items-center space-x-1 bg-warm-100 p-1 rounded-xl border border-warm-200/70 text-xs font-medium text-slate-600">
+      <button onclick="switchView('workroom')" id="nav-workroom" class="nav-tab px-3.5 py-1.5 rounded-lg transition-all flex items-center space-x-2 bg-white text-slate-900 shadow-sm">
+        <i data-lucide="bot" class="w-3.5 h-3.5 text-brand-600"></i>
+        <span>Workroom & Terminal</span>
+      </button>
+      <button onclick="switchView('board')" id="nav-board" class="nav-tab px-3.5 py-1.5 rounded-lg transition-all flex items-center space-x-2 hover:text-slate-900">
+        <i data-lucide="kanban" class="w-3.5 h-3.5"></i>
+        <span>Work Board</span>
+        <span class="bg-warm-200 text-slate-700 text-[10px] px-1.5 py-0.2 rounded-full font-mono font-medium">7</span>
+      </button>
+      <button onclick="switchView('team')" id="nav-team" class="nav-tab px-3.5 py-1.5 rounded-lg transition-all flex items-center space-x-2 hover:text-slate-900">
+        <i data-lucide="users" class="w-3.5 h-3.5"></i>
+        <span>Team Roster</span>
+      </button>
+    </nav>
+
+    <!-- Right Global Actions & Status -->
+    <div class="flex items-center space-x-3">
+      <!-- Quick Status -->
+      <div class="hidden lg:flex items-center space-x-2 text-xs bg-emerald-50 border border-emerald-200 text-emerald-800 px-2.5 py-1 rounded-full font-medium">
+        <span class="badge-dot bg-emerald-500 animate-pulse"></span>
+        <span>8 Agents Operational</span>
+      </div>
+
+      <!-- Decisions Pill (from original) -->
+      <button onclick="switchView('decisions')" id="btn-decisions" class="relative flex items-center space-x-1.5 text-xs font-medium px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300/80 rounded-lg transition">
+        <i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-amber-700"></i>
+        <span>Decisions</span>
+        <span class="w-4 h-4 text-[10px] font-bold bg-amber-600 text-white rounded-full flex items-center justify-center font-mono">2</span>
+      </button>
+
+      <!-- User Profile / Settings -->
+      <div class="flex items-center space-x-2 pl-2 border-l border-warm-200">
+        <button class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:bg-warm-100 transition" title="Toggle Layout Panel" onclick="toggleContextDrawer()">
+          <i data-lucide="sidebar" class="w-4 h-4"></i>
+        </button>
+        <div class="w-8 h-8 rounded-full bg-slate-900 text-white flex items-center justify-center text-xs font-semibold cursor-pointer ring-2 ring-warm-200">
+          JL
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="flex-1 flex overflow-hidden relative">
+
+    <aside id="agent-sidebar" class="w-72 bg-white border-r border-warm-200 flex flex-col shrink-0 transition-all duration-300 z-20">
+      
+      <!-- Search & Auto Route -->
+      <div class="p-3 border-b border-warm-100 space-y-2">
+        <div class="relative">
+          <i data-lucide="search" class="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400"></i>
+          <input type="text" id="agent-search" placeholder="Search specialists or skill..." 
+                 oninput="filterAgents(this.value)"
+                 class="w-full bg-warm-50 border border-warm-200 text-xs rounded-lg pl-8 pr-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:bg-white text-slate-800 placeholder-slate-400">
+        </div>
+        
+        <!-- Team Auto-Router Tile -->
+        <button onclick="selectAgent('team-router')" id="agent-btn-team-router" class="agent-nav-item w-full flex items-center justify-between p-2 rounded-xl border border-transparent hover:bg-warm-50 transition group text-left">
+          <div class="flex items-center space-x-2.5">
+            <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-brand-700 to-brand-500 text-white flex items-center justify-center shrink-0 shadow-sm">
+              <i data-lucide="sparkles" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <div class="text-xs font-semibold text-slate-900 group-hover:text-brand-700 flex items-center space-x-1.5">
+                <span>Autonomous Team</span>
+              </div>
+              <div class="text-[11px] text-slate-500 font-mono">Dynamic AI orchestrator</div>
+            </div>
+          </div>
+          <span class="text-[10px] px-1.5 py-0.5 rounded bg-brand-50 text-brand-700 font-mono border border-brand-200/50">AUTO</span>
+        </button>
+      </div>
+
+      <!-- Agents Grouped List -->
+      <div class="flex-1 overflow-y-auto px-2 py-3 space-y-4" id="agent-roster-list">
+        
+        <!-- Leadership & Ops -->
+        <div>
+          <div class="px-2 text-[10px] font-mono uppercase tracking-wider text-slate-400 font-semibold mb-1.5">Leadership & Ops</div>
+          <div class="space-y-0.5">
+            <!-- Shepard -->
+            <button onclick="selectAgent('shepard')" id="agent-btn-shepard" class="agent-nav-item w-full flex items-center justify-between px-2.5 py-2 rounded-xl hover:bg-warm-100 transition text-left">
+              <div class="flex items-center space-x-2.5">
+                <div class="w-7 h-7 rounded-lg bg-slate-800 text-white flex items-center justify-center shrink-0 text-xs">
+                  <i data-lucide="compass" class="w-3.5 h-3.5"></i>
+                </div>
+                <div>
+                  <div class="text-xs font-medium text-slate-900 flex items-center space-x-1.5">
+                    <span>Shepard</span>
+                    <span class="badge-dot bg-emerald-500"></span>
+                  </div>
+                  <div class="text-[11px] text-slate-500">Chief of Staff</div>
+                </div>
+              </div>
+              <span class="text-[10px] font-mono text-slate-400">1 task</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Engineering & Product -->
+        <div>
+          <div class="px-2 text-[10px] font-mono uppercase tracking-wider text-slate-400 font-semibold mb-1.5">Product & Engineering</div>
+          <div class="space-y-0.5">
+            <!-- Devon (Active) -->
+            <button onclick="selectAgent('devon')" id="agent-btn-devon" class="agent-nav-item active w-full flex items-center justify-between px-2.5 py-2 rounded-xl bg-brand-50 border border-brand-200/80 text-left transition shadow-xs">
+              <div class="flex items-center space-x-2.5">
+                <div class="w-7 h-7 rounded-lg bg-amber-700 text-white flex items-center justify-center shrink-0 text-xs font-mono">
+                  <i data-lucide="wrench" class="w-3.5 h-3.5"></i>
+                </div>
+                <div>
+                  <div class="text-xs font-semibold text-brand-900 flex items-center space-x-1.5">
+                    <span>Devon</span>
+                    <span class="badge-dot bg-emerald-500"></span>
+                  </div>
+                  <div class="text-[11px] text-brand-700 font-medium">DevOps Engineer</div>
+                </div>
+              </div>
+              <span class="text-[10px] font-mono bg-amber-100/80 text-amber-800 px-1.5 py-0.5 rounded font-medium">Working</span>
+            </button>
+
+            <!-- Desiree -->
+            <button onclick="selectAgent('desiree')" id="agent-btn-desiree" class="agent-nav-item w-full flex items-center justify-between px-2.5 py-2 rounded-xl hover:bg-warm-100 transition text-left">
+              <div class="flex items-center space-x-2.5">
+                <div class="w-7 h-7 rounded-lg bg-cyan-800 text-white flex items-center justify-center shrink-0 text-xs">
+                  <i data-lucide="layout-grid" class="w-3.5 h-3.5"></i>
+                </div>
+                <div>
+                  <div class="text-xs font-medium text-slate-900 flex items-center space-x-1.5">
+                    <span>Desiree</span>
+                    <span class="badge-dot bg-emerald-500"></span>
+                  </div>
+                  <div class="text-[11px] text-slate-500">Design Lead</div>
+                </div>
+              </div>
+              <span class="text-[10px] font-mono text-slate-400">Idle</span>
+            </button>
+
+            <!-- Casey -->
+            <button onclick="selectAgent('casey')" id="agent-btn-casey" class="agent-nav-item w-full flex items-center justify-between px-2.5 py-2 rounded-xl hover:bg-warm-100 transition text-left">
+              <div class="flex items-center space-x-2.5">
+                <div class="w-7 h-7 rounded-lg bg-indigo-800 text-white flex items-center justify-center shrink-0 text-xs">
+                  <i data-lucide="check-square" class="w-3.5 h-3.5"></i>
+                </div>
+                <div>
+                  <div class="text-xs font-medium text-slate-900 flex items-center space-x-1.5">
+                    <span>Casey</span>
+                    <span class="badge-dot bg-emerald-500"></span>
+                  </div>
+                  <div class="text-[11px] text-slate-500">QA & Accessibility Lead</div>
+                </div>
+              </div>
+              <span class="text-[10px] font-mono text-slate-400">2 tasks</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Content & Comms -->
+        <div>
+          <div class="px-2 text-[10px] font-mono uppercase tracking-wider text-slate-400 font-semibold mb-1.5">Content & Community</div>
+          <div class="space-y-0.5">
+            <!-- Paige -->
+            <button onclick="selectAgent('paige')" id="agent-btn-paige" class="agent-nav-item w-full flex items-center justify-between px-2.5 py-2 rounded-xl hover:bg-warm-100 transition text-left">
+              <div class="flex items-center space-x-2.5">
+                <div class="w-7 h-7 rounded-lg bg-rose-800 text-white flex items-center justify-center shrink-0 text-xs">
+                  <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                </div>
+                <div>
+                  <div class="text-xs font-medium text-slate-900 flex items-center space-x-1.5">
+                    <span>Paige</span>
+                    <span class="badge-dot bg-emerald-500"></span>
+                  </div>
+                  <div class="text-[11px] text-slate-500">Content Editor</div>
+                </div>
+              </div>
+              <span class="text-[10px] font-mono text-slate-400">Idle</span>
+            </button>
+
+            <!-- Archie -->
+            <button onclick="selectAgent('archie')" id="agent-btn-archie" class="agent-nav-item w-full flex items-center justify-between px-2.5 py-2 rounded-xl hover:bg-warm-100 transition text-left">
+              <div class="flex items-center space-x-2.5">
+                <div class="w-7 h-7 rounded-lg bg-amber-800 text-white flex items-center justify-center shrink-0 text-xs">
+                  <i data-lucide="book-open" class="w-3.5 h-3.5"></i>
+                </div>
+                <div>
+                  <div class="text-xs font-medium text-slate-900 flex items-center space-x-1.5">
+                    <span>Archie</span>
+                    <span class="badge-dot bg-emerald-500"></span>
+                  </div>
+                  <div class="text-[11px] text-slate-500">Docs & Continuity</div>
+                </div>
+              </div>
+              <span class="text-[10px] font-mono text-slate-400">Syncing</span>
+            </button>
+
+            <!-- Ryder -->
+            <button onclick="selectAgent('ryder')" id="agent-btn-ryder" class="agent-nav-item w-full flex items-center justify-between px-2.5 py-2 rounded-xl hover:bg-warm-100 transition text-left">
+              <div class="flex items-center space-x-2.5">
+                <div class="w-7 h-7 rounded-lg bg-pink-900 text-white flex items-center justify-center shrink-0 text-xs">
+                  <i data-lucide="megaphone" class="w-3.5 h-3.5"></i>
+                </div>
+                <div>
+                  <div class="text-xs font-medium text-slate-900 flex items-center space-x-1.5">
+                    <span>Ryder</span>
+                    <span class="badge-dot bg-emerald-500"></span>
+                  </div>
+                  <div class="text-[11px] text-slate-500">Communications Director</div>
+                </div>
+              </div>
+              <span class="text-[10px] font-mono text-slate-400">Idle</span>
+            </button>
+
+            <!-- Scout -->
+            <button onclick="selectAgent('scout')" id="agent-btn-scout" class="agent-nav-item w-full flex items-center justify-between px-2.5 py-2 rounded-xl hover:bg-warm-100 transition text-left">
+              <div class="flex items-center space-x-2.5">
+                <div class="w-7 h-7 rounded-lg bg-emerald-800 text-white flex items-center justify-center shrink-0 text-xs">
+                  <i data-lucide="radar" class="w-3.5 h-3.5"></i>
+                </div>
+                <div>
+                  <div class="text-xs font-medium text-slate-900 flex items-center space-x-1.5">
+                    <span>Scout</span>
+                    <span class="badge-dot bg-emerald-500"></span>
+                  </div>
+                  <div class="text-[11px] text-slate-500">Civic Events Monitor</div>
+                </div>
+              </div>
+              <span class="text-[10px] font-mono text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">Live</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Quick Session Indicator Bottom -->
+      <div class="p-3 border-t border-warm-200/80 bg-warm-50/50 flex items-center justify-between text-xs text-slate-500">
+        <div class="flex items-center space-x-2">
+          <div class="w-2 h-2 rounded-full bg-brand-500"></div>
+          <span class="font-mono text-[11px]">Direct Link Active</span>
+        </div>
+        <button class="text-slate-400 hover:text-slate-700" title="Roster Settings">
+          <i data-lucide="sliders-horizontal" class="w-3.5 h-3.5"></i>
+        </button>
+      </div>
+    </aside>
+
+    <main class="flex-1 flex flex-col overflow-hidden bg-white">
+      
+      <!-- VIEW 1: WORKROOM (Chat / Direct Terminal) -->
+      <div id="view-workroom" class="flex-1 flex flex-col h-full overflow-hidden">
+        
+        <!-- Header for Active Agent Session -->
+        <div class="px-6 py-3 border-b border-warm-200/80 flex items-center justify-between bg-warm-50/40">
+          <div class="flex items-center space-x-3">
+            <div id="active-agent-avatar" class="w-9 h-9 rounded-xl bg-amber-700 text-white flex items-center justify-center font-bold text-sm shadow-xs">
+              <i data-lucide="wrench" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <div class="flex items-center space-x-2">
+                <h1 id="active-agent-name" class="font-serif text-lg font-semibold text-slate-900">Devon</h1>
+                <span id="active-agent-badge" class="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-medium rounded-full flex items-center space-x-1">
+                  <span class="badge-dot bg-emerald-600"></span>
+                  <span>Available for execution</span>
+                </span>
+              </div>
+              <p id="active-agent-role" class="text-xs text-slate-500 font-mono">Infrastructure & Release Specialist • Owns CI/CD & DNS automation</p>
+            </div>
+          </div>
+
+          <div class="flex items-center space-x-2">
+            <button onclick="clearChat()" class="px-2.5 py-1.5 text-xs text-slate-500 hover:text-slate-800 hover:bg-warm-100 rounded-lg transition flex items-center space-x-1">
+              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+              <span>Clear History</span>
+            </button>
+            <button onclick="openNewTaskModal()" class="px-3 py-1.5 bg-brand-700 hover:bg-brand-800 text-white text-xs font-medium rounded-lg transition flex items-center space-x-1.5 shadow-sm">
+              <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+              <span>Create Task for Devon</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Chat / Terminal Feed Container -->
+        <div id="chat-stream" class="flex-1 overflow-y-auto p-6 space-y-5 bg-gradient-to-b from-warm-50/20 to-white">
+          
+          <!-- System Initializer Card -->
+          <div class="max-w-3xl mx-auto border border-warm-200 rounded-2xl p-5 bg-warm-50/60 shadow-xs">
+            <div class="flex items-start space-x-3">
+              <div class="w-8 h-8 rounded-lg bg-brand-100 text-brand-800 flex items-center justify-center shrink-0">
+                <i data-lucide="terminal" class="w-4 h-4"></i>
+              </div>
+              <div class="space-y-1">
+                <h3 class="text-sm font-semibold text-slate-900" id="welcome-title">Ready for instructions: Devon</h3>
+                <p class="text-xs text-slate-600 leading-relaxed" id="welcome-desc">
+                  Devon has read-access to the repository, DNS manager, and Terraform staging environments. Choose an action prompt below or describe what needs fixing.
+                </p>
+                <div class="pt-2 flex flex-wrap gap-1.5" id="agent-quick-prompts">
+                  <button onclick="sendQuickPrompt('Check current staging deployment health')" class="text-xs px-2.5 py-1 bg-white border border-warm-300/80 rounded-lg text-slate-700 hover:border-brand-500 hover:text-brand-700 transition">
+                    ⚡ Check staging health
+                  </button>
+                  <button onclick="sendQuickPrompt('Review pending SSL certificate renewal')" class="text-xs px-2.5 py-1 bg-white border border-warm-300/80 rounded-lg text-slate-700 hover:border-brand-500 hover:text-brand-700 transition">
+                    🔒 Verify SSL & DNS status
+                  </button>
+                  <button onclick="sendQuickPrompt('Sync environment variables with production')" class="text-xs px-2.5 py-1 bg-white border border-warm-300/80 rounded-lg text-slate-700 hover:border-brand-500 hover:text-brand-700 transition">
+                    ⚙️ Audit env variables
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sample conversation thread -->
+          <div class="max-w-3xl mx-auto space-y-4" id="messages-container">
+            
+            <!-- User Prompt -->
+            <div class="flex items-start justify-end space-x-3">
+              <div class="bg-slate-900 text-white rounded-2xl rounded-tr-sm px-4 py-2.5 text-xs max-w-md shadow-xs">
+                <p>Can you verify the status of our deployment pipeline and make sure the new edge caching headers are active?</p>
+                <span class="text-[10px] text-slate-400 mt-1 block font-mono">11:42 AM</span>
+              </div>
+              <div class="w-7 h-7 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center text-xs font-semibold shrink-0">
+                JL
+              </div>
+            </div>
+
+            <!-- Agent Response with rich terminal artifact -->
+            <div class="flex items-start space-x-3">
+              <div class="w-7 h-7 rounded-lg bg-amber-700 text-white flex items-center justify-center shrink-0 text-xs">
+                <i data-lucide="wrench" class="w-3.5 h-3.5"></i>
+              </div>
+              <div class="bg-white border border-warm-200 rounded-2xl rounded-tl-sm p-4 text-xs text-slate-800 max-w-xl shadow-xs space-y-3">
+                <div class="flex items-center justify-between pb-2 border-b border-warm-100">
+                  <div class="font-semibold text-slate-900 flex items-center space-x-1.5">
+                    <span>Devon</span>
+                    <span class="text-[10px] font-mono text-slate-400">DevOps Specialist</span>
+                  </div>
+                  <span class="text-[10px] font-mono text-slate-400">Just now</span>
+                </div>
+
+                <p>I inspected the Cloudflare Workers edge configuration and CI build run <span class="font-mono text-brand-700 font-semibold">#1402</span>. The caching rules are validated with an edge TTL of 86400s.</p>
+
+                <!-- Code block / Diff preview -->
+                <div class="bg-slate-950 text-slate-100 rounded-xl p-3 font-mono text-[11px] overflow-x-auto border border-slate-800">
+                  <div class="flex items-center justify-between text-slate-400 text-[10px] pb-2 mb-2 border-b border-slate-800">
+                    <span>cloudflare.config.ts</span>
+                    <span class="text-emerald-400">● 200 OK</span>
+                  </div>
+                  <pre class="leading-relaxed"><code>headers: {
+  'Cache-Control': 'public, max-age=3600, s-maxage=86400, stale-while-revalidate=60',
+  'X-Edge-Origin': 'covington-us-east',
+  'Strict-Transport-Security': 'max-age=31536000; includeSubDomains'
+}</code></pre>
+                </div>
+
+                <!-- Action Button in Chat -->
+                <div class="bg-amber-50/80 border border-amber-200/80 rounded-xl p-2.5 flex items-center justify-between">
+                  <div class="flex items-center space-x-2">
+                    <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-600 shrink-0"></i>
+                    <span class="text-[11px] text-amber-900 font-medium">Staging deployment needs your formal sign-off.</span>
+                  </div>
+                  <button onclick="switchView('decisions')" class="text-xs bg-amber-700 text-white px-2.5 py-1 rounded-lg font-medium hover:bg-amber-800 transition">Review Decision</button>
+                </div>
+
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="p-4 border-t border-warm-200/80 bg-white">
+          <div class="max-w-3xl mx-auto space-y-2">
+            
+            <!-- Quick Suggestion Chips (from original UI) -->
+            <div class="flex items-center space-x-1.5 overflow-x-auto pb-1 text-xs">
+              <span class="text-slate-400 text-[11px] font-mono mr-1 shrink-0">Quick reply:</span>
+              <button onclick="quickInput('Yes, go ahead and push.')" class="px-2.5 py-1 bg-warm-100 hover:bg-warm-200 text-slate-700 rounded-full shrink-0 transition text-[11px]">
+                Yes, go ahead
+              </button>
+              <button onclick="quickInput('Looks good to me.')" class="px-2.5 py-1 bg-warm-100 hover:bg-warm-200 text-slate-700 rounded-full shrink-0 transition text-[11px]">
+                Looks good
+              </button>
+              <button onclick="quickInput('Not yet — hold off until tonight.')" class="px-2.5 py-1 bg-warm-100 hover:bg-warm-200 text-slate-700 rounded-full shrink-0 transition text-[11px]">
+                Not yet — hold off
+              </button>
+              <button onclick="quickInput('Can you explain the rollback plan?')" class="px-2.5 py-1 bg-warm-100 hover:bg-warm-200 text-slate-700 rounded-full shrink-0 transition text-[11px]">
+                Explain rollback plan?
+              </button>
+            </div>
+
+            <!-- Input Form Box -->
+            <form onsubmit="handleSendMessage(event)" class="relative flex items-center">
+              <input type="text" id="chat-input" placeholder="Ask Devon to help or run an automation command..." 
+                     class="w-full bg-warm-50 border border-warm-300/80 rounded-2xl pl-4 pr-24 py-3 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white text-slate-800 placeholder-slate-400 shadow-inner">
+              
+              <div class="absolute right-2 flex items-center space-x-1">
+                <button type="button" class="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg" title="Attach file or log">
+                  <i data-lucide="paperclip" class="w-4 h-4"></i>
+                </button>
+                <button type="submit" class="w-8 h-8 rounded-xl bg-brand-700 hover:bg-brand-800 text-white flex items-center justify-center transition shadow-sm">
+                  <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                </button>
+              </div>
+            </form>
+
+            <div class="flex items-center justify-between text-[11px] text-slate-400 px-1">
+              <span>Press <kbd class="px-1 py-0.5 bg-warm-200 text-slate-700 rounded text-[10px] font-mono">Return ↵</kbd> to submit</span>
+              <span>Direct encrypted WebSocket to Agent Kernel</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div id="view-board" class="hidden flex-1 flex flex-col h-full overflow-hidden">
+        <!-- Board Top Header -->
+        <div class="px-6 py-4 border-b border-warm-200 flex items-center justify-between bg-warm-50/30">
+          <div>
+            <div class="flex items-center space-x-2">
+              <h1 class="font-serif text-2xl font-bold text-slate-900 tracking-tight">Team Work Stream</h1>
+              <span class="px-2 py-0.5 bg-brand-50 text-brand-700 text-xs font-medium rounded-full border border-brand-200">7 Active Work Items</span>
+            </div>
+            <p class="text-xs text-slate-500">Autonomous execution board and human-in-the-loop task assignments.</p>
+          </div>
+          
+          <div class="flex items-center space-x-2">
+            <!-- Filter Pills -->
+            <div class="hidden sm:flex items-center space-x-1 bg-warm-100 p-0.5 rounded-lg text-xs">
+              <button class="px-2.5 py-1 rounded-md bg-white font-medium shadow-xs text-slate-800">All Work</button>
+              <button class="px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900">Infra</button>
+              <button class="px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900">Design</button>
+              <button class="px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900">Docs</button>
+            </div>
+            <button onclick="openNewTaskModal()" class="px-3.5 py-1.5 bg-brand-700 text-white rounded-lg text-xs font-semibold hover:bg-brand-800 transition flex items-center space-x-1.5">
+              <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+              <span>New Task</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 3-Column Kanban Board -->
+        <div class="flex-1 overflow-x-auto p-6 bg-warm-50/40">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-5 max-w-7xl mx-auto h-full items-start">
+            
+            <!-- Column 1: Backlog -->
+            <div class="bg-warm-100/70 border border-warm-200/90 rounded-2xl p-4 flex flex-col max-h-full">
+              <div class="flex items-center justify-between mb-3 pb-2 border-b border-warm-200">
+                <div class="flex items-center space-x-2">
+                  <span class="w-2.5 h-2.5 rounded-full bg-slate-400"></span>
+                  <h3 class="text-xs font-mono uppercase font-bold text-slate-700 tracking-wider">Backlog</h3>
+                  <span class="text-xs font-mono bg-warm-200 px-1.5 py-0.2 rounded text-slate-600 font-bold">2</span>
+                </div>
+                <button class="text-slate-400 hover:text-slate-700"><i data-lucide="more-horizontal" class="w-3.5 h-3.5"></i></button>
+              </div>
+
+              <div class="space-y-3 overflow-y-auto pr-1">
+                <!-- Task Card 1 -->
+                <div class="bg-white border border-warm-200/80 rounded-xl p-3.5 shadow-xs hover:border-brand-500/50 transition group cursor-pointer">
+                  <div class="flex items-center justify-between text-[11px] mb-2">
+                    <span class="px-2 py-0.5 bg-cyan-50 text-cyan-800 font-medium rounded border border-cyan-200/60">Design</span>
+                    <span class="text-slate-400 font-mono text-[10px]">#TSK-89</span>
+                  </div>
+                  <h4 class="text-xs font-semibold text-slate-900 group-hover:text-brand-700 transition mb-1">Dark mode token harmonization</h4>
+                  <p class="text-[11px] text-slate-500 mb-3 line-clamp-2">Ensure contrast ratios in the new agent terminal pass WCAG AA standards.</p>
+                  <div class="flex items-center justify-between pt-2 border-t border-warm-100 text-[11px]">
+                    <div class="flex items-center space-x-1.5">
+                      <div class="w-5 h-5 rounded-full bg-cyan-800 text-white flex items-center justify-center text-[9px] font-bold">D</div>
+                      <span class="text-slate-600 text-[11px]">Desiree</span>
+                    </div>
+                    <span class="text-slate-400 font-mono text-[10px]">Est 2h</span>
+                  </div>
+                </div>
+
+                <!-- Task Card 2 -->
+                <div class="bg-white border border-warm-200/80 rounded-xl p-3.5 shadow-xs hover:border-brand-500/50 transition group cursor-pointer">
+                  <div class="flex items-center justify-between text-[11px] mb-2">
+                    <span class="px-2 py-0.5 bg-amber-50 text-amber-800 font-medium rounded border border-amber-200/60">Docs</span>
+                    <span class="text-slate-400 font-mono text-[10px]">#TSK-92</span>
+                  </div>
+                  <h4 class="text-xs font-semibold text-slate-900 group-hover:text-brand-700 transition mb-1">Onboarding flow continuity guide</h4>
+                  <p class="text-[11px] text-slate-500 mb-3 line-clamp-2">Document the new single-click workspace bootstrap flow for non-technical teammates.</p>
+                  <div class="flex items-center justify-between pt-2 border-t border-warm-100 text-[11px]">
+                    <div class="flex items-center space-x-1.5">
+                      <div class="w-5 h-5 rounded-full bg-amber-800 text-white flex items-center justify-center text-[9px] font-bold">A</div>
+                      <span class="text-slate-600 text-[11px]">Archie</span>
+                    </div>
+                    <span class="text-slate-400 font-mono text-[10px]">Est 4h</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Column 2: In Progress -->
+            <div class="bg-warm-100/70 border border-warm-200/90 rounded-2xl p-4 flex flex-col max-h-full">
+              <div class="flex items-center justify-between mb-3 pb-2 border-b border-warm-200">
+                <div class="flex items-center space-x-2">
+                  <span class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></span>
+                  <h3 class="text-xs font-mono uppercase font-bold text-slate-700 tracking-wider">In Progress</h3>
+                  <span class="text-xs font-mono bg-warm-200 px-1.5 py-0.2 rounded text-slate-600 font-bold">3</span>
+                </div>
+                <button class="text-slate-400 hover:text-slate-700"><i data-lucide="more-horizontal" class="w-3.5 h-3.5"></i></button>
+              </div>
+
+              <div class="space-y-3 overflow-y-auto pr-1">
+                <!-- Task Card 3 -->
+                <div class="bg-white border-2 border-brand-500/80 rounded-xl p-3.5 shadow-sm group cursor-pointer relative">
+                  <div class="flex items-center justify-between text-[11px] mb-2">
+                    <span class="px-2 py-0.5 bg-amber-100 text-amber-900 font-medium rounded font-mono">Infra</span>
+                    <span class="text-brand-600 font-mono text-[10px] font-semibold animate-pulse">● Running</span>
+                  </div>
+                  <h4 class="text-xs font-semibold text-slate-900 mb-1">Terraform Edge Worker Deploy</h4>
+                  <p class="text-[11px] text-slate-500 mb-3">Syncing Cloudflare routing rules and edge cache layers for Covington endpoint.</p>
+                  
+                  <!-- Micro Progress Bar -->
+                  <div class="w-full bg-warm-100 h-1.5 rounded-full overflow-hidden mb-3">
+                    <div class="bg-brand-600 h-full w-3/4 rounded-full"></div>
+                  </div>
+
+                  <div class="flex items-center justify-between pt-2 border-t border-warm-100 text-[11px]">
+                    <div class="flex items-center space-x-1.5">
+                      <div class="w-5 h-5 rounded-full bg-amber-700 text-white flex items-center justify-center text-[9px] font-bold">D</div>
+                      <span class="text-slate-800 font-medium text-[11px]">Devon</span>
+                    </div>
+                    <span class="text-brand-700 font-mono text-[10px] font-bold">75%</span>
+                  </div>
+                </div>
+
+                <!-- Task Card 4 -->
+                <div class="bg-white border border-warm-200/80 rounded-xl p-3.5 shadow-xs hover:border-brand-500/50 transition group cursor-pointer">
+                  <div class="flex items-center justify-between text-[11px] mb-2">
+                    <span class="px-2 py-0.5 bg-indigo-50 text-indigo-800 font-medium rounded border border-indigo-200/60">QA</span>
+                    <span class="text-slate-400 font-mono text-[10px]">#TSK-87</span>
+                  </div>
+                  <h4 class="text-xs font-semibold text-slate-900 group-hover:text-brand-700 transition mb-1">Accessibility Screen Reader Audit</h4>
+                  <p class="text-[11px] text-slate-500 mb-3">Testing ARIA live regions in agent conversational canvas.</p>
+                  <div class="flex items-center justify-between pt-2 border-t border-warm-100 text-[11px]">
+                    <div class="flex items-center space-x-1.5">
+                      <div class="w-5 h-5 rounded-full bg-indigo-800 text-white flex items-center justify-center text-[9px] font-bold">C</div>
+                      <span class="text-slate-600 text-[11px]">Casey</span>
+                    </div>
+                    <span class="text-slate-400 font-mono text-[10px]">In review</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Column 3: Done -->
+            <div class="bg-warm-100/70 border border-warm-200/90 rounded-2xl p-4 flex flex-col max-h-full">
+              <div class="flex items-center justify-between mb-3 pb-2 border-b border-warm-200">
+                <div class="flex items-center space-x-2">
+                  <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                  <h3 class="text-xs font-mono uppercase font-bold text-slate-700 tracking-wider">Completed</h3>
+                  <span class="text-xs font-mono bg-warm-200 px-1.5 py-0.2 rounded text-slate-600 font-bold">2</span>
+                </div>
+                <button class="text-slate-400 hover:text-slate-700"><i data-lucide="more-horizontal" class="w-3.5 h-3.5"></i></button>
+              </div>
+
+              <div class="space-y-3 overflow-y-auto pr-1">
+                <!-- Task Card 5 -->
+                <div class="bg-white border border-warm-200/80 rounded-xl p-3.5 shadow-xs opacity-90">
+                  <div class="flex items-center justify-between text-[11px] mb-2">
+                    <span class="px-2 py-0.5 bg-emerald-50 text-emerald-800 font-medium rounded border border-emerald-200/60">Press</span>
+                    <span class="text-emerald-600 font-mono text-[10px]">✓ Done</span>
+                  </div>
+                  <h4 class="text-xs font-semibold text-slate-900 mb-1 line-through text-slate-500">Launch Announcement Draft v2</h4>
+                  <p class="text-[11px] text-slate-400 mb-3">Prepared executive remarks for Covington municipal event.</p>
+                  <div class="flex items-center justify-between pt-2 border-t border-warm-100 text-[11px]">
+                    <div class="flex items-center space-x-1.5">
+                      <div class="w-5 h-5 rounded-full bg-pink-900 text-white flex items-center justify-center text-[9px] font-bold">R</div>
+                      <span class="text-slate-500 text-[11px]">Ryder</span>
+                    </div>
+                    <span class="text-slate-400 font-mono text-[10px]">Today</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <div id="view-decisions" class="hidden flex-1 flex flex-col h-full overflow-hidden">
+        <div class="px-6 py-4 border-b border-warm-200 bg-amber-50/40 flex items-center justify-between">
+          <div>
+            <div class="flex items-center space-x-2">
+              <h1 class="font-serif text-2xl font-bold text-slate-900">Decisions & Human-in-the-Loop Gate</h1>
+              <span class="px-2 py-0.5 bg-amber-100 text-amber-900 font-mono text-xs font-semibold rounded-full border border-amber-300">2 Pending</span>
+            </div>
+            <p class="text-xs text-slate-600">Autonomous agents require authorization before executing critical infrastructure and external communications.</p>
+          </div>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-6 max-w-4xl mx-auto w-full space-y-4">
+          <!-- Decision Item 1 -->
+          <div class="border border-amber-200 bg-white rounded-2xl p-5 shadow-xs space-y-4">
+            <div class="flex items-start justify-between">
+              <div class="flex items-start space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-amber-700 text-white flex items-center justify-center shrink-0">
+                  <i data-lucide="wrench" class="w-5 h-5"></i>
+                </div>
+                <div>
+                  <div class="flex items-center space-x-2">
+                    <span class="font-semibold text-sm text-slate-900">Devon requested: Production DNS Failover Cutover</span>
+                    <span class="text-[10px] font-mono px-2 py-0.5 bg-red-100 text-red-800 rounded font-bold">HIGH IMPACT</span>
+                  </div>
+                  <p class="text-xs text-slate-500 mt-0.5 font-mono">Target: Cloudflare Primary CNAME • Lockard.tech/edge</p>
+                </div>
+              </div>
+              <span class="text-xs font-mono text-slate-400">Requested 12m ago</span>
+            </div>
+
+            <div class="bg-warm-50 rounded-xl p-3 text-xs text-slate-700 border border-warm-200 space-y-2">
+              <p><strong>Rationale:</strong> The primary Covington edge cluster passed health checks. Switching primary DNS will direct 100% of live traffic to v2.4.</p>
+              <div class="font-mono text-[11px] bg-white p-2.5 rounded-lg border border-warm-200 text-slate-800">
+                - CNAME origin-v1.lockard.tech (TTL 300)<br>
+                + CNAME origin-v2-covington.lockard.tech (TTL 60)
+              </div>
+            </div>
+
+            <div class="flex items-center justify-end space-x-3 pt-2">
+              <button onclick="rejectDecision(this)" class="px-4 py-2 border border-warm-300 text-xs font-medium text-slate-700 rounded-xl hover:bg-warm-100 transition">
+                Reject / Modify
+              </button>
+              <button onclick="approveDecision(this)" class="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold rounded-xl transition flex items-center space-x-1.5 shadow-sm">
+                <i data-lucide="check" class="w-4 h-4"></i>
+                <span>Approve & Authorize Devon</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Decision Item 2 -->
+          <div class="border border-warm-200 bg-white rounded-2xl p-5 shadow-xs space-y-4">
+            <div class="flex items-start justify-between">
+              <div class="flex items-start space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-pink-900 text-white flex items-center justify-center shrink-0">
+                  <i data-lucide="megaphone" class="w-5 h-5"></i>
+                </div>
+                <div>
+                  <div class="flex items-center space-x-2">
+                    <span class="font-semibold text-sm text-slate-900">Ryder requested: Dispatch Public Launch Update</span>
+                    <span class="text-[10px] font-mono px-2 py-0.5 bg-blue-100 text-blue-800 rounded font-bold">COMMUNICATIONS</span>
+                  </div>
+                  <p class="text-xs text-slate-500 mt-0.5 font-mono">Target: Covington Tech Bulletin & RSS</p>
+                </div>
+              </div>
+              <span class="text-xs font-mono text-slate-400">Requested 45m ago</span>
+            </div>
+
+            <div class="bg-warm-50 rounded-xl p-3 text-xs text-slate-700 border border-warm-200">
+              <p><strong>Proposed Message:</strong> "Lockard.tech has completed initialization of the autonomous civic event monitor in Covington, KY."</p>
+            </div>
+
+            <div class="flex items-center justify-end space-x-3 pt-2">
+              <button onclick="rejectDecision(this)" class="px-4 py-2 border border-warm-300 text-xs font-medium text-slate-700 rounded-xl hover:bg-warm-100 transition">
+                Hold
+              </button>
+              <button onclick="approveDecision(this)" class="px-4 py-2 bg-brand-700 hover:bg-brand-800 text-white text-xs font-semibold rounded-xl transition flex items-center space-x-1.5 shadow-sm">
+                <i data-lucide="check" class="w-4 h-4"></i>
+                <span>Approve Dispatch</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="view-team" class="hidden flex-1 flex flex-col h-full overflow-hidden">
+        <div class="px-6 py-4 border-b border-warm-200 flex items-center justify-between bg-warm-50/40">
+          <div>
+            <h1 class="font-serif text-2xl font-bold text-slate-900">Specialist Roster & Capabilities</h1>
+            <p class="text-xs text-slate-500">Autonomous agents registered in Lockard.tech. Click any agent to inspect or start a work session.</p>
+          </div>
+          <button class="px-3 py-1.5 bg-white border border-warm-300 text-slate-700 text-xs font-medium rounded-lg hover:bg-warm-50 transition flex items-center space-x-1.5">
+            <i data-lucide="download" class="w-3.5 h-3.5"></i>
+            <span>Export Registry</span>
+          </button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-6 max-w-6xl mx-auto w-full">
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" id="team-cards-grid">
+            <!-- Cards populated dynamically via JS for consistency -->
+          </div>
+        </div>
+      </div>
+
+    </main>
+
+    <aside id="context-drawer" class="w-80 bg-warm-50/80 border-l border-warm-200 flex flex-col shrink-0 overflow-y-auto transition-all duration-300">
+      
+      <!-- Drawer Header -->
+      <div class="p-4 border-b border-warm-200 flex items-center justify-between bg-white">
+        <div class="text-xs font-mono uppercase tracking-wider text-slate-400 font-bold">Specialist Inspector</div>
+        <button onclick="toggleContextDrawer()" class="text-slate-400 hover:text-slate-700">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- Agent Profile Summary -->
+      <div class="p-5 space-y-5">
+        
+        <div class="flex items-center space-x-3">
+          <div id="drawer-avatar" class="w-12 h-12 rounded-2xl bg-amber-700 text-white flex items-center justify-center font-bold text-lg shadow-sm">
+            <i data-lucide="wrench" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <div class="flex items-center space-x-1.5">
+              <h2 id="drawer-name" class="font-serif text-lg font-bold text-slate-900">Devon</h2>
+              <span class="badge-dot bg-emerald-500"></span>
+            </div>
+            <p id="drawer-role" class="text-xs text-brand-700 font-medium">DevOps Engineer</p>
+          </div>
+        </div>
+
+        <!-- Capability Statement -->
+        <div class="bg-white p-3.5 rounded-xl border border-warm-200 shadow-xs space-y-1.5">
+          <div class="text-[10px] font-mono uppercase text-slate-400 font-semibold tracking-wider">Mission & Mandate</div>
+          <p id="drawer-mission" class="text-xs text-slate-700 leading-relaxed">
+            Owns builds, deploys, and domain/DNS configuration. Automates anything done twice.
+          </p>
+        </div>
+
+        <!-- Live Workload -->
+        <div class="bg-white p-3.5 rounded-xl border border-warm-200 shadow-xs space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] font-mono uppercase text-slate-400 font-semibold tracking-wider">Current Workload</span>
+            <span class="text-[10px] font-mono font-bold bg-amber-100 text-amber-900 px-1.5 py-0.2 rounded">1 Active Task</span>
+          </div>
+
+          <div class="p-2.5 bg-warm-50 rounded-lg border border-warm-200/80">
+            <div class="text-xs font-semibold text-slate-900 mb-1">Terraform Edge Worker Deploy</div>
+            <div class="flex items-center justify-between text-[10px] text-slate-500 font-mono mb-1.5">
+              <span>Progress</span>
+              <span>75%</span>
+            </div>
+            <div class="w-full bg-warm-200 h-1.5 rounded-full overflow-hidden">
+              <div class="bg-brand-600 h-full w-3/4 rounded-full"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Skills & Permissions -->
+        <div class="bg-white p-3.5 rounded-xl border border-warm-200 shadow-xs space-y-2">
+          <div class="text-[10px] font-mono uppercase text-slate-400 font-semibold tracking-wider">System Permissions</div>
+          <div class="flex flex-wrap gap-1 text-[11px]" id="drawer-skills">
+            <span class="px-2 py-0.5 bg-warm-100 text-slate-700 rounded font-mono">Cloudflare Workers</span>
+            <span class="px-2 py-0.5 bg-warm-100 text-slate-700 rounded font-mono">GitHub Actions</span>
+            <span class="px-2 py-0.5 bg-warm-100 text-slate-700 rounded font-mono">Terraform</span>
+            <span class="px-2 py-0.5 bg-warm-100 text-slate-700 rounded font-mono">DNS Admin</span>
+          </div>
+        </div>
+
+        <!-- Direct Actions -->
+        <div class="space-y-2 pt-2">
+          <button onclick="sendQuickPrompt('Generate automated system diagnostics report')" class="w-full py-2 px-3 bg-white hover:bg-warm-100 border border-warm-300 text-slate-700 rounded-xl text-xs font-medium transition flex items-center justify-center space-x-2">
+            <i data-lucide="activity" class="w-3.5 h-3.5 text-brand-600"></i>
+            <span>Run Health Diagnostic</span>
+          </button>
+          <button onclick="openNewTaskModal()" class="w-full py-2 px-3 bg-brand-700 hover:bg-brand-800 text-white rounded-xl text-xs font-semibold transition flex items-center justify-center space-x-2 shadow-sm">
+            <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i>
+            <span>Assign New Task</span>
+          </button>
+        </div>
+
+      </div>
+    </aside>
+
+  </div>
+
+  <div id="modal-new-task" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full border border-warm-200 shadow-2xl overflow-hidden p-6 space-y-4">
+      <div class="flex items-center justify-between pb-2 border-b border-warm-100">
+        <h3 class="font-serif text-lg font-bold text-slate-900">Create Specialist Task</h3>
+        <button onclick="closeModal()" class="text-slate-400 hover:text-slate-700"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block font-medium text-slate-700 mb-1">Task Title</label>
+          <input type="text" id="task-title-input" placeholder="e.g., Audit TLS 1.3 Ciphers..." class="w-full bg-warm-50 border border-warm-300 rounded-lg p-2 text-slate-800 focus:outline-none focus:ring-1 focus:ring-brand-500">
+        </div>
+
+        <div>
+          <label class="block font-medium text-slate-700 mb-1">Assignee Specialist</label>
+          <select id="task-assignee-select" class="w-full bg-warm-50 border border-warm-300 rounded-lg p-2 text-slate-800">
+            <option value="devon">Devon — DevOps Engineer</option>
+            <option value="shepard">Shepard — Chief of Staff</option>
+            <option value="desiree">Desiree — Design Lead</option>
+            <option value="casey">Casey — QA & Accessibility</option>
+            <option value="paige">Paige — Content Editor</option>
+            <option value="archie">Archie — Docs & Continuity</option>
+            <option value="ryder">Ryder — Comms Director</option>
+            <option value="scout">Scout — Civic Events Monitor</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block font-medium text-slate-700 mb-1">Instructions & Context</label>
+          <textarea id="task-desc-input" rows="3" placeholder="Provide requirements or constraints..." class="w-full bg-warm-50 border border-warm-300 rounded-lg p-2 text-slate-800 focus:outline-none focus:ring-1 focus:ring-brand-500"></textarea>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end space-x-2 pt-2 border-t border-warm-100">
+        <button onclick="closeModal()" class="px-3.5 py-1.5 border border-warm-300 rounded-lg text-xs font-medium text-slate-700 hover:bg-warm-100">Cancel</button>
+        <button onclick="submitNewTask()" class="px-4 py-1.5 bg-brand-700 text-white rounded-lg text-xs font-semibold hover:bg-brand-800">Assign & Dispatch</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Agent Registry Database matching original UI
+    const AGENTS_DATA = {
+      'team-router': {
+        name: 'Team Auto-Router',
+        role: 'Autonomous Coordinator',
+        domain: 'Orchestration',
+        color: 'bg-brand-700',
+        icon: 'sparkles',
+        status: 'Operational',
+        mission: 'Dynamically analyzes prompts and delegates work across the 8 specialists based on domain mastery.',
+        skills: ['Dynamic Routing', 'Task Partitioning', 'Consensus Sync', 'Cross-Agent Handoff'],
+        prompts: ['Analyze workspace health', 'Run full deployment audit across team', 'Draft complete launch plan'],
+        activeTasks: 0
+      },
+      'shepard': {
+        name: 'Shepard',
+        role: 'Chief of Staff',
+        domain: 'Leadership',
+        color: 'bg-slate-800',
+        icon: 'compass',
+        status: 'Available',
+        mission: 'Runs the day-to-day. Keeps the project moving and the team unblocked.',
+        skills: ['Project Governance', 'Resource Allocation', 'Sprint Pacing', 'Unblocking'],
+        prompts: ['Summarize team bottlenecks', 'Review sprint priorities', 'Plan tomorrow\'s agent sync'],
+        activeTasks: 1
+      },
+      'devon': {
+        name: 'Devon',
+        role: 'DevOps Engineer',
+        domain: 'Infrastructure & Release',
+        color: 'bg-amber-700',
+        icon: 'wrench',
+        status: 'Working',
+        mission: 'Owns builds, deploys, and domain/DNS. Automates anything done twice.',
+        skills: ['CI/CD Pipelines', 'Cloudflare Workers', 'DNS / SSL', 'Terraform', 'Docker'],
+        prompts: ['Check staging health', 'Verify SSL & DNS status', 'Audit env variables'],
+        activeTasks: 1
+      },
+      'desiree': {
+        name: 'Desiree',
+        role: 'Design Lead',
+        domain: 'Product Design & Frontend',
+        color: 'bg-cyan-800',
+        icon: 'layout-grid',
+        status: 'Available',
+        mission: 'Owns the design system and the frontend that ships it.',
+        skills: ['Tailwind CSS', 'Figma Systems', 'Component Specs', 'Design Tokens'],
+        prompts: ['Review token hierarchy', 'Audit spacing system', 'Generate button variants'],
+        activeTasks: 0
+      },
+      'paige': {
+        name: 'Paige',
+        role: 'Content Editor',
+        domain: 'Content & Editorial',
+        color: 'bg-rose-800',
+        icon: 'edit-3',
+        status: 'Available',
+        mission: 'Writes the words that go on the site. Clear beats clever, every time.',
+        skills: ['Microcopy', 'Technical Writing', 'Voice Guidelines', 'Copy Editing'],
+        prompts: ['Review homepage copy', 'Polish hero microcopy', 'Simplify tooltip labels'],
+        activeTasks: 0
+      },
+      'casey': {
+        name: 'Casey',
+        role: 'QA & Accessibility Lead',
+        domain: 'Quality & Accessibility',
+        color: 'bg-indigo-800',
+        icon: 'check-square',
+        status: 'Available',
+        mission: 'Tests what ships. An inaccessible feature is a broken feature.',
+        skills: ['WCAG 2.1 AA', 'Screen Readers', 'Playwright E2E', 'Keyboard Nav'],
+        prompts: ['Run contrast check', 'Audit modal focus traps', 'Validate ARIA live status'],
+        activeTasks: 2
+      },
+      'archie': {
+        name: 'Archie',
+        role: 'Docs & Continuity',
+        domain: 'Documentation & Knowledge Lead',
+        color: 'bg-amber-800',
+        icon: 'book-open',
+        status: 'Available',
+        mission: 'Keeps one answer per question, written down once, so nothing gets re-explained.',
+        skills: ['Knowledge Architecture', 'API Documentation', 'Changelogs', 'Runbooks'],
+        prompts: ['Update API guide', 'Generate release changelog', 'Audit FAQ freshness'],
+        activeTasks: 0
+      },
+      'ryder': {
+        name: 'Ryder',
+        role: 'Communications Director',
+        domain: 'Press & Public Narrative',
+        color: 'bg-pink-900',
+        icon: 'megaphone',
+        status: 'Available',
+        mission: 'Shapes the public story, checks in with stakeholders directly, and gets us ready for launch day.',
+        skills: ['Press Releases', 'Stakeholder Briefs', 'Social Announcements', 'Public Relations'],
+        prompts: ['Draft launch tweet thread', 'Prepare Covington civic brief', 'Format press kit'],
+        activeTasks: 0
+      },
+      'scout': {
+        name: 'Scout',
+        role: 'Civic Events Monitor',
+        domain: 'Community Monitoring & Scheduling',
+        color: 'bg-emerald-800',
+        icon: 'radar',
+        status: 'Live Monitoring',
+        mission: 'Watches Covington so nobody on the team has to go looking for what\'s coming up.',
+        skills: ['Civic Calendar Crawling', 'Local Ordinance Feeds', 'Event Schedule Sync', 'Alerts'],
+        prompts: ['Fetch Covington calendar updates', 'Check upcoming council hearings', 'Filter local tech events'],
+        activeTasks: 0
+      }
+    };
+
+    let currentAgentKey = 'devon';
+
+    function selectAgent(agentKey) {
+      currentAgentKey = agentKey;
+      const agent = AGENTS_DATA[agentKey];
+      if (!agent) return;
+
+      // Update Active Navigation Item
+      document.querySelectorAll('.agent-nav-item').forEach(el => el.classList.remove('bg-brand-50', 'border-brand-200/80', 'shadow-xs'));
+      const activeBtn = document.getElementById(`agent-btn-${agentKey}`);
+      if (activeBtn) {
+        activeBtn.classList.add('bg-brand-50', 'border-brand-200/80', 'shadow-xs');
+      }
+
+      // Update Center Canvas Header
+      document.getElementById('active-agent-name').innerText = agent.name;
+      document.getElementById('active-agent-role').innerText = `${agent.domain} • ${agent.mission}`;
+      document.getElementById('welcome-title').innerText = `Ready for instructions: ${agent.name}`;
+      document.getElementById('welcome-desc').innerText = agent.mission;
+      document.getElementById('chat-input').placeholder = `Ask ${agent.name} to help or assign an action...`;
+
+      // Update Avatar
+      const avatarEl = document.getElementById('active-agent-avatar');
+      avatarEl.className = `w-9 h-9 rounded-xl ${agent.color} text-white flex items-center justify-center font-bold text-sm shadow-xs`;
+      avatarEl.innerHTML = `<i data-lucide="${agent.icon}" class="w-4 h-4"></i>`;
+
+      // Update Quick Prompts
+      const promptsContainer = document.getElementById('agent-quick-prompts');
+      promptsContainer.innerHTML = agent.prompts.map(p => `
+        <button onclick="sendQuickPrompt('${p}')" class="text-xs px-2.5 py-1 bg-white border border-warm-300/80 rounded-lg text-slate-700 hover:border-brand-500 hover:text-brand-700 transition">
+          ⚡ ${p}
+        </button>
+      `).join('');
+
+      // Update Right Inspector Drawer
+      document.getElementById('drawer-name').innerText = agent.name;
+      document.getElementById('drawer-role').innerText = agent.role;
+      document.getElementById('drawer-mission').innerText = agent.mission;
+      const drawerAvatar = document.getElementById('drawer-avatar');
+      drawerAvatar.className = `w-12 h-12 rounded-2xl ${agent.color} text-white flex items-center justify-center font-bold text-lg shadow-sm`;
+      drawerAvatar.innerHTML = `<i data-lucide="${agent.icon}" class="w-6 h-6"></i>`;
+
+      // Update skills
+      const skillsContainer = document.getElementById('drawer-skills');
+      skillsContainer.innerHTML = agent.skills.map(s => `
+        <span class="px-2 py-0.5 bg-warm-100 text-slate-700 rounded font-mono">${s}</span>
+      `).join('');
+
+      // Switch to Workroom view
+      switchView('workroom');
+      lucide.createIcons();
+    }
+
+    function switchView(viewName) {
+      const views = ['workroom', 'board', 'decisions', 'team'];
+      views.forEach(v => {
+        const el = document.getElementById(`view-${v}`);
+        if (el) el.classList.add('hidden');
+        
+        const navEl = document.getElementById(`nav-${v}`);
+        if (navEl) {
+          navEl.classList.remove('bg-white', 'text-slate-900', 'shadow-sm');
+          navEl.classList.add('hover:text-slate-900');
+        }
+      });
+
+      const activeView = document.getElementById(`view-${viewName}`);
+      if (activeView) activeView.classList.remove('hidden');
+
+      const activeNav = document.getElementById(`nav-${viewName}`);
+      if (activeNav) {
+        activeNav.classList.add('bg-white', 'text-slate-900', 'shadow-sm');
+        activeNav.classList.remove('hover:text-slate-900');
+      }
+
+      lucide.createIcons();
+    }
+
+    function handleSendMessage(e) {
+      if (e) e.preventDefault();
+      const input = document.getElementById('chat-input');
+      const text = input.value.trim();
+      if (!text) return;
+
+      appendUserMessage(text);
+      input.value = '';
+
+      // Simulate Specialist Agent Response
+      const agent = AGENTS_DATA[currentAgentKey] || AGENTS_DATA['devon'];
+      setTimeout(() => {
+        appendAgentResponse(agent, text);
+      }, 700);
+    }
+
+    function sendQuickPrompt(promptText) {
+      appendUserMessage(promptText);
+      const agent = AGENTS_DATA[currentAgentKey] || AGENTS_DATA['devon'];
+      setTimeout(() => {
+        appendAgentResponse(agent, promptText);
+      }, 600);
+    }
+
+    function quickInput(text) {
+      const input = document.getElementById('chat-input');
+      input.value = text;
+      input.focus();
+    }
+
+    function appendUserMessage(text) {
+      const container = document.getElementById('messages-container');
+      const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const msgHtml = `
+        <div class="flex items-start justify-end space-x-3">
+          <div class="bg-slate-900 text-white rounded-2xl rounded-tr-sm px-4 py-2.5 text-xs max-w-md shadow-xs">
+            <p>${escapeHtml(text)}</p>
+            <span class="text-[10px] text-slate-400 mt-1 block font-mono">${timeStr}</span>
+          </div>
+          <div class="w-7 h-7 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center text-xs font-semibold shrink-0">
+            JL
+          </div>
+        </div>
+      `;
+      container.insertAdjacentHTML('beforeend', msgHtml);
+      scrollToBottom();
+    }
+
+    function appendAgentResponse(agent, prompt) {
+      const container = document.getElementById('messages-container');
+      const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const responseHtml = `
+        <div class="flex items-start space-x-3">
+          <div class="w-7 h-7 rounded-lg ${agent.color} text-white flex items-center justify-center shrink-0 text-xs">
+            <i data-lucide="${agent.icon}" class="w-3.5 h-3.5"></i>
+          </div>
+          <div class="bg-white border border-warm-200 rounded-2xl rounded-tl-sm p-4 text-xs text-slate-800 max-w-xl shadow-xs space-y-2.5">
+            <div class="flex items-center justify-between pb-1 border-b border-warm-100">
+              <div class="font-semibold text-slate-900 flex items-center space-x-1.5">
+                <span>${agent.name}</span>
+                <span class="text-[10px] font-mono text-slate-400">${agent.role}</span>
+              </div>
+              <span class="text-[10px] font-mono text-slate-400">${timeStr}</span>
+            </div>
+            <p>Understood. I am executing this mandate against the active workspace environment.</p>
+            <div class="bg-warm-50 rounded-lg p-2.5 border border-warm-200 font-mono text-[11px] text-brand-900">
+              <span class="text-slate-400">$</span> agent.exec("${escapeHtml(prompt.substring(0, 38))}...")<br>
+              <span class="text-emerald-600 font-semibold">✓ Step 1: Context verified</span><br>
+              <span class="text-emerald-600 font-semibold">✓ Step 2: Policy & security checks passed</span>
+            </div>
+          </div>
+        </div>
+      `;
+      container.insertAdjacentHTML('beforeend', responseHtml);
+      lucide.createIcons();
+      scrollToBottom();
+    }
+
+    function scrollToBottom() {
+      const stream = document.getElementById('chat-stream');
+      stream.scrollTop = stream.scrollHeight;
+    }
+
+    function clearChat() {
+      document.getElementById('messages-container').innerHTML = '';
+    }
+
+    function approveDecision(btn) {
+      const card = btn.closest('.border');
+      card.innerHTML = `
+        <div class="p-4 bg-emerald-50 text-emerald-900 rounded-xl flex items-center justify-between text-xs">
+          <div class="flex items-center space-x-2">
+            <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-700"></i>
+            <span class="font-semibold">Authorization granted. Agent execution started.</span>
+          </div>
+          <span class="text-[10px] font-mono bg-emerald-200/80 px-2 py-0.5 rounded text-emerald-900">APPROVED</span>
+        </div>
+      `;
+      lucide.createIcons();
+      updateDecisionCount();
+    }
+
+    function rejectDecision(btn) {
+      const card = btn.closest('.border');
+      card.remove();
+      updateDecisionCount();
+    }
+
+    function updateDecisionCount() {
+      const btn = document.getElementById('btn-decisions');
+      const remaining = document.querySelectorAll('#view-decisions .border-amber-200, #view-decisions .border-warm-200').length;
+      if (remaining === 0) {
+        btn.classList.add('opacity-60');
+      }
+    }
+
+    function renderTeamDirectory() {
+      const container = document.getElementById('team-cards-grid');
+      container.innerHTML = Object.keys(AGENTS_DATA).filter(k => k !== 'team-router').map(k => {
+        const a = AGENTS_DATA[k];
+        return `
+          <div class="bg-white border border-warm-200 rounded-2xl p-4 shadow-xs hover:border-brand-500 transition flex flex-col justify-between group">
+            <div class="space-y-3">
+              <div class="flex items-start justify-between">
+                <div class="w-10 h-10 rounded-xl ${a.color} text-white flex items-center justify-center font-bold text-sm shadow-xs">
+                  <i data-lucide="${a.icon}" class="w-5 h-5"></i>
+                </div>
+                <span class="px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200/70 rounded-full text-[10px] font-medium flex items-center space-x-1">
+                  <span class="badge-dot bg-emerald-500"></span>
+                  <span>${a.status}</span>
+                </span>
+              </div>
+
+              <div>
+                <h3 class="font-serif font-bold text-base text-slate-900 group-hover:text-brand-700 transition">${a.name}</h3>
+                <p class="text-xs text-brand-700 font-medium font-mono">${a.role}</p>
+                <p class="text-[11px] text-slate-500 mt-2 leading-relaxed line-clamp-3">${a.mission}</p>
+              </div>
+            </div>
+
+            <div class="pt-4 mt-3 border-t border-warm-100 flex items-center space-x-2">
+              <button onclick="selectAgent('${k}')" class="flex-1 py-1.5 bg-warm-100 hover:bg-brand-50 hover:text-brand-800 text-slate-700 rounded-lg text-xs font-semibold transition text-center">
+                Open Workspace
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Modal & Drawer Toggles
+    function toggleContextDrawer() {
+      const drawer = document.getElementById('context-drawer');
+      drawer.classList.toggle('hidden');
+    }
+
+    function openNewTaskModal() {
+      document.getElementById('modal-new-task').classList.remove('hidden');
+      document.getElementById('modal-new-task').classList.add('flex');
+    }
+
+    function closeModal() {
+      document.getElementById('modal-new-task').classList.add('hidden');
+      document.getElementById('modal-new-task').classList.remove('flex');
+    }
+
+    function submitNewTask() {
+      const title = document.getElementById('task-title-input').value;
+      if (!title) return;
+      closeModal();
+      switchView('board');
+      appendUserMessage(`Created task: ${title}`);
+    }
+
+    function filterAgents(query) {
+      const q = query.toLowerCase();
+      document.querySelectorAll('.agent-nav-item').forEach(el => {
+        const text = el.innerText.toLowerCase();
+        el.style.display = text.includes(q) ? 'flex' : 'none';
+      });
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+      renderTeamDirectory();
+    });
+  </script>
+</body>
+</html>

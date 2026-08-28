@@ -9,7 +9,15 @@ import { onApprovalRequested, onApprovalResolved, resolveApproval, listPendingAp
 import { checkPreviewStatus, startPreviewServer, PREVIEW_URL } from "./preview.js";
 import { appendTranscriptEvent, clearTranscript, readTranscript } from "./transcript.js";
 import { routeMessage } from "./router.js";
-import { readProfile } from "../../server/src/profile.js";
+import {
+  readProfileDoc,
+  setProfileField,
+  removeProfileField,
+  forgetObservation,
+  isProfileFieldCategory,
+  listProfileFieldCategories,
+  ProfileSafetyError,
+} from "../../server/src/profile.js";
 import { readTeamUpdates, watchTeamUpdates } from "../../server/src/memory.js";
 import {
   createTask,
@@ -150,8 +158,63 @@ app.post("/api/approvals/:id", (req: Request, res: Response) => {
   res.json({ ok: true });
 });
 
+// ---------- profile ----------
+// The store agents read at the start of every session (get_profile) and write to
+// as they learn (set_profile_field / note_about_jerry). These routes are Jerry's
+// side of the same data: he owns the curated facts, and he can strike an
+// observation the team got wrong.
+
 app.get("/api/profile", (_req: Request, res: Response) => {
-  res.json(readProfile());
+  res.json({ ...readProfileDoc(), categories: listProfileFieldCategories() });
+});
+
+app.post("/api/profile/fields", (req: Request, res: Response) => {
+  const { key, label, value, category } = req.body ?? {};
+  if (typeof key !== "string" || !key.trim()) {
+    res.status(400).json({ error: "key required" });
+    return;
+  }
+  if (typeof label !== "string" || !label.trim()) {
+    res.status(400).json({ error: "label required" });
+    return;
+  }
+  if (typeof value !== "string" || !value.trim()) {
+    res.status(400).json({ error: "value required" });
+    return;
+  }
+  if (typeof category !== "string" || !isProfileFieldCategory(category)) {
+    res.status(400).json({ error: `category must be one of: ${listProfileFieldCategories().join(", ")}` });
+    return;
+  }
+  try {
+    res.json(setProfileField("jerry", key, label, value, category));
+  } catch (error) {
+    // The guardrail refusal is a 422, not a 500: the request was well formed and
+    // was declined on content. Jerry sees the reason rather than "try again".
+    if (error instanceof ProfileSafetyError) {
+      res.status(422).json({ error: error.message, violations: error.violations });
+      return;
+    }
+    res.status(400).json({ error: error instanceof Error ? error.message : "could not save that field" });
+  }
+});
+
+app.delete("/api/profile/fields/:key", (req: Request, res: Response) => {
+  const removed = removeProfileField(String(req.params.key));
+  if (!removed) {
+    res.status(404).json({ error: "not found" });
+    return;
+  }
+  res.json({ ok: true });
+});
+
+app.delete("/api/profile/observations/:id", (req: Request, res: Response) => {
+  const removed = forgetObservation(String(req.params.id));
+  if (!removed) {
+    res.status(404).json({ error: "not found" });
+    return;
+  }
+  res.json({ ok: true });
 });
 
 app.get("/api/transcript", (req: Request, res: Response) => {

@@ -9,7 +9,12 @@ import { identity, education, work, todos, guardrails, designTokens, civicVoiceG
 import { checkContentSafety } from "./guardrails.js";
 import { readMemoryContext, appendMemoryNote, postTeamUpdate, readTeamUpdates } from "./memory.js";
 import { appendJournalEntry, readRecentJournal } from "./journal.js";
-import { readProfile, noteObservation } from "./profile.js";
+import {
+  readProfileDoc,
+  noteObservation,
+  setProfileField,
+  removeProfileField,
+} from "./profile.js";
 import { getPersona } from "../../agents/src/personas.js";
 import {
   createTask,
@@ -176,11 +181,41 @@ server.registerTool(
 server.registerTool(
   "get_profile",
   {
-    title: "Get Jerry's learned profile",
+    title: "Get Jerry's profile",
     description:
-      "Behavioral patterns the team has learned about how Jerry works — communication style, decision patterns, priorities, technical preferences, working style — sorted by how well-established each one is. Read this alongside get_memory_context at the start of a session so you don't ask him things the team should already know. This is NOT biographical/personal content (that's Ryder's private journal, get_journal_context) — it's how he works, not who he is.",
+      "Everything the team knows about working with Jerry, in two parts. `fields` are curated facts with one correct value each — the shareable bio, contact details, standing positions, scheduling constraints — meant to be reused verbatim so nobody re-asks and nobody guesses. `observations` are behavioural patterns the team has learned, sorted by how well established each is. Read this alongside get_memory_context at the START of every session: if a field answers your question, use it instead of asking. Biographical/personal reflection is NOT here (that is Ryder's private journal, get_journal_context).",
   },
-  async () => json(readProfile())
+  async () => json(readProfileDoc())
+);
+
+server.registerTool(
+  "set_profile_field",
+  {
+    title: "Record a durable fact about Jerry",
+    description:
+      "Save a fact worth reusing later — a bio blurb, a phone number he offered, a standing position, an availability constraint. Use this when Jerry states something in passing that a form, application, or draft will need again; that is the whole point of the store. Last write wins, so read get_profile first and only overwrite when the new value is genuinely more current. This is for STATED FACTS with one correct value; use note_about_jerry for patterns you have inferred. Anything on the hard-excluded list (get_guardrails) is refused by the store itself — do not attempt to work around that, and do not paste something he told you in confidence just because it would be convenient later.",
+    inputSchema: {
+      agent: z.string().describe("Your name, so the record shows who filled it in"),
+      key: z.string().describe('Stable kebab-case slug, e.g. "short-bio" or "public-phone" — reused to update the same fact'),
+      label: z.string().describe('Human-readable name for the field, e.g. "Short bio (2 sentences)"'),
+      value: z.string().describe("The fact itself, written so it can be pasted straight into a form or draft"),
+      category: z
+        .enum(["identity", "contact", "civic", "background", "positions", "logistics", "assets"])
+        .describe("Which part of the profile this belongs in"),
+    },
+  },
+  async ({ agent, key, label, value, category }) => json(setProfileField(agent, key, label, value, category))
+);
+
+server.registerTool(
+  "forget_profile_field",
+  {
+    title: "Remove a fact from Jerry's profile",
+    description:
+      "Delete a curated field that is wrong or out of date. Only do this when Jerry has said so, or when the fact is demonstrably stale (a superseded domain, an old handle). Prefer set_profile_field to correct a value over deleting and re-adding it, so the field keeps its history of who touched it.",
+    inputSchema: { key: z.string().describe("The field's kebab-case key") },
+  },
+  async ({ key }) => json({ removed: removeProfileField(key), key })
 );
 
 server.registerTool(

@@ -21,31 +21,28 @@
       <span class="icon i-panel-left" aria-hidden="true"></span>
     </button>
 
-    <div class="flex min-w-0 items-center gap-2">
-      <span class="avatar h-7 w-7 text-[11px] font-bold" style="background:#1D6F68">JL</span>
-      <div class="min-w-0 leading-tight">
-        <p class="truncate text-[13px] font-semibold">Agent Workspace</p>
-        <p class="font-mono text-[10px] text-ink-3">jerrylockard.me</p>
-      </div>
-    </div>
+    <!-- The brand doubles as the way back to the conversation. Chat has no nav
+         button because it is the ground state, not a destination — every nav item
+         takes you away from it, and this (or picking anyone in the rail) returns. -->
+    <button type="button" id="home-btn" class="flex min-w-0 items-center gap-2 rounded-lg px-1 py-0.5 text-left hover:bg-sunken" aria-label="Back to the conversation">
+      <span class="avatar h-7 w-7 text-[11px] font-bold" style="background:#1D6F68" aria-hidden="true">JL</span>
+      <span class="min-w-0 leading-tight">
+        <span class="block truncate text-[13px] font-semibold">Lockard HQ</span>
+        <span class="block font-mono text-[10px] text-ink-3">jerrylockard.me</span>
+      </span>
+    </button>
 
     <nav class="ml-2 flex items-center gap-0.5 rounded-xl bg-sunken p-0.5" aria-label="Primary">
-      <!-- Workroom, Team and Decisions are one group: all three are about the
-           agents themselves — talking to them, seeing who they are, answering
-           what they have stopped to ask. Board and Calendar are about the work,
-           and stay top level. -->
-      <div class="relative">
-        <button class="nav-btn" type="button" id="group-btn" aria-expanded="false" aria-haspopup="menu">
-          <span class="icon icon-sm i-terminal" aria-hidden="true" id="group-icon"></span>
-          <span id="group-label">Workroom</span>
-          <span class="chip chip-warn px-1.5 py-0" id="badge-decisions" hidden>0</span>
-          <span class="icon icon-sm i-chevron-down opacity-60" aria-hidden="true"></span>
-        </button>
-        <div id="group-menu" class="absolute left-0 top-full z-40 mt-1 w-64 overflow-hidden rounded-xl border border-line bg-surface shadow-lg" role="menu" hidden></div>
-      </div>
-      <button class="nav-btn" type="button" data-view="board">
-        <span class="icon icon-sm i-kanban" aria-hidden="true"></span><span>Board</span>
-        <span class="chip chip-brand px-1.5 py-0" id="badge-board" hidden>0</span>
+      <button class="nav-btn" type="button" data-view="team">
+        <span class="icon icon-sm i-users" aria-hidden="true"></span><span>Team</span>
+      </button>
+      <button class="nav-btn" type="button" data-view="tasks">
+        <span class="icon icon-sm i-square-check" aria-hidden="true"></span><span>Tasks</span>
+        <span class="chip chip-brand px-1.5 py-0" id="badge-tasks" hidden>0</span>
+      </button>
+      <button class="nav-btn" type="button" data-view="changelog">
+        <span class="icon icon-sm i-book-open" aria-hidden="true"></span><span>Changelog</span>
+        <span class="chip px-1.5 py-0" id="badge-changelog" hidden>0</span>
       </button>
       <button class="nav-btn" type="button" data-view="calendar">
         <span class="icon icon-sm i-calendar-days" aria-hidden="true"></span><span>Calendar</span>
@@ -73,6 +70,23 @@
     </div>
   </header>
 
+  <!-- Approvals are an interrupt, not a place. An agent is paused mid-turn and is
+       auto-denied after five minutes, so this sits across the top of everything
+       and is only in the DOM when something is genuinely waiting. -->
+  <div id="interrupt" class="border-b px-3 py-2" style="border-color:color-mix(in oklab, var(--c-warn) 45%, transparent);background:var(--c-warn-soft)" hidden>
+    <div class="flex flex-wrap items-center gap-2">
+      <span class="icon icon-sm i-triangle-alert text-warn" aria-hidden="true"></span>
+      <p class="text-[13px] font-medium" id="interrupt-text"></p>
+      <span class="chip font-mono" id="interrupt-timer" title="Auto-denied when this runs out"></span>
+      <div class="ml-auto flex items-center gap-1.5">
+        <button class="btn btn-primary py-1 text-[12px]" type="button" id="interrupt-approve">Approve</button>
+        <button class="btn btn-danger py-1 text-[12px]" type="button" id="interrupt-deny">Deny</button>
+        <button class="btn btn-quiet py-1 text-[12px]" type="button" id="interrupt-all">See all</button>
+      </div>
+    </div>
+    <pre class="tool-block mt-1.5" id="interrupt-detail"></pre>
+  </div>
+
   <div class="flex min-h-0 flex-1">
 
     <!-- ============ left rail: roster ============ -->
@@ -94,8 +108,8 @@
     <!-- ============ center ============ -->
     <main class="flex min-w-0 flex-1 flex-col">
 
-      <!-- ---- workroom ---- -->
-      <section id="view-workroom" class="flex min-h-0 flex-1 flex-col">
+      <!-- ---- chat: the ground state ---- -->
+      <section id="view-chat" class="flex min-h-0 flex-1 flex-col">
         <div class="flex items-center gap-3 border-b border-line bg-surface px-4 py-2.5">
           <span class="avatar h-9 w-9" id="active-avatar" aria-hidden="true"></span>
           <div class="min-w-0">
@@ -166,64 +180,124 @@
         </div>
       </section>
 
-      <!-- ---- board ---- -->
-      <section id="view-board" class="flex min-h-0 flex-1 flex-col" hidden>
+      <!-- ---- tasks ---- -->
+      <!-- Now / Next / On hold. Jerry's framing, not backlog/in-progress/done:
+           "current work, future work, and things I can't get to". Finished work
+           is deliberately absent — it leaves here and shows up in Changelog. -->
+      <section id="view-tasks" class="flex min-h-0 flex-1 flex-col" hidden>
         <div class="flex flex-wrap items-center gap-2 border-b border-line bg-surface px-4 py-2.5">
-          <h1 class="font-serif text-base font-semibold">Work</h1>
-          <div id="board-filters" class="flex flex-wrap items-center gap-1"></div>
-          <button class="btn btn-primary ml-auto" type="button" id="board-new-task">
+          <h1 class="font-serif text-base font-semibold">Tasks</h1>
+          <div id="task-filters" class="flex flex-wrap items-center gap-1"></div>
+          <button class="btn btn-primary ml-auto" type="button" id="tasks-new">
             <span class="icon icon-sm i-plus" aria-hidden="true"></span><span>New task</span>
           </button>
         </div>
-        <p id="board-notice" class="mx-4 mt-3 rounded-lg border border-warn/40 bg-warn-soft px-3 py-2 text-[12px] text-warn" aria-live="polite" hidden></p>
+
+        <div id="tasks-approvals" class="border-b border-line-soft px-4 py-3" hidden>
+          <h2 class="label mb-2">Waiting on your decision</h2>
+          <div id="tasks-approvals-list" class="space-y-2"></div>
+        </div>
+
+        <!-- Agent errors that happened in a channel Jerry was not looking at. They
+             already render inline in the conversation where they occurred; this is
+             the aggregate so one in a background channel is not lost. -->
+        <div id="tasks-alerts" class="border-b border-line-soft px-4 py-3" hidden>
+          <h2 class="label mb-2">Agent errors</h2>
+          <div id="alerts-list" class="space-y-2"></div>
+        </div>
+
+        <p id="task-notice" class="mx-4 mt-3 rounded-lg px-3 py-2 text-[12px]"
+           style="border:1px solid color-mix(in oklab, var(--c-warn) 40%, transparent);background:var(--c-warn-soft);color:var(--c-warn)"
+           aria-live="polite" hidden></p>
+
         <div class="grid min-h-0 flex-1 gap-3 overflow-y-auto p-4 lg:grid-cols-3">
-          <div class="board-col" data-status="backlog">
-            <div class="flex items-center justify-between border-b border-line-soft px-3 py-2">
-              <h2 class="text-[13px] font-semibold">Backlog</h2>
-              <span class="chip px-1.5 py-0" id="count-backlog">0</span>
-            </div>
-            <div class="min-h-0 flex-1 space-y-2 overflow-y-auto p-2" id="col-backlog"></div>
-          </div>
           <div class="board-col" data-status="in-progress">
             <div class="flex items-center justify-between border-b border-line-soft px-3 py-2">
-              <h2 class="text-[13px] font-semibold">In progress</h2>
+              <div>
+                <h2 class="text-[13px] font-semibold">Now</h2>
+                <p class="text-[10px] text-ink-3">Being worked on</p>
+              </div>
               <span class="chip px-1.5 py-0" id="count-in-progress">0</span>
             </div>
             <div class="min-h-0 flex-1 space-y-2 overflow-y-auto p-2" id="col-in-progress"></div>
           </div>
-          <div class="board-col" data-status="done">
+          <div class="board-col" data-status="backlog">
             <div class="flex items-center justify-between border-b border-line-soft px-3 py-2">
-              <h2 class="text-[13px] font-semibold">Done</h2>
-              <span class="chip px-1.5 py-0" id="count-done">0</span>
+              <div>
+                <h2 class="text-[13px] font-semibold">Next</h2>
+                <p class="text-[10px] text-ink-3">Queued up</p>
+              </div>
+              <span class="chip px-1.5 py-0" id="count-backlog">0</span>
             </div>
-            <div class="min-h-0 flex-1 space-y-2 overflow-y-auto p-2" id="col-done"></div>
+            <div class="min-h-0 flex-1 space-y-2 overflow-y-auto p-2" id="col-backlog"></div>
           </div>
+          <div class="board-col" data-status="on-hold">
+            <div class="flex items-center justify-between border-b border-line-soft px-3 py-2">
+              <div>
+                <h2 class="text-[13px] font-semibold">On hold</h2>
+                <p class="text-[10px] text-ink-3">Not getting to these yet</p>
+              </div>
+              <span class="chip px-1.5 py-0" id="count-on-hold">0</span>
+            </div>
+            <div class="min-h-0 flex-1 space-y-2 overflow-y-auto p-2" id="col-on-hold"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ---- changelog ---- -->
+      <section id="view-changelog" class="flex min-h-0 flex-1 flex-col" hidden>
+        <div class="flex flex-wrap items-center gap-2 border-b border-line bg-surface px-4 py-2.5">
+          <h1 class="font-serif text-base font-semibold">Changelog</h1>
+          <p class="text-[11px] text-ink-3">Finished work, on its way to a public CHANGELOG.md</p>
+          <button class="btn btn-primary ml-auto" type="button" id="changelog-publish" disabled>
+            <span class="icon icon-sm i-check" aria-hidden="true"></span><span>Publish selected</span>
+          </button>
+        </div>
+        <p id="changelog-notice" class="mx-4 mt-3 rounded-lg px-3 py-2 text-[12px]" aria-live="polite" hidden></p>
+        <div class="grid min-h-0 flex-1 gap-3 overflow-y-auto p-4 lg:grid-cols-2">
+          <section class="flex min-h-0 flex-col">
+            <div class="mb-2 flex items-center gap-2">
+              <h2 class="label">Ready to publish</h2>
+              <button class="chip" type="button" id="changelog-select-all">Select all</button>
+            </div>
+            <div id="changelog-candidates" class="min-h-0 flex-1 space-y-2 overflow-y-auto"></div>
+          </section>
+          <section class="card flex min-h-0 flex-col p-4">
+            <h2 class="label mb-2">CHANGELOG.md as it stands</h2>
+            <pre id="changelog-published" class="min-h-0 flex-1 overflow-auto whitespace-pre-wrap font-mono text-[11px] leading-relaxed text-ink-2"></pre>
+          </section>
         </div>
       </section>
 
       <!-- ---- calendar ---- -->
       <section id="view-calendar" class="flex min-h-0 flex-1 flex-col" hidden>
         <div class="flex flex-wrap items-center gap-2 border-b border-line bg-surface px-4 py-2.5">
-          <h1 class="font-serif text-base font-semibold">Calendar</h1>
-          <p class="text-[11px] text-ink-3">What shipped, and what's coming up</p>
-          <label class="label ml-auto flex items-center gap-2">
-            <span>Window</span>
-            <select id="calendar-days" class="field w-auto py-1">
-              <option value="7">7 days</option>
-              <option value="30" selected>30 days</option>
-              <option value="90">90 days</option>
-            </select>
-          </label>
+          <h1 class="font-serif text-base font-semibold" id="calendar-title">Calendar</h1>
+          <div class="ml-auto flex items-center gap-1">
+            <button class="icon-btn" type="button" id="calendar-prev" aria-label="Previous month">
+              <span class="icon icon-sm i-chevron-down rotate-90" aria-hidden="true"></span>
+            </button>
+            <button class="btn btn-quiet py-1 text-[12px]" type="button" id="calendar-today">Today</button>
+            <button class="icon-btn" type="button" id="calendar-next" aria-label="Next month">
+              <span class="icon icon-sm i-chevron-down -rotate-90" aria-hidden="true"></span>
+            </button>
+          </div>
         </div>
-        <div class="grid min-h-0 flex-1 gap-3 overflow-y-auto p-4 lg:grid-cols-2">
-          <section class="card flex min-h-0 flex-col p-4">
-            <h2 class="label mb-3">Planned &amp; in progress</h2>
-            <div id="calendar-upcoming" class="min-h-0 flex-1 space-y-2 overflow-y-auto"></div>
-          </section>
-          <section class="card flex min-h-0 flex-col p-4">
-            <h2 class="label mb-3">Recent activity</h2>
-            <div id="calendar-activity" class="min-h-0 flex-1 space-y-2 overflow-y-auto"></div>
-          </section>
+        <div class="min-h-0 flex-1 overflow-y-auto p-4">
+          <div class="card overflow-hidden">
+            <div class="grid grid-cols-7 border-b border-line-soft bg-raised" id="calendar-weekdays"></div>
+            <div class="grid grid-cols-7" id="calendar-grid"></div>
+          </div>
+          <div class="mt-4 grid gap-3 sm:grid-cols-2">
+            <section class="card p-4">
+              <h2 class="label mb-2" id="calendar-day-label">Nothing selected</h2>
+              <div id="calendar-day-items" class="space-y-2 text-[13px]"></div>
+            </section>
+            <section class="card p-4">
+              <h2 class="label mb-2">Coming up</h2>
+              <div id="calendar-upcoming" class="space-y-2 text-[13px]"></div>
+            </section>
+          </div>
         </div>
       </section>
 
@@ -231,27 +305,9 @@
       <section id="view-team" class="flex min-h-0 flex-1 flex-col" hidden>
         <div class="flex items-center gap-2 border-b border-line bg-surface px-4 py-2.5">
           <h1 class="font-serif text-base font-semibold">Team</h1>
-          <p class="text-[11px] text-ink-3">Eight agents. Everything shown here comes from the live roster.</p>
+          <p class="text-[11px] text-ink-3">Who works for you, what each one owns, and what they are on right now.</p>
         </div>
-        <div id="team-grid" class="grid min-h-0 flex-1 gap-3 overflow-y-auto p-4 sm:grid-cols-2 xl:grid-cols-4"></div>
-      </section>
-
-      <!-- ---- decisions ---- -->
-      <section id="view-decisions" class="flex min-h-0 flex-1 flex-col" hidden>
-        <div class="flex items-center gap-2 border-b border-line bg-surface px-4 py-2.5">
-          <h1 class="font-serif text-base font-semibold">Decisions</h1>
-          <p class="text-[11px] text-ink-3">Agents pause here for your approval. No answer in five minutes counts as no.</p>
-        </div>
-        <div class="grid min-h-0 flex-1 gap-4 overflow-y-auto p-4 lg:grid-cols-2">
-          <section>
-            <h2 class="label mb-2">Waiting on you</h2>
-            <div id="approvals-list" class="space-y-3"></div>
-          </section>
-          <section>
-            <h2 class="label mb-2">Agent alerts</h2>
-            <div id="alerts-list" class="space-y-2"></div>
-          </section>
-        </div>
+        <div id="team-list" class="min-h-0 flex-1 space-y-3 overflow-y-auto p-4"></div>
       </section>
 
     </main>

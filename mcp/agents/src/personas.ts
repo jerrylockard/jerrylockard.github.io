@@ -12,6 +12,20 @@ export interface Persona {
   /** Path globs (relative to repo root) this persona primarily works in. Soft guidance, not a hard sandbox. */
   scope: string[];
   /**
+   * What this agent actually does, for the Team view. Summarised from
+   * systemPrompt rather than written fresh — the prompt is what governs the
+   * agent's behaviour, so a duty listed here that the prompt does not contain
+   * would be the dashboard describing staff Jerry does not have.
+   */
+  responsibilities: string[];
+  /**
+   * Shown alongside the duties when a declared beat is not yet wired to a real
+   * source. Only Scout has one today, and only because listing "watches the
+   * civic calendar" with no calendar tool would be the interface asserting
+   * something untrue.
+   */
+  caveat?: string;
+  /**
    * Vercel AI Gateway model string (e.g. "openai/gpt-5.5", "google/gemini-3.1-pro-preview").
    * Optional — unset personas fall back to providers.ts's DEFAULT_MODEL (Claude). This is how
    * one employee's identity stays separate from which model actually runs them: change this
@@ -68,6 +82,13 @@ export const PERSONAS: Persona[] = [
     color: "#1E4C59",
     tagline: "Runs the day-to-day. Keeps the project moving and the team unblocked.",
     scope: ["**"],
+    responsibilities: [
+      "Tracks everything open across the project and notices when something has stalled",
+      "Does hands-on development that is not in a specialist's lane",
+      "Flags a blocker the moment it appears rather than sitting on it",
+      "Keeps track of how the repos fit together as lockard-tech grows",
+      "Holds no exemption from the team's own rules — push confirmation and guardrails apply to him too",
+    ],
     systemPrompt: `${SHARED_PREAMBLE}
 
 You're Shepard, Chief of Staff. You own jerrylockard.github.io day to day — that means tracking
@@ -96,6 +117,13 @@ Devon, or anyone else. Your job is to keep the team coordinated, not to be the e
     color: "#2C6B7C",
     tagline: "Owns the design system and the frontend that ships it.",
     scope: ["src/components/**", "src/layouts/**", "src/styles/**", "src/pages/**"],
+    responsibilities: [
+      "Owns the design system: palette, type scale, spacing and motion",
+      "Builds and maintains the Astro components that implement it",
+      "Treats accessibility as part of the design spec, not a later pass",
+      "Preserves the reasoning behind the tokens, not just their values",
+      "Hands copy changes to Paige instead of rewriting text",
+    ],
     systemPrompt: `${SHARED_PREAMBLE}
 
 You're Desiree, Design Lead. You own the design system and the Astro components that implement
@@ -126,6 +154,14 @@ rather than guessing which one wins.`,
     color: "#B5622E",
     tagline: "Owns builds, deploys, and domain/DNS. Automates anything done twice.",
     scope: ["astro.config.mjs", "package.json", "pnpm-workspace.yaml", ".github/**"],
+    responsibilities: [
+      "Owns the Astro build and the Vercel deploy for jerrylockard.me",
+      "Owns domain and DNS changes",
+      "Maintains the dashboard tooling under mcp/",
+      "Gets the build passing before proposing a commit, since main deploys straight to production",
+      "Has a rollback plan before a deploy plan",
+      "Stops for explicit confirmation on every push, deploy and DNS change",
+    ],
     systemPrompt: `${SHARED_PREAMBLE}
 
 You're Devon, DevOps Engineer. You own the build, the deploy pipeline, and domain/DNS — right
@@ -154,6 +190,13 @@ changes and CI/config edits for review instead of making them quietly.`,
     color: "#7A4B5C",
     tagline: "Writes the words that go on the site. Clear beats clever, every time.",
     scope: ["src/content/**", "src/pages/**"],
+    responsibilities: [
+      "Writes the bio, work history and site copy a hiring manager actually reads",
+      "Checks the current facts before drafting anything",
+      "Runs the content-safety check on drafts and treats any match as a hard stop",
+      "Writes for the reader's knowledge level; structure over cleverness",
+      "Leaves documentation to Archie and layout to Desiree",
+    ],
     systemPrompt: `${SHARED_PREAMBLE}
 
 You're Paige, Content Editor. You own the site's bio, work history, and writing copy — the
@@ -183,6 +226,13 @@ work, so accuracy always wins over a good line.`,
     color: "#4A5A68",
     tagline: "Tests what ships. An inaccessible feature is a broken feature.",
     scope: ["src/**"],
+    responsibilities: [
+      "Tests reduced motion, colour contrast, semantic HTML, keyboard navigation and responsive behaviour",
+      "Checks against the real spec rather than by eye",
+      "Comes with the fix, not just the finding",
+      "Raises a release-blocking accessibility issue immediately and on its own",
+      "Reads broadly, writes narrowly — proposes changes rather than making them",
+    ],
     systemPrompt: `${SHARED_PREAMBLE}
 
 You're Casey, QA & Accessibility Lead. You own quality and accessibility across the site —
@@ -210,6 +260,13 @@ into a batch of other notes.`,
     color: "#8C7A2C",
     tagline: "Keeps one answer per question, written down once, so nothing gets re-explained.",
     scope: ["AGENTS.md", "CLAUDE.md", "GEMINI.md", "CHEATSHEET.md", "mcp/AGENTS.md", "README.md"],
+    responsibilities: [
+      "Keeps AGENTS.md, mcp/AGENTS.md and CHEATSHEET.md accurate as things change",
+      "Writes settled decisions down once so nobody has to re-ask Jerry",
+      "Hunts down the same fact defined in two places with different values",
+      "Owns onboarding: whether a cold reader understands the project in a minute",
+      "Records what the team settles; never invents a decision to fill a gap",
+    ],
     systemPrompt: `${SHARED_PREAMBLE}
 
 You're Archie, Documentation & Knowledge Lead. Your first question about any fact is "where
@@ -248,6 +305,13 @@ so rather than picking an answer to fill the gap.`,
     color: "#6B3A4A",
     tagline: "Shapes the public story, checks in with Jerry directly, and gets him ready for launch day.",
     scope: ["src/content/**", "src/pages/**"],
+    responsibilities: [
+      "Shapes the public narrative, working toward the campaign announcement",
+      "Runs the daily check-in when Jerry asks for it, and keeps his private journal",
+      "Owns the Covington Civic Field Notes series against the civic voice guide",
+      "Drafts \"who Jerry is and why\" copy; routine site copy stays with Paige",
+      "Checks anything personal with Jerry directly before proposing it",
+    ],
     systemPrompt: `${SHARED_PREAMBLE}
 
 You're Ryder, Communications Director. Your beat isn't a slice of the codebase — it's the whole
@@ -308,6 +372,15 @@ with him directly first, every time — knowing him well isn't license to publis
     color: "#3D6B4A",
     tagline: "Watches Covington so nobody on the team has to go looking for what's coming up.",
     scope: ["src/content/civic-notes/**"],
+    responsibilities: [
+      "Watches Covington's public civic calendar — meetings, caucuses, agendas, minutes",
+      "Flags meetings worth attending and agenda items that touch the site",
+      "Raises conflicts between a civic event and something else on the calendar",
+      "Files what it finds as tasks and team updates so nobody has to go asking",
+      "Reports a quiet week as quiet instead of manufacturing urgency",
+    ],
+    caveat:
+      "No calendar or web access is wired up yet, so schedule facts have to come from Jerry or a teammate until that is built. Scout will say when it is guessing.",
     systemPrompt: `${SHARED_PREAMBLE}
 
 You're Scout, Civic Events & Schedule Monitor. Your beat isn't repo files — it's Covington's

@@ -166,8 +166,10 @@ const state = {
   board: { backlog: [], "in-progress": [], done: [] },
   categories: [],
   categoryFilter: null,
-  view: "workroom",
+  view: "chat",
   streamBubbles: new Map(), // personaId -> { body, text }
+  changelog: { candidates: [], selected: new Set(), published: "" },
+  calendar: { month: null, tasks: [], activity: [], upcoming: [], selected: null },
 };
 
 function persona(id) {
@@ -216,67 +218,24 @@ function initTheme() {
 // ---------------------------------------------------------------- views
 
 /**
- * The three agent-facing views share one nav slot. The button shows whichever of
- * them is current rather than a fixed group name, so the header still answers
- * "where am I" at a glance — a dropdown labelled only "Workroom" while you are
- * looking at Decisions reads as a bug.
+ * Chat is the ground state, so it has no nav button. Every nav item navigates
+ * away from it; the brand button and picking anyone in the rail come back. That
+ * matches how the dashboard is actually used — the conversation is where you
+ * live, and the other four are places you visit.
  */
-const GROUPED = [
-  { view: "workroom", label: "Workroom", icon: "terminal", blurb: "Talk to the team" },
-  { view: "team", label: "Team", icon: "users", blurb: "Who they are and what they own" },
-  { view: "decisions", label: "Decisions", icon: "shield-check", blurb: "Requests waiting on you" },
-];
-
-function renderGroupMenu() {
-  const menu = $("group-menu");
-  clear(menu);
-  menu.append(
-    ...GROUPED.map((item) =>
-      el("button", {
-        type: "button",
-        role: "menuitem",
-        class: `flex w-full items-center gap-2.5 px-3 py-2 text-left hover:bg-sunken ${state.view === item.view ? "bg-brand-soft" : ""}`.trim(),
-        onclick: () => { closeGroupMenu(); showView(item.view); },
-      }, [
-        icon(item.icon, "icon-sm text-ink-3"),
-        el("span", { class: "min-w-0 flex-1" }, [
-          el("span", { class: "block text-[13px] font-medium", text: item.label }),
-          el("span", { class: "block text-[11px] text-ink-3", text: item.blurb }),
-        ]),
-        item.view === "decisions" && state.approvals.length
-          ? el("span", { class: "chip chip-warn px-1.5 py-0", text: String(state.approvals.length) })
-          : state.view === item.view ? icon("check", "icon-sm text-brand") : null,
-      ]),
-    ),
-  );
-}
-
-function closeGroupMenu() {
-  $("group-menu").hidden = true;
-  $("group-btn").setAttribute("aria-expanded", "false");
-}
-
 function showView(name) {
   state.view = name;
   for (const section of document.querySelectorAll("main > section")) {
     section.hidden = section.id !== `view-${name}`;
   }
-
-  const grouped = GROUPED.find((g) => g.view === name);
-  const groupBtn = $("group-btn");
-  setText($("group-label"), (grouped || GROUPED[0]).label);
-  $("group-icon").className = `icon icon-sm i-${(grouped || GROUPED[0]).icon}`;
-  if (grouped) groupBtn.setAttribute("aria-current", "page");
-  else groupBtn.removeAttribute("aria-current");
-
   for (const btn of document.querySelectorAll(".nav-btn[data-view]")) {
     if (btn.dataset.view === name) btn.setAttribute("aria-current", "page");
     else btn.removeAttribute("aria-current");
   }
-
-  if (name === "board") loadBoard();
+  if (name === "tasks") loadBoard();
   if (name === "calendar") loadCalendar();
-  if (name === "team") renderTeamGrid();
+  if (name === "changelog") loadChangelog();
+  if (name === "team") renderTeamList();
 }
 
 // ---------------------------------------------------------------- roster rail
@@ -432,7 +391,7 @@ function selectChannel(id) {
   refreshStatusChip();
   if (!$("drawer").hidden) renderDrawer();
   loadTranscript();
-  showView("workroom");
+  showView("chat");
 }
 
 function refreshStatusChip() {
@@ -747,7 +706,7 @@ async function loadBoard() {
 }
 
 function renderBoardFilters() {
-  const host = $("board-filters");
+  const host = $("task-filters");
   clear(host);
   const make = (label, value) =>
     el("button", {
@@ -760,27 +719,50 @@ function renderBoardFilters() {
 }
 
 function renderBoard() {
-  let total = 0;
-  for (const status of ["backlog", "in-progress", "done"]) {
+  for (const status of LIVE_COLUMNS) {
     const host = $(`col-${status}`);
     clear(host);
     const tasks = (state.board[status] || []).filter((t) => !state.categoryFilter || t.category === state.categoryFilter);
     setText($(`count-${status}`), String(tasks.length));
-    if (status !== "done") total += tasks.length;
     if (!tasks.length) {
-      host.append(el("p", { class: "px-1 py-2 text-[12px] text-ink-3", text: "Empty." }));
+      host.append(el("p", { class: "px-1 py-2 text-[12px] text-ink-3", text: status === "on-hold" ? "Nothing parked." : "Empty." }));
       continue;
     }
     host.append(...tasks.map(taskCard));
   }
-  const badge = $("badge-board");
+  // Finished work is intentionally not shown here — checking a task off moves it
+  // out of Tasks and into the Changelog, which is where it waits for publishing.
+  const badge = $("badge-tasks");
   const active = (state.board["in-progress"] || []).length;
   badge.hidden = active === 0;
   setText(badge, String(active));
+
+  const done = (state.board.done || []).length;
+  const clBadge = $("badge-changelog");
+  clBadge.hidden = done === 0;
+  setText(clBadge, String(done));
 }
 
-const NEXT_STATUS = { backlog: "in-progress", "in-progress": "done", done: "backlog" };
-const NEXT_LABEL = { backlog: "Start", "in-progress": "Done", done: "Reopen" };
+// Stored value -> the label Jerry sees. See TaskStatus in mcp/server/src/tasks.ts
+// for why the stored names were not renamed.
+const STATUS_LABEL = { "in-progress": "Now", backlog: "Next", "on-hold": "On hold", done: "Done" };
+const LIVE_COLUMNS = ["in-progress", "backlog", "on-hold"];
+
+/** The moves offered on a card, per column. Finishing is the primary action. */
+const MOVES = {
+  "in-progress": [
+    { to: "done", label: "Done", primary: true },
+    { to: "on-hold", label: "Hold" },
+  ],
+  backlog: [
+    { to: "in-progress", label: "Start", primary: true },
+    { to: "on-hold", label: "Hold" },
+  ],
+  "on-hold": [
+    { to: "in-progress", label: "Pick back up", primary: true },
+    { to: "backlog", label: "Queue" },
+  ],
+};
 
 function taskCard(task) {
   const who = task.assignee ? persona(task.assignee) : null;
@@ -795,14 +777,16 @@ function taskCard(task) {
       task.dueDate ? el("span", { class: "chip" }, [icon("clock", "icon-sm"), el("span", { text: dayOf(task.dueDate) })]) : null,
       who ? el("span", { class: "chip" }, [avatarNode(who, "h-3.5 w-3.5", "icon-sm"), el("span", { text: who.name })]) : el("span", { class: "chip", text: "unassigned" }),
     ]),
-    el("div", { class: "mt-2 flex items-center gap-1.5" }, [
-      el("button", {
-        type: "button",
-        class: "btn btn-quiet flex-1 py-1 text-[12px]",
-        text: NEXT_LABEL[task.status],
-        onclick: (ev) => moveTask(task, NEXT_STATUS[task.status], ev.currentTarget),
-      }),
-    ]),
+    el("div", { class: "mt-2 flex items-center gap-1.5" },
+      (MOVES[task.status] || []).map((move) =>
+        el("button", {
+          type: "button",
+          class: `btn ${move.primary ? "btn-primary" : "btn-quiet"} flex-1 py-1 text-[12px]`,
+          text: move.label,
+          onclick: (ev) => moveTask(task, move.to, ev.currentTarget),
+        }),
+      ),
+    ),
   ]);
 }
 
@@ -818,11 +802,15 @@ async function moveTask(task, next, button) {
       method: "POST",
       body: JSON.stringify({ status: next, expectedStatus: task.status }),
     });
-    $("board-notice").hidden = true;
+    $("task-notice").hidden = true;
     await loadBoard();
+    if (next === "done") {
+      toast("Done — it's in the Changelog now");
+      if (state.view === "changelog") loadChangelog();
+    }
   } catch (err) {
     if (err.status === 409) {
-      const notice = $("board-notice");
+      const notice = $("task-notice");
       setText(notice, `${err.message} (now: ${err.data?.currentStatus ?? "unknown"})`);
       notice.hidden = false;
       await loadBoard();
@@ -872,121 +860,447 @@ async function submitTask(ev) {
   }
 }
 
-// ---------------------------------------------------------------- calendar
+// ---------------------------------------------------------------- changelog
 
-async function loadCalendar() {
-  const days = $("calendar-days").value;
+async function loadChangelog() {
   try {
-    const data = await api(`/api/calendar?days=${encodeURIComponent(days)}`);
-    const up = $("calendar-upcoming");
-    clear(up);
-    if (!data.upcoming?.length) up.append(el("p", { class: "text-[13px] text-ink-3", text: "Nothing planned." }));
-    else up.append(...data.upcoming.map((t) => el("div", { class: "rounded-lg border border-line-soft p-2.5" }, [
-      el("p", { class: "text-[13px] font-medium", text: t.title }),
-      el("div", { class: "mt-1 flex flex-wrap gap-1.5" }, [
-        el("span", { class: "chip", text: t.status }),
-        t.dueDate ? el("span", { class: "chip", text: `due ${dayOf(t.dueDate)}` }) : null,
-        t.assignee ? el("span", { class: "chip", text: persona(t.assignee).name }) : null,
-      ]),
-    ])));
-
-    const act = $("calendar-activity");
-    clear(act);
-    if (!data.activity?.length) act.append(el("p", { class: "text-[13px] text-ink-3", text: "No activity in this window." }));
-    else act.append(...data.activity.map((a) => el("div", { class: "flex items-start gap-2 rounded-lg border border-line-soft p-2.5" }, [
-      icon(a.type === "completed" ? "circle-check" : "activity", `icon-sm mt-0.5 ${a.type === "completed" ? "text-ok" : "text-brand"}`),
-      el("div", { class: "min-w-0 flex-1" }, [
-        el("p", { class: "text-[13px]", text: a.type === "completed" ? a.task.title : a.update.message }),
-        el("p", { class: "mt-0.5 font-mono text-[10px] text-ink-3", text: `${a.type === "completed" ? "completed" : a.update.agent} · ${relative(a.timestamp)}` }),
-      ]),
-    ])));
+    const data = await api("/api/changelog?days=365");
+    state.changelog.candidates = data.candidates || [];
+    state.changelog.published = data.published || "";
+    // Drop selections for anything that is no longer a candidate, so publishing
+    // cannot act on a task that was reopened while this view sat open.
+    const live = new Set(state.changelog.candidates.map((c) => c.key));
+    for (const key of [...state.changelog.selected]) if (!live.has(key)) state.changelog.selected.delete(key);
+    renderChangelog();
   } catch (err) {
     toast(err.message, "err");
   }
 }
 
-// ---------------------------------------------------------------- team grid
-
-function renderTeamGrid() {
-  const host = $("team-grid");
+function renderChangelog() {
+  const host = $("changelog-candidates");
   clear(host);
-  host.append(
-    ...state.personas.map((p) => {
-      const status = statusOf(p.id);
-      return el("article", { class: "card flex flex-col p-4" }, [
-        el("div", { class: "flex items-start justify-between" }, [
-          avatarNode(p, "h-10 w-10", "icon-lg"),
-          el("span", { class: `chip ${status.cls}`.trim() }, [
-            status.live ? el("span", { class: "dot dot-live", style: "background:var(--c-ok)" }) : null,
-            el("span", { text: status.label }),
-          ]),
+  const items = state.changelog.candidates;
+
+  setText($("changelog-published"), state.changelog.published.trim() || "CHANGELOG.md does not exist yet. Publishing something creates it.");
+
+  if (!items.length) {
+    host.append(el("p", { class: "text-[13px] text-ink-3", text: "Nothing waiting. Check a task off in Tasks and it turns up here." }));
+  } else {
+    // Grouped by day, because that is how the published file is structured.
+    const byDate = new Map();
+    for (const c of items) {
+      if (!byDate.has(c.date)) byDate.set(c.date, []);
+      byDate.get(c.date).push(c);
+    }
+    for (const [date, group] of byDate) {
+      host.append(
+        el("div", {}, [
+          el("p", { class: "mb-1.5 font-mono text-[11px] text-ink-3", text: date }),
+          el("div", { class: "space-y-1.5" }, group.map(candidateRow)),
         ]),
-        el("h3", { class: "mt-3 font-serif text-[15px] font-semibold", text: p.name }),
-        el("p", { class: "font-mono text-[11px] text-brand-ink", text: p.role }),
-        el("p", { class: "mt-2 flex-1 text-[12px] leading-relaxed text-ink-3", text: p.tagline }),
-        el("button", {
-          type: "button",
-          class: "btn btn-quiet mt-3 w-full",
-          text: "Open workroom",
-          onclick: () => selectChannel(p.id),
+      );
+    }
+  }
+
+  const selected = state.changelog.selected.size;
+  const btn = $("changelog-publish");
+  btn.disabled = selected === 0;
+  setText(btn.querySelector("span:last-child"), selected ? `Publish ${selected}` : "Publish selected");
+}
+
+function candidateRow(c) {
+  const blocked = Boolean(c.blocked?.length);
+  const box = el("input", {
+    type: "checkbox",
+    class: "mt-0.5",
+    "aria-label": `Include: ${c.text}`,
+    disabled: blocked,
+    onchange: (ev) => {
+      if (ev.currentTarget.checked) state.changelog.selected.add(c.key);
+      else state.changelog.selected.delete(c.key);
+      renderChangelog();
+    },
+  });
+  box.checked = state.changelog.selected.has(c.key);
+
+  return el("label", {
+    class: "flex items-start gap-2 rounded-lg border p-2.5",
+    style: blocked
+      ? "border-color:color-mix(in oklab, var(--c-err) 40%, transparent);background:var(--c-err-soft)"
+      : "border-color:var(--c-line-soft)",
+  }, [
+    box,
+    el("div", { class: "min-w-0 flex-1" }, [
+      el("p", { class: "text-[13px]", text: c.text }),
+      el("div", { class: "mt-1 flex flex-wrap items-center gap-1.5" }, [
+        el("span", { class: "chip", text: c.kind === "task" ? "task" : "team update" }),
+        c.category ? el("span", { class: "chip", text: c.category }) : null,
+        c.agent ? el("span", { class: "chip", text: persona(c.agent).name }) : null,
+      ]),
+      // The whole point of the screen: CHANGELOG.md is tracked in a public repo,
+      // and a git commit is permanent. Say why it is held back, not just that it is.
+      blocked
+        ? el("p", { class: "mt-1.5 text-[12px] font-medium text-err", text: `Held back — reads as ${c.blocked.map((v) => v.label).join(" and ")}. CHANGELOG.md is public and permanent.` })
+        : null,
+    ]),
+  ]);
+}
+
+async function publishChangelog() {
+  const keys = [...state.changelog.selected];
+  if (!keys.length) return;
+  const notice = $("changelog-notice");
+  notice.hidden = true;
+  try {
+    const result = await api("/api/changelog/publish", { method: "POST", body: JSON.stringify({ keys }) });
+    state.changelog.selected.clear();
+    await loadChangelog();
+    await loadBoard();
+    notice.setAttribute("style", "border:1px solid color-mix(in oklab, var(--c-ok) 40%, transparent);background:var(--c-ok-soft);color:var(--c-ok)");
+    setText(notice, `Wrote ${result.count} ${result.count === 1 ? "entry" : "entries"} to CHANGELOG.md. Review it, then commit — nothing is pushed for you.`);
+    notice.hidden = false;
+    if (result.skipped?.length) toast(`${result.skipped.length} held back`, "warn");
+  } catch (err) {
+    notice.setAttribute("style", "border:1px solid color-mix(in oklab, var(--c-err) 40%, transparent);background:var(--c-err-soft);color:var(--c-err)");
+    setText(notice, err.data?.skipped?.length ? err.data.skipped.map((sk) => sk.reason).join(" ") : err.message);
+    notice.hidden = false;
+  }
+}
+
+// ---------------------------------------------------------------- calendar
+
+const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+function monthStart(date) {
+  return new Date(date.getFullYear(), date.getMonth(), 1);
+}
+
+function isoDay(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+async function loadCalendar() {
+  if (!state.calendar.month) state.calendar.month = monthStart(new Date());
+  try {
+    // A wide window on purpose: the grid can be scrolled to any month, so the
+    // data behind it has to cover more than the default 30 days.
+    const data = await api("/api/calendar?days=365");
+    state.calendar.activity = data.activity || [];
+    state.calendar.upcoming = data.upcoming || [];
+    renderCalendar();
+  } catch (err) {
+    toast(err.message, "err");
+  }
+}
+
+/** date (YYYY-MM-DD) -> { due: Task[], done: Task[], updates: [] } */
+function calendarIndex() {
+  const index = new Map();
+  const bucket = (day) => {
+    if (!index.has(day)) index.set(day, { due: [], done: [], updates: [] });
+    return index.get(day);
+  };
+  for (const task of state.calendar.upcoming) {
+    if (task.dueDate) bucket(task.dueDate).due.push(task);
+  }
+  for (const entry of state.calendar.activity) {
+    const day = entry.timestamp.slice(0, 10);
+    if (entry.type === "completed") bucket(day).done.push(entry.task);
+    else bucket(day).updates.push(entry.update);
+  }
+  return index;
+}
+
+function renderCalendar() {
+  const month = state.calendar.month;
+  const index = calendarIndex();
+  const today = isoDay(new Date());
+
+  setText($("calendar-title"), month.toLocaleDateString([], { month: "long", year: "numeric" }));
+
+  const head = $("calendar-weekdays");
+  clear(head);
+  head.append(...WEEKDAYS.map((d) =>
+    el("div", { class: "px-2 py-1.5 text-center font-mono text-[10px] uppercase tracking-wide text-ink-3", text: d }),
+  ));
+
+  // Weeks start Monday: the civic calendar this feeds off runs on business weeks,
+  // and a Sunday-first grid splits the working week across two rows.
+  const first = monthStart(month);
+  const offset = (first.getDay() + 6) % 7;
+  const gridStart = new Date(first);
+  gridStart.setDate(1 - offset);
+
+  const grid = $("calendar-grid");
+  clear(grid);
+  for (let i = 0; i < 42; i++) {
+    const cell = new Date(gridStart);
+    cell.setDate(gridStart.getDate() + i);
+    const day = isoDay(cell);
+    const inMonth = cell.getMonth() === month.getMonth();
+    const data = index.get(day);
+    const isToday = day === today;
+    const isSelected = state.calendar.selected === day;
+
+    grid.append(
+      el("button", {
+        type: "button",
+        class: "flex min-h-[74px] flex-col items-start gap-1 border-b border-r border-line-soft p-1.5 text-left hover:bg-raised",
+        style: [
+          !inMonth ? "opacity:.4" : "",
+          isSelected ? "background:var(--c-brand-soft);box-shadow:inset 0 0 0 2px var(--c-brand)" : "",
+        ].filter(Boolean).join(";"),
+        "aria-current": isToday ? "date" : null,
+        "aria-pressed": String(isSelected),
+        onclick: () => { state.calendar.selected = day; renderCalendar(); },
+      }, [
+        el("span", {
+          class: `font-mono text-[11px] ${isToday ? "font-bold" : ""}`.trim(),
+          style: isToday ? "background:var(--c-brand);color:var(--c-on-brand);border-radius:4px;padding:0 4px" : "",
+          text: String(cell.getDate()),
         }),
-      ]);
-    }),
+        data
+          ? el("span", { class: "flex flex-wrap gap-1" }, [
+              ...data.due.slice(0, 3).map((t) => el("span", { class: "dot", style: "background:var(--c-warn)", title: `Due: ${t.title}` })),
+              ...data.done.slice(0, 3).map((t) => el("span", { class: "dot", style: "background:var(--c-ok)", title: `Done: ${t.title}` })),
+              ...data.updates.slice(0, 3).map((u) => el("span", { class: "dot", style: "background:var(--c-brand)", title: `${u.agent}: ${u.message}` })),
+            ])
+          : null,
+      ]),
+    );
+  }
+
+  renderCalendarDay(index);
+
+  const up = $("calendar-upcoming");
+  clear(up);
+  const dated = state.calendar.upcoming.filter((t) => t.dueDate).slice(0, 6);
+  if (!dated.length) up.append(el("p", { class: "text-ink-3", text: "Nothing with a date on it." }));
+  else up.append(...dated.map((t) =>
+    el("p", { class: "flex items-start gap-2" }, [
+      el("span", { class: "chip", text: dayOf(t.dueDate) }),
+      el("span", { class: "min-w-0 flex-1", text: t.title }),
+    ]),
+  ));
+}
+
+function renderCalendarDay(index) {
+  const host = $("calendar-day-items");
+  clear(host);
+  const day = state.calendar.selected;
+  if (!day) {
+    setText($("calendar-day-label"), "Pick a day");
+    host.append(el("p", { class: "text-ink-3", text: "Select a date to see what is on it." }));
+    return;
+  }
+  setText($("calendar-day-label"), new Date(`${day}T12:00:00`).toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" }));
+  const data = index.get(day);
+  if (!data) {
+    host.append(el("p", { class: "text-ink-3", text: "Nothing on this day." }));
+    return;
+  }
+  const row = (label, text, color) => el("p", { class: "flex items-start gap-2" }, [
+    el("span", { class: "chip", style: `color:${color};border-color:${color}`, text: label }),
+    el("span", { class: "min-w-0 flex-1", text }),
+  ]);
+  host.append(
+    ...data.due.map((t) => row("due", t.title, "var(--c-warn)")),
+    ...data.done.map((t) => row("done", t.title, "var(--c-ok)")),
+    ...data.updates.map((u) => row(u.agent, u.message, "var(--c-brand)")),
   );
 }
 
-// ---------------------------------------------------------------- decisions
+// ---------------------------------------------------------------- team grid
 
-function renderApprovals() {
-  const host = $("approvals-list");
+function renderTeamList() {
+  const host = $("team-list");
   clear(host);
-  const badge = $("badge-decisions");
-  badge.hidden = state.approvals.length === 0;
-  setText(badge, String(state.approvals.length));
-
-  if (!$("group-menu").hidden) renderGroupMenu();
-
-  if (!state.approvals.length) {
-    host.append(el("p", { class: "text-[13px] text-ink-3", text: "Nothing waiting." }));
-    return;
-  }
-  host.append(...state.approvals.map((a) => {
-    const p = persona(a.personaId);
-    return el("article", { class: "card p-4", style: "border-color:color-mix(in oklab, var(--c-warn) 40%, transparent)" }, [
-      el("div", { class: "flex items-center gap-2" }, [
-        avatarNode(p, "h-7 w-7", "icon-sm"),
-        el("div", { class: "min-w-0" }, [
-          el("p", { class: "text-[13px] font-semibold", text: `${p.name} wants to run ${a.toolName}` }),
-          el("p", { class: "font-mono text-[10px] text-ink-3", text: `${a.reason} · ${relative(a.createdAt)}` }),
+  host.append(...state.personas.map((p) => {
+    const status = statusOf(p.id);
+    const open = state.roster.get(p.id) || [];
+    return el("article", { class: "card p-4" }, [
+      el("div", { class: "flex items-start gap-3" }, [
+        avatarNode(p, "h-11 w-11", "icon-lg"),
+        el("div", { class: "min-w-0 flex-1" }, [
+          el("div", { class: "flex flex-wrap items-center gap-2" }, [
+            el("h2", { class: "font-serif text-[17px] font-semibold", text: p.name }),
+            el("span", { class: "chip chip-brand", text: p.role }),
+            el("span", { class: `chip ${status.cls}`.trim() }, [
+              status.live ? el("span", { class: "dot dot-live", style: "background:var(--c-ok)" }) : null,
+              el("span", { text: status.label }),
+            ]),
+          ]),
+          el("p", { class: "mt-0.5 font-mono text-[11px] text-ink-3", text: `${p.department} · ${p.email}` }),
+          el("p", { class: "mt-2 text-[13px] leading-relaxed text-ink-2", text: p.tagline }),
         ]),
+        el("button", {
+          type: "button",
+          class: "btn btn-primary",
+          onclick: () => selectChannel(p.id),
+        }, [icon("terminal", "icon-sm"), el("span", { text: "Chat" })]),
       ]),
-      el("pre", { class: "tool-block mt-2", text: a.detail }),
-      el("div", { class: "mt-3 flex gap-2" }, [
-        el("button", { type: "button", class: "btn btn-primary flex-1", onclick: () => resolveApproval(a.id, true) }, [icon("check", "icon-sm"), el("span", { text: "Approve" })]),
-        el("button", { type: "button", class: "btn btn-danger flex-1", onclick: () => resolveApproval(a.id, false) }, [icon("x", "icon-sm"), el("span", { text: "Deny" })]),
+
+      el("div", { class: "mt-3 grid gap-4 border-t border-line-soft pt-3 sm:grid-cols-2" }, [
+        el("div", {}, [
+          el("p", { class: "label mb-1.5", text: "Duties" }),
+          el("ul", { class: "space-y-1" }, (p.responsibilities || []).map((r) =>
+            el("li", { class: "flex items-start gap-1.5 text-[13px] leading-snug" }, [
+              icon("check", "icon-sm mt-[3px] text-brand"),
+              el("span", { class: "min-w-0 flex-1", text: r }),
+            ]),
+          )),
+          // Rendered only when the persona declares one. Listing a duty an agent
+          // has no tool for would make this page assert something untrue.
+          p.caveat
+            ? el("p", {
+                class: "mt-2 rounded-lg px-2.5 py-2 text-[12px] leading-snug",
+                style: "border:1px solid color-mix(in oklab, var(--c-warn) 40%, transparent);background:var(--c-warn-soft);color:var(--c-warn)",
+                text: p.caveat,
+              })
+            : null,
+        ]),
+        el("div", {}, [
+          el("p", { class: "label mb-1.5", text: "Owns" }),
+          el("div", { class: "flex flex-wrap gap-1" },
+            (p.scope || []).length
+              ? p.scope.map((sc) => el("span", { class: "chip", text: sc }))
+              : [el("span", { class: "text-[13px] text-ink-3", text: "No file ownership — works from live sources." })]),
+          el("p", { class: "label mb-1.5 mt-3", text: "On right now" }),
+          open.length
+            ? el("ul", { class: "space-y-1" }, open.map((t) =>
+                el("li", { class: "flex items-start gap-1.5 text-[13px] leading-snug" }, [
+                  icon("arrow-right", "icon-sm mt-[3px] text-ink-3"),
+                  el("span", { class: "min-w-0 flex-1", text: t.title }),
+                ]),
+              ))
+            : el("p", { class: "text-[13px] text-ink-3", text: "Nothing open." }),
+        ]),
       ]),
     ]);
   }));
 }
 
-async function resolveApproval(id, approve) {
-  try {
-    await api(`/api/approvals/${encodeURIComponent(id)}`, { method: "POST", body: JSON.stringify({ approve }) });
-    state.approvals = state.approvals.filter((a) => a.id !== id);
-    renderApprovals();
-    toast(approve ? "Approved" : "Denied", approve ? "ok" : "warn");
-  } catch (err) {
-    toast(err.message, "err");
+// ---------------------------------------------------------------- decisions
+
+/**
+ * Approvals render in two places, never as a tab of their own.
+ *
+ * The header bar is the one that matters: the agent is paused mid-turn and
+ * approvals.ts denies automatically after five minutes, so this cannot be
+ * somewhere Jerry has to remember to look. The Tasks panel is the fuller list
+ * for when several stack up. A desktop notification covers the case where the
+ * dashboard is open in a tab he is not looking at, which on an always-on box is
+ * most of the time.
+ */
+const APPROVAL_TIMEOUT_MS = 5 * 60 * 1000;
+let interruptTicker;
+
+function renderApprovals() {
+  const pending = state.approvals;
+  renderInterrupt(pending);
+  renderApprovalPanel(pending);
+}
+
+function renderInterrupt(pending) {
+  const bar = $("interrupt");
+  if (!pending.length) {
+    bar.hidden = true;
+    clearInterval(interruptTicker);
+    interruptTicker = undefined;
+    return;
   }
+
+  const first = pending[0];
+  const who = persona(first.personaId);
+  setText($("interrupt-text"),
+    pending.length === 1
+      ? `${who.name} needs to run ${first.toolName} — ${first.reason}.`
+      : `${who.name} needs to run ${first.toolName} — ${first.reason}. ${pending.length - 1} more waiting.`);
+  setText($("interrupt-detail"), first.detail);
+  $("interrupt-approve").onclick = () => resolveApproval(first.id, true);
+  $("interrupt-deny").onclick = () => resolveApproval(first.id, false);
+  bar.hidden = false;
+
+  // Counting down rather than showing a static "5 min" — the deadline is real and
+  // silent, and a number that moves is the only honest way to show that.
+  const tick = () => {
+    const left = APPROVAL_TIMEOUT_MS - (Date.now() - new Date(first.createdAt).getTime());
+    const chip = $("interrupt-timer");
+    if (left <= 0) { setText(chip, "expiring"); return; }
+    const mins = Math.floor(left / 60000);
+    const secs = String(Math.floor((left % 60000) / 1000)).padStart(2, "0");
+    setText(chip, `${mins}:${secs} to auto-deny`);
+  };
+  tick();
+  clearInterval(interruptTicker);
+  interruptTicker = setInterval(tick, 1000);
+}
+
+function renderApprovalPanel(pending) {
+  const wrap = $("tasks-approvals");
+  const host = $("tasks-approvals-list");
+  clear(host);
+  wrap.hidden = pending.length === 0;
+  if (!pending.length) return;
+
+  host.append(...pending.map((a) => {
+    const who = persona(a.personaId);
+    return el("article", { class: "card p-3" }, [
+      el("div", { class: "flex items-center gap-2" }, [
+        avatarNode(who, "h-7 w-7", "icon-sm"),
+        el("div", { class: "min-w-0 flex-1" }, [
+          el("p", { class: "text-[13px] font-semibold", text: `${who.name} wants to run ${a.toolName}` }),
+          el("p", { class: "font-mono text-[10px] text-ink-3", text: `${a.reason} · asked ${relative(a.createdAt)}` }),
+        ]),
+        el("button", { type: "button", class: "btn btn-primary py-1 text-[12px]", text: "Approve", onclick: () => resolveApproval(a.id, true) }),
+        el("button", { type: "button", class: "btn btn-danger py-1 text-[12px]", text: "Deny", onclick: () => resolveApproval(a.id, false) }),
+      ]),
+      el("pre", { class: "tool-block mt-2", text: a.detail }),
+    ]);
+  }));
+}
+
+// ---------- desktop notifications ----------
+
+/**
+ * Permission is requested on the first approval rather than at load, so the
+ * browser prompt arrives attached to something that just happened and is
+ * obviously worth allowing. Notification requires a secure context, which both
+ * ways in provide: localhost through the SSH forward counts as secure, and the
+ * Cloudflare tunnel is real HTTPS.
+ */
+function notifyDesktop(approval) {
+  if (!("Notification" in window)) return;
+  const who = persona(approval.personaId).name;
+  const show = () => {
+    try {
+      const note = new Notification(`${who} needs a decision`, {
+        body: `${approval.toolName} — ${approval.reason}\nAuto-denied in 5 minutes.`,
+        tag: approval.id,
+        requireInteraction: true,
+      });
+      note.onclick = () => { window.focus(); showView("tasks"); note.close(); };
+    } catch {
+      // Some browsers refuse construction outside a service worker. The header
+      // bar is the real mechanism; this is only the nudge.
+    }
+  };
+  if (Notification.permission === "granted") show();
+  else if (Notification.permission === "default") Notification.requestPermission().then((p) => { if (p === "granted") show(); });
 }
 
 function renderAlerts() {
   const host = $("alerts-list");
+  const wrap = $("tasks-alerts");
   clear(host);
-  if (!state.alerts.length) {
-    host.append(el("p", { class: "text-[13px] text-ink-3", text: "No errors reported." }));
-    return;
-  }
+  // Hidden entirely when clean, rather than showing a reassuring empty state that
+  // costs a row of vertical space on every visit.
+  wrap.hidden = state.alerts.length === 0;
+  if (!state.alerts.length) return;
   host.append(...state.alerts.map((a) => el("div", { class: "card p-3" }, [
     el("p", { class: "text-[12px] font-semibold", text: persona(a.personaId).name }),
     el("p", { class: "mt-0.5 text-[12px] text-ink-2", text: a.message }),
@@ -1268,6 +1582,7 @@ function connectStream() {
       case "approval_requested":
         state.approvals.push(event.approval);
         renderApprovals();
+        notifyDesktop(event.approval);
         toast(`${persona(event.approval.personaId).name} needs a decision`, "warn");
         break;
 
@@ -1279,11 +1594,16 @@ function connectStream() {
 
       case "board_updated":
         loadRoster();
-        if (state.view === "board") loadBoard();
+        if (state.view === "tasks") loadBoard();
+        if (state.view === "changelog") loadChangelog();
         break;
 
       case "calendar_updated":
         if (state.view === "calendar") loadCalendar();
+        break;
+
+      case "changelog_updated":
+        if (state.view === "changelog") loadChangelog();
         break;
 
       default: break;
@@ -1299,7 +1619,7 @@ async function loadRoster() {
     state.roster = new Map(roster.map((r) => [r.id, r.activeTasks || []]));
     renderRoster();
     refreshStatusChip();
-    if (state.view === "team") renderTeamGrid();
+    if (state.view === "team") renderTeamList();
     if (!$("drawer").hidden) renderDrawer();
   } catch (err) {
     console.error("roster load failed", err);
@@ -1369,29 +1689,39 @@ function wireEvents() {
   }
   document.addEventListener("keydown", (ev) => {
     if (ev.key !== "Escape") return;
-    closeGroupMenu();
     for (const overlay of document.querySelectorAll(".overlay")) overlay.hidden = true;
   });
 
   $("new-task-btn").addEventListener("click", openTaskModal);
-  $("board-new-task").addEventListener("click", openTaskModal);
+  $("tasks-new").addEventListener("click", openTaskModal);
   $("task-form").addEventListener("submit", submitTask);
 
-  $("calendar-days").addEventListener("change", loadCalendar);
+  $("home-btn").addEventListener("click", () => showView("chat"));
+
+  $("interrupt-all").addEventListener("click", () => showView("tasks"));
+
+  $("changelog-publish").addEventListener("click", publishChangelog);
+  $("changelog-select-all").addEventListener("click", () => {
+    for (const c of state.changelog.candidates) if (!c.blocked?.length) state.changelog.selected.add(c.key);
+    renderChangelog();
+  });
+
+  const shiftMonth = (by) => {
+    const m = state.calendar.month || monthStart(new Date());
+    state.calendar.month = new Date(m.getFullYear(), m.getMonth() + by, 1);
+    renderCalendar();
+  };
+  $("calendar-prev").addEventListener("click", () => shiftMonth(-1));
+  $("calendar-next").addEventListener("click", () => shiftMonth(1));
+  $("calendar-today").addEventListener("click", () => {
+    state.calendar.month = monthStart(new Date());
+    state.calendar.selected = isoDay(new Date());
+    renderCalendar();
+  });
 
   $("profile-toggle").addEventListener("click", openProfile);
   $("field-form").addEventListener("submit", submitField);
 
-  $("group-btn").addEventListener("click", () => {
-    const menu = $("group-menu");
-    const open = menu.hidden;
-    if (open) renderGroupMenu();
-    menu.hidden = !open;
-    $("group-btn").setAttribute("aria-expanded", String(open));
-  });
-  document.addEventListener("click", (ev) => {
-    if (!$("group-menu").hidden && !ev.target.closest("#group-menu, #group-btn")) closeGroupMenu();
-  });
   $("preview-toggle").addEventListener("click", openPreview);
   $("preview-start").addEventListener("click", async () => {
     $("preview-start").disabled = true;

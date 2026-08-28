@@ -9,6 +9,7 @@ import { onApprovalRequested, onApprovalResolved, resolveApproval, listPendingAp
 import { checkPreviewStatus, startPreviewServer, PREVIEW_URL } from "./preview.js";
 import { appendTranscriptEvent, clearTranscript, readTranscript } from "./transcript.js";
 import { routeMessage } from "./router.js";
+import { listChangelogCandidates, publishToChangelog, readChangelog } from "../../server/src/changelog.js";
 import {
   readProfileDoc,
   setProfileField,
@@ -34,6 +35,8 @@ import {
   upcomingWork,
   watchTaskStore,
   isTaskDueDate,
+  isTaskStatus,
+  TASK_STATUSES,
   TaskStatusConflictError,
 } from "../../server/src/tasks.js";
 
@@ -60,7 +63,8 @@ type StreamEvent =
   | { type: "dashboard_sync" }
   | { type: "heartbeat" }
   | { type: "board_updated"; reason: "sync" }
-  | { type: "calendar_updated" };
+  | { type: "calendar_updated" }
+  | { type: "changelog_updated" };
 
 const clients = new Set<Response>();
 type ReconcileState = "queued" | "working" | "waiting" | "complete" | "error";
@@ -140,7 +144,11 @@ app.get("/api/events", (req: Request, res: Response) => {
 });
 
 app.get("/api/personas", (_req: Request, res: Response) => {
-  res.json(PERSONAS.map(({ id, name, role, department, tagline, color, email, scope }) => ({ id, name, role, department, tagline, color, email, scope })));
+  res.json(
+    PERSONAS.map(({ id, name, role, department, tagline, color, email, scope, responsibilities, caveat }) => ({
+      id, name, role, department, tagline, color, email, scope, responsibilities, caveat,
+    })),
+  );
 });
 
 app.get("/api/approvals", (_req: Request, res: Response) => {
@@ -356,11 +364,11 @@ app.get("/api/board", (_req: Request, res: Response) => {
 
 app.get("/api/tasks", (req: Request, res: Response) => {
   const rawStatus = typeof req.query.status === "string" ? req.query.status : undefined;
-  if (rawStatus && rawStatus !== "backlog" && rawStatus !== "in-progress" && rawStatus !== "done") {
-    res.status(400).json({ error: "status must be backlog, in-progress, or done" });
+  if (rawStatus && !isTaskStatus(rawStatus)) {
+    res.status(400).json({ error: `status must be one of: ${TASK_STATUSES.join(", ")}` });
     return;
   }
-  const status = rawStatus === "backlog" || rawStatus === "in-progress" || rawStatus === "done" ? rawStatus : undefined;
+  const status = rawStatus && isTaskStatus(rawStatus) ? rawStatus : undefined;
   const assignee = typeof req.query.assignee === "string" ? req.query.assignee : undefined;
   const category = typeof req.query.category === "string" ? req.query.category : undefined;
   res.json(listTasks({ status, assignee, category }));
@@ -403,12 +411,12 @@ app.post("/api/tasks", (req: Request, res: Response) => {
 
 app.post("/api/tasks/:id/status", (req: Request, res: Response) => {
   const { status, note, expectedStatus } = req.body ?? {};
-  if (status !== "backlog" && status !== "in-progress" && status !== "done") {
-    res.status(400).json({ error: "status must be backlog, in-progress, or done" });
+  if (!isTaskStatus(status)) {
+    res.status(400).json({ error: `status must be one of: ${TASK_STATUSES.join(", ")}` });
     return;
   }
-  if (expectedStatus !== "backlog" && expectedStatus !== "in-progress" && expectedStatus !== "done") {
-    res.status(400).json({ error: "expectedStatus is required and must be backlog, in-progress, or done" });
+  if (!isTaskStatus(expectedStatus)) {
+    res.status(400).json({ error: `expectedStatus is required and must be one of: ${TASK_STATUSES.join(", ")}` });
     return;
   }
   let task;
@@ -478,6 +486,35 @@ app.post("/api/task-categories", (req: Request, res: Response) => {
   }
   const categories = proposeTaskCategory(category);
   res.json({ categories });
+});
+
+// ---------- changelog ----------
+// Finished work on its way to a public, permanent CHANGELOG.md. The screening
+// lives in changelog.ts; these routes only carry Jerry's selection.
+
+app.get("/api/changelog", (req: Request, res: Response) => {
+  const requested = typeof req.query.days === "string" ? Number(req.query.days) : 90;
+  const days = Number.isFinite(requested) && requested >= 1 && requested <= 3650 ? Math.floor(requested) : 90;
+  res.json({ candidates: listChangelogCandidates(days), published: readChangelog(), days });
+});
+
+app.post("/api/changelog/publish", (req: Request, res: Response) => {
+  const { keys, heading } = req.body ?? {};
+  if (!Array.isArray(keys) || !keys.length || !keys.every((k) => typeof k === "string")) {
+    res.status(400).json({ error: "keys must be a non-empty array of candidate keys" });
+    return;
+  }
+  if (heading != null && typeof heading !== "string") {
+    res.status(400).json({ error: "heading must be a string" });
+    return;
+  }
+  const result = publishToChangelog(keys, typeof heading === "string" ? heading : undefined);
+  if (!result.count) {
+    res.status(422).json({ error: "Nothing could be published.", skipped: result.skipped });
+    return;
+  }
+  broadcast({ type: "changelog_updated" });
+  res.json(result);
 });
 
 // ---------- roster + calendar ----------

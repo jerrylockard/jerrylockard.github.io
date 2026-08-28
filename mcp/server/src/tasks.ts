@@ -32,7 +32,26 @@ interface RecoveryClaim {
   ancestors: Array<{ path: string; token: string }>;
 }
 
-export type TaskStatus = "backlog" | "in-progress" | "done";
+/**
+ * Stored status values, which are NOT the labels the dashboard shows.
+ *
+ * Jerry's framing for the Tasks view is "current work, future work, and things I
+ * can't get to" — so the UI reads Now / Next / On hold. The stored strings keep
+ * their original names because tasks.json already holds them and renaming an
+ * enum on disk to improve a label is how you lose a board.
+ *
+ *   in-progress -> "Now"
+ *   backlog     -> "Next"
+ *   on-hold     -> "On hold"   (new: started but parked, or deliberately deferred)
+ *   done        -> leaves the Tasks view entirely and surfaces in the Changelog
+ */
+export type TaskStatus = "backlog" | "in-progress" | "on-hold" | "done";
+
+export const TASK_STATUSES: TaskStatus[] = ["backlog", "in-progress", "on-hold", "done"];
+
+export function isTaskStatus(value: unknown): value is TaskStatus {
+  return typeof value === "string" && (TASK_STATUSES as string[]).includes(value);
+}
 export type TaskPriority = "low" | "normal" | "high";
 
 /**
@@ -109,7 +128,7 @@ function parseTask(value: unknown, index: number): Task {
   for (const key of requiredStrings) {
     if (typeof value[key] !== "string") throw new Error(`Task store entry ${index} has an invalid ${key}.`);
   }
-  if (value.status !== "backlog" && value.status !== "in-progress" && value.status !== "done") {
+  if (!isTaskStatus(value.status)) {
     throw new Error(`Task store entry ${index} has an invalid status.`);
   }
   if (value.priority !== "low" && value.priority !== "normal" && value.priority !== "high") {
@@ -443,6 +462,7 @@ export function getTask(id: string): Task | undefined {
 export interface Board {
   backlog: Task[];
   "in-progress": Task[];
+  "on-hold": Task[];
   done: Task[];
   categories: string[];
 }
@@ -450,8 +470,9 @@ export interface Board {
 export function getBoard(): Board {
   const { tasks, categories } = readAll();
   return {
-    backlog: tasks.filter((t) => t.status === "backlog").sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
+    backlog: tasks.filter((t) => t.status === "backlog").sort(compareUpcoming),
     "in-progress": tasks.filter((t) => t.status === "in-progress").sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)),
+    "on-hold": tasks.filter((t) => t.status === "on-hold").sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)),
     done: tasks.filter((t) => t.status === "done").sort((a, b) => (b.completedAt ?? b.updatedAt).localeCompare(a.completedAt ?? a.updatedAt)),
     categories,
   };
@@ -480,6 +501,9 @@ export function updateTaskStatus(
     }
     task.status = status;
     task.updatedAt = now;
+    // Cleared on the way out of done as well as set on the way in. The Changelog
+    // is built from completedAt, so a reopened task that kept its old stamp would
+    // go on appearing as finished work in a published CHANGELOG.md.
     if (status === "done") task.completedAt = now;
     else delete task.completedAt;
     task.activity.push({ at: now, by, note: cleanNote || `Moved to ${status}` });
@@ -536,7 +560,7 @@ export function tasksByAssignee(): Record<string, Task[]> {
   const { tasks } = readAll();
   const byAssignee = Object.create(null) as Record<string, Task[]>;
   for (const t of tasks) {
-    if (!t.assignee || t.status === "done") continue;
+    if (!t.assignee || t.status === "done" || t.status === "on-hold") continue;
     (byAssignee[t.assignee] ??= []).push(t);
   }
   return byAssignee;
@@ -564,5 +588,7 @@ function compareUpcoming(a: Task, b: Task): number {
 /** In-progress work first, then backlog; due dates and priority determine order within each group. */
 export function upcomingWork(): Task[] {
   const board = getBoard();
+  // on-hold is deliberately excluded: "what's coming up" should not include the
+  // things Jerry has already said he cannot get to.
   return [...board["in-progress"].sort(compareUpcoming), ...board.backlog.sort(compareUpcoming)];
 }

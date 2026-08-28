@@ -1,323 +1,378 @@
-<!doctype html>
-<html lang="en" data-theme="light">
+<!DOCTYPE html>
+<html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Agent Workroom — jerrylockard.me</title>
-<link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Public+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agent Workspace</title>
+  <link rel="icon" href="/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,500;6..72,600&family=JetBrains+Mono:wght@400;500&display=swap">
+  <!-- Compiled from styles/app.css. Rebuild: pnpm --filter mcp-gui build:css -->
+  <link rel="stylesheet" href="/app.css">
 </head>
-<body>
-<div class="shell">
+<body class="h-full">
 
-  <header class="app-header" id="sidenav">
-    <button class="brand brand-button" type="button" data-goto="chat" aria-label="Open the Workroom">
-      <span class="brand-mark" aria-hidden="true">◆</span>
-      <span class="brand-copy">
-        <span class="brand-name">Lockard.tech</span>
-        <span class="brand-domain">Agent workspace</span>
-      </span>
+<div class="flex h-full flex-col">
+
+  <!-- ============ header ============ -->
+  <header class="flex items-center gap-3 border-b border-line bg-surface px-3 py-2">
+    <button id="rail-toggle" class="icon-btn" type="button" aria-pressed="true" aria-label="Toggle agent list" title="Toggle agent list">
+      <span class="icon i-panel-left" aria-hidden="true"></span>
     </button>
 
-    <nav class="topnav" id="sidenav-nav" aria-label="Primary workspace">
-      <button type="button" class="nav-btn" data-tab="chat" aria-pressed="false" aria-label="Workroom">
-        <svg class="nav-icon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5h16v10.5H9l-4 3.5v-3.5H4z"/></svg>
-        <span>Workroom</span>
-        <span class="nav-badge" id="badge-chat" hidden></span>
+    <div class="flex min-w-0 items-center gap-2">
+      <span class="avatar h-7 w-7 text-[11px] font-bold" style="background:#1D6F68">JL</span>
+      <div class="min-w-0 leading-tight">
+        <p class="truncate text-[13px] font-semibold">Agent Workspace</p>
+        <p class="font-mono text-[10px] text-ink-3">jerrylockard.me</p>
+      </div>
+    </div>
+
+    <nav class="ml-2 flex items-center gap-0.5 rounded-xl bg-sunken p-0.5" aria-label="Primary">
+      <button class="nav-btn" type="button" data-view="workroom" aria-current="page">
+        <span class="icon icon-sm i-terminal" aria-hidden="true"></span><span>Workroom</span>
       </button>
-      <button type="button" class="nav-btn" data-tab="board" aria-pressed="false" aria-label="Work">
-        <svg class="nav-icon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4.5" width="16" height="15" rx="1.5"/><path d="M8 4.5v15M8 9.5h8M8 14h5"/></svg>
-        <span>Work</span>
+      <button class="nav-btn" type="button" data-view="board">
+        <span class="icon icon-sm i-kanban" aria-hidden="true"></span><span>Board</span>
+        <span class="chip chip-brand px-1.5 py-0" id="badge-board" hidden>0</span>
       </button>
-      <button type="button" class="nav-btn" data-tab="employees" aria-pressed="false" aria-label="Team">
-        <svg class="nav-icon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8.5" cy="8" r="3"/><circle cx="16" cy="9.2" r="2.4"/><path d="M3.3 19c.5-3 2.6-4.8 5.2-4.8s4.7 1.8 5.2 4.8"/><path d="M14.5 14.6c2.1.2 3.7 1.7 4.2 4.4"/></svg>
-        <span>Team</span>
+      <button class="nav-btn" type="button" data-view="calendar">
+        <span class="icon icon-sm i-calendar-days" aria-hidden="true"></span><span>Calendar</span>
+      </button>
+      <button class="nav-btn" type="button" data-view="team">
+        <span class="icon icon-sm i-users" aria-hidden="true"></span><span>Team</span>
+      </button>
+      <button class="nav-btn" type="button" data-view="decisions">
+        <span class="icon icon-sm i-shield-check" aria-hidden="true"></span><span>Decisions</span>
+        <span class="chip chip-warn px-1.5 py-0" id="badge-decisions" hidden>0</span>
       </button>
     </nav>
 
-    <div class="header-tools">
-      <button type="button" class="nav-btn decision-btn" data-tab="approvals" aria-pressed="false" aria-label="Decisions" title="Decisions">
-        <svg class="nav-icon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4.2 19 7v5.3c0 4-2.9 6.9-7 8.5-4.1-1.6-7-4.5-7-8.5V7z"/><path d="M8.6 12.2l2.2 2.2 4.4-4.6"/></svg>
-        <span>Decisions</span>
-        <span class="nav-badge nav-badge-warn" id="badge-approvals" hidden></span>
+    <div class="ml-auto flex items-center gap-1">
+      <span class="chip" id="stream-status" title="Live connection to the server">
+        <span class="dot bg-ink-3" id="stream-dot"></span><span id="stream-label">connecting</span>
+      </span>
+      <button id="preview-toggle" class="icon-btn" type="button" aria-pressed="false" aria-label="Local site preview" title="Local site preview">
+        <span class="icon i-monitor" aria-hidden="true"></span>
       </button>
-      <span class="header-divider" aria-hidden="true"></span>
-      <button id="preview-toggle" class="utility-btn" type="button" aria-pressed="false" aria-label="Open local site preview" title="Local site preview">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="13" rx="1.5"/><path d="M3.5 9.5h17"/></svg>
+      <button id="profile-toggle" class="icon-btn" type="button" aria-pressed="false" aria-label="Working profile" title="Working profile">
+        <span class="icon i-user" aria-hidden="true"></span>
       </button>
-      <button id="profile-toggle" class="utility-btn" type="button" aria-pressed="false" aria-label="Open Jerry's working profile" title="Jerry's working profile">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8.3" r="3.3"/><path d="M5 19c.7-3.6 3.2-5.6 7-5.6s6.3 2 7 5.6"/></svg>
+      <button id="theme-toggle" class="icon-btn" type="button" aria-label="Toggle theme" title="Toggle theme">
+        <span class="icon i-sun" aria-hidden="true" id="theme-icon"></span>
       </button>
-      <button id="theme-btn" class="utility-btn" type="button" aria-live="polite" aria-label="Toggle color theme" title="Toggle color theme">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4.3"/><path d="M12 3v2M12 19v2M4.6 4.6l1.4 1.4M18 18l1.4 1.4M3 12h2M19 12h2M4.6 19.4l1.4-1.4M18 6l1.4-1.4"/></svg>
-        <span class="sr-only" id="theme-btn-label">Dark mode</span>
-      </button>
+      <form method="POST" action="/logout" class="contents">
+        <button class="icon-btn" type="submit" aria-label="Sign out" title="Sign out">
+          <span class="icon i-log-out" aria-hidden="true"></span>
+        </button>
+      </form>
     </div>
   </header>
 
-  <div class="main-col">
-    <header class="topbar" aria-label="Workspace status">
-      <div class="topbar-title">
-        <p class="eyebrow" id="page-eyebrow">Workspace</p>
-        <h1 id="page-title">Workroom</h1>
+  <div class="flex min-h-0 flex-1">
+
+    <!-- ============ left rail: roster ============ -->
+    <aside id="rail" class="flex w-64 flex-none flex-col border-r border-line bg-surface">
+      <div class="border-b border-line-soft p-2">
+        <div class="relative">
+          <span class="icon icon-sm i-search pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-3" aria-hidden="true"></span>
+          <input id="agent-search" type="search" class="field pl-8" placeholder="Search the team…" autocomplete="off" aria-label="Search agents">
+        </div>
       </div>
-      <div class="pulse-strip" aria-label="Organization status">
-        <div class="pulse-status"><span class="status-light"></span><span id="studio-status">Ready for direction</span></div>
-        <div class="pulse-stat pulse-stat-secondary"><span class="pulse-value" id="agent-count">0</span><span class="pulse-label">agents</span></div>
-        <div class="pulse-stat"><span class="pulse-value" id="active-count">0</span><span class="pulse-label">working</span></div>
-        <div class="pulse-stat"><span class="pulse-value" id="board-progress-count">0</span><span class="pulse-label">in progress</span></div>
-        <div class="pulse-stat pulse-stat-secondary"><span class="pulse-value" id="board-backlog-count">0</span><span class="pulse-label">queued</span></div>
-        <div class="pulse-stat pulse-stat-warn"><span class="pulse-value" id="approval-count">0</span><span class="pulse-label">decisions</span></div>
+      <div id="roster" class="min-h-0 flex-1 overflow-y-auto p-2"></div>
+      <div class="border-t border-line-soft p-2">
+        <button id="new-task-btn" class="btn btn-quiet w-full" type="button">
+          <span class="icon icon-sm i-plus" aria-hidden="true"></span><span>New task</span>
+        </button>
       </div>
-    </header>
+    </aside>
 
-    <main class="views">
+    <!-- ============ center ============ -->
+    <main class="flex min-w-0 flex-1 flex-col">
 
-      <!-- ---------- HOME / COMMAND CENTER ---------- -->
-      <section class="view" id="view-home" hidden>
-        <p class="greeting-eyebrow">Lockard.tech</p>
-        <h1 class="greeting" id="home-greeting">Good evening, Jerry</h1>
-        <p class="greeting-sub">Here's where things stand across the team.</p>
-
-        <form class="ask-bar" id="ask-bar">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4.3-4.3"/></svg>
-          <label class="sr-only" for="ask-input">Ask the agent team</label>
-          <input id="ask-input" type="text" placeholder="Ask Lockard.tech — tell the team what you want done…" autocomplete="off">
-          <button type="submit">Send</button>
-        </form>
-
-        <div class="home-grid">
-          <section class="home-col">
-            <div class="home-section-head"><h2>Team</h2></div>
-            <div class="team-strip" id="team-strip"></div>
-          </section>
-
-          <section class="home-col home-col-wide">
-            <div class="home-section-head"><h2>Current work</h2><button type="button" class="home-link" data-goto="board">View all →</button></div>
-            <div class="current-work-list" id="current-work-list"></div>
-          </section>
-
-          <section class="home-col">
-            <div class="home-section-head"><h2>Recent activity</h2><button type="button" class="home-link" data-goto="calendar">View all →</button></div>
-            <div class="home-activity-list" id="home-activity-list"></div>
-          </section>
-        </div>
-      </section>
-
-      <!-- ---------- TEAM ---------- -->
-      <section class="view" id="view-employees" hidden>
-        <div class="view-head">
-          <div>
-            <p class="eyebrow">Your agent team</p>
-            <h1>Team</h1>
-            <p class="view-sub">Choose the right specialist, see what they own, or open a direct conversation.</p>
-          </div>
-        </div>
-        <div class="roster-grid" id="roster-grid"></div>
-      </section>
-
-      <!-- ---------- BOARD / TASKS ---------- -->
-      <section class="view" id="view-board" hidden>
-        <div class="view-head">
-          <div>
-            <p class="eyebrow">Shared work</p>
-            <h1>Work</h1>
-            <p class="view-sub">See what's moving, decide what comes next, and give the team new work.</p>
-          </div>
-          <button type="button" class="deck-action primary" id="new-task-btn">New task</button>
-        </div>
-        <nav class="section-tabs" aria-label="Work views">
-          <button type="button" class="section-tab active" aria-current="page">Tasks</button>
-          <button type="button" class="section-tab" data-goto="calendar">Activity</button>
-        </nav>
-        <p class="board-notice" id="board-notice" aria-live="polite" hidden></p>
-        <div class="board-filters" id="board-filters"></div>
-        <div class="board-columns" id="board-columns">
-          <section class="board-col" data-status="backlog" aria-labelledby="board-heading-backlog">
-            <div class="board-col-head"><h2 class="board-col-title" id="board-heading-backlog">Backlog</h2><span class="board-col-count" id="count-backlog">0</span></div>
-            <div class="board-col-body" id="col-backlog"></div>
-          </section>
-          <section class="board-col" data-status="in-progress" aria-labelledby="board-heading-in-progress">
-            <div class="board-col-head"><h2 class="board-col-title" id="board-heading-in-progress">In progress</h2><span class="board-col-count" id="count-in-progress">0</span></div>
-            <div class="board-col-body" id="col-in-progress"></div>
-          </section>
-          <section class="board-col" data-status="done" aria-labelledby="board-heading-done">
-            <div class="board-col-head"><h2 class="board-col-title" id="board-heading-done">Done</h2><span class="board-col-count" id="count-done">0</span></div>
-            <div class="board-col-body" id="col-done"></div>
-          </section>
-        </div>
-      </section>
-
-      <!-- ---------- ACTIVITY / CALENDAR ---------- -->
-      <section class="view" id="view-calendar" hidden>
-        <div class="view-head">
-          <div>
-            <p class="eyebrow">Shared work</p>
-            <h1>Work</h1>
-            <p class="view-sub">Review what shipped, what's planned, and the updates agents have shared.</p>
-          </div>
-        </div>
-        <nav class="section-tabs" aria-label="Work views">
-          <button type="button" class="section-tab" data-goto="board">Tasks</button>
-          <button type="button" class="section-tab active" aria-current="page">Activity</button>
-        </nav>
-        <div class="calendar-columns">
-          <section class="calendar-col" aria-labelledby="calendar-heading-activity">
-            <h2 class="calendar-col-label" id="calendar-heading-activity">Recent activity</h2>
-            <div id="calendar-completed" class="calendar-list"></div>
-          </section>
-          <section class="calendar-col" aria-labelledby="calendar-heading-upcoming">
-            <h2 class="calendar-col-label" id="calendar-heading-upcoming">Planned &amp; in progress</h2>
-            <div id="calendar-upcoming" class="calendar-list"></div>
-          </section>
-        </div>
-      </section>
-
-      <!-- ---------- APPROVALS ---------- -->
-      <section class="view" id="view-approvals" hidden>
-        <div class="view-head">
-          <div>
-            <p class="eyebrow">Needs your call</p>
-            <h1>Decisions</h1>
-            <p class="view-sub">Review actions agents have paused before they continue with sensitive or externally visible work.</p>
-          </div>
-        </div>
-        <div class="decisions-layout">
-          <section aria-labelledby="approval-requests-title">
-            <div class="home-section-head"><h2 id="approval-requests-title">Approval requests</h2></div>
-            <div class="approvals-full" id="approvals-full"></div>
-          </section>
-          <section aria-labelledby="agent-alerts-title">
-            <div class="home-section-head">
-              <h2 id="agent-alerts-title">Agent alerts</h2>
-              <span class="home-section-count" id="attention-count">0</span>
+      <!-- ---- workroom ---- -->
+      <section id="view-workroom" class="flex min-h-0 flex-1 flex-col">
+        <div class="flex items-center gap-3 border-b border-line bg-surface px-4 py-2.5">
+          <span class="avatar h-9 w-9" id="active-avatar" aria-hidden="true"></span>
+          <div class="min-w-0">
+            <div class="flex items-center gap-2">
+              <h1 class="truncate font-serif text-base font-semibold" id="active-name">Team</h1>
+              <span class="chip" id="active-status">idle</span>
             </div>
-            <div class="attention-list" id="attention-list"></div>
-          </section>
+            <p class="truncate text-[11px] text-ink-3" id="active-role">Automatic routing across the whole team</p>
+          </div>
+          <div class="ml-auto flex items-center gap-1">
+            <button id="drawer-toggle" class="icon-btn" type="button" aria-pressed="false" aria-label="Agent details" title="Agent details">
+              <span class="icon i-sliders-horizontal" aria-hidden="true"></span>
+            </button>
+            <button id="history-menu-btn" class="icon-btn" type="button" aria-expanded="false" aria-label="Conversation actions" title="Conversation actions">
+              <span class="icon i-more-horizontal" aria-hidden="true"></span>
+            </button>
+          </div>
         </div>
-      </section>
 
-      <!-- ---------- WORKROOM ---------- -->
-      <section class="view" id="view-chat" hidden>
-        <div class="body" id="body-layout">
-          <aside class="chat-sidebar" id="sidebar">
-            <section class="panel" id="channel-panel">
-              <div class="channel-picker-heading">
-                <div>
-                  <p class="eyebrow">Choose who to work with</p>
-                  <p class="channel-picker-copy">Start with Team for automatic routing, or pick a specialist.</p>
-                </div>
-                <button type="button" class="home-link" data-goto="employees">Meet the team →</button>
-              </div>
-              <div id="channel-list" class="channel-list"></div>
-            </section>
-          </aside>
+        <div id="history-menu" class="absolute right-4 top-24 z-40 w-56 overflow-hidden rounded-xl border border-line bg-surface shadow-lg" hidden>
+          <button class="flex w-full items-center gap-2 px-3 py-2 text-left text-[13px] hover:bg-sunken" type="button" id="reconcile-btn">
+            <span class="icon icon-sm i-refresh-cw" aria-hidden="true"></span><span>Reconcile with Archie</span>
+          </button>
+          <button class="flex w-full items-center gap-2 px-3 py-2 text-left text-[13px] text-err hover:bg-sunken" type="button" id="clear-chat-btn">
+            <span class="icon icon-sm i-trash-2" aria-hidden="true"></span><span>Clear this conversation</span>
+          </button>
+        </div>
 
-          <div class="chat">
-            <section class="command-deck" aria-label="Channel actions">
-              <div class="command-deck-heading">
-                <p class="eyebrow" id="chat-channel-eyebrow">Automatically routed</p>
-                <h1 id="chat-channel-title">Team</h1>
-              </div>
-              <div class="deck-actions" aria-label="Chat history actions">
-                <details class="history-menu">
-                  <summary class="deck-action">History</summary>
-                  <div class="history-menu-popover">
-                    <button id="reconcile-chat" class="history-action" type="button">Reconcile &amp; clear</button>
-                    <button id="clear-chat" class="history-action history-action-danger" type="button">Clear chat</button>
-                  </div>
-                </details>
-              </div>
-            </section>
-            <div id="log" class="log">
-              <div class="empty-state" id="empty-state">
-                <div>
-                  <strong>What should the team work on?</strong>
-                  <p>Team will route your request to the right agent, or choose a specialist above.</p>
+        <div id="chat-stream" class="min-h-0 flex-1 overflow-y-auto px-4 py-4">
+          <div id="chat-empty" class="mx-auto max-w-2xl">
+            <div class="card p-5">
+              <div class="flex items-start gap-3">
+                <span class="icon icon-lg i-sparkles mt-0.5 text-brand" aria-hidden="true"></span>
+                <div class="min-w-0">
+                  <h2 class="font-serif text-[15px] font-semibold" id="empty-title">Ready for direction</h2>
+                  <p class="mt-1 text-[13px] leading-relaxed text-ink-2" id="empty-desc">Say what you want done. Mention someone with @ to route it, or just describe it and the team will pick.</p>
+                  <div class="mt-3 flex flex-wrap gap-1.5" id="quick-prompts"></div>
                 </div>
               </div>
             </div>
-            <div class="quick-replies" id="quick-replies"></div>
-            <form id="composer" class="composer">
-              <p class="composer-error" id="composer-error" hidden></p>
-              <p class="recipients-preview" id="recipients-preview" hidden></p>
-              <div class="composer-inner">
-                <div class="mention-popover" id="mention-popover" hidden></div>
-                <button type="button" id="mention-btn" class="icon-btn mention-btn" aria-label="Tag a teammate" title="Tag a teammate">@</button>
-                <label class="sr-only" for="input">Message the selected agent or team</label>
-                <textarea id="input" placeholder="Describe what you want done…" rows="1"></textarea>
-                <button type="submit" id="send-btn" aria-label="Send">
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 8h11M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                </button>
+            <div class="mt-4 grid gap-3 sm:grid-cols-2">
+              <div class="card p-4">
+                <p class="label mb-2">In progress now</p>
+                <div id="empty-work" class="space-y-2 text-[13px]"></div>
               </div>
-            </form>
+              <div class="card p-4">
+                <p class="label mb-2">Latest from the team</p>
+                <div id="empty-activity" class="space-y-2 text-[13px]"></div>
+              </div>
+            </div>
           </div>
+          <div id="messages" class="mx-auto max-w-3xl space-y-4"></div>
+        </div>
 
+        <div class="border-t border-line bg-surface px-4 py-3">
+          <p id="composer-error" class="mb-2 text-[12px] text-err" hidden></p>
+          <form id="composer" class="mx-auto flex max-w-3xl items-end gap-2">
+            <div class="relative min-w-0 flex-1">
+              <textarea id="chat-input" class="field max-h-40 resize-none py-2.5" rows="1"
+                placeholder="Tell the team what you want done…" aria-label="Message"></textarea>
+              <div id="mention-popover" class="absolute bottom-full left-0 z-30 mb-1 w-72 overflow-hidden rounded-xl border border-line bg-surface shadow-lg" hidden></div>
+            </div>
+            <button class="btn btn-primary h-[38px]" type="submit" id="send-btn">
+              <span class="icon icon-sm i-send-horizontal" aria-hidden="true"></span><span class="sr-only">Send</span>
+            </button>
+          </form>
+          <p class="mx-auto mt-1.5 max-w-3xl font-mono text-[10px] text-ink-3" id="recipients-hint"></p>
+        </div>
+      </section>
+
+      <!-- ---- board ---- -->
+      <section id="view-board" class="flex min-h-0 flex-1 flex-col" hidden>
+        <div class="flex flex-wrap items-center gap-2 border-b border-line bg-surface px-4 py-2.5">
+          <h1 class="font-serif text-base font-semibold">Work</h1>
+          <div id="board-filters" class="flex flex-wrap items-center gap-1"></div>
+          <button class="btn btn-primary ml-auto" type="button" id="board-new-task">
+            <span class="icon icon-sm i-plus" aria-hidden="true"></span><span>New task</span>
+          </button>
+        </div>
+        <p id="board-notice" class="mx-4 mt-3 rounded-lg border border-warn/40 bg-warn-soft px-3 py-2 text-[12px] text-warn" aria-live="polite" hidden></p>
+        <div class="grid min-h-0 flex-1 gap-3 overflow-y-auto p-4 lg:grid-cols-3">
+          <div class="board-col" data-status="backlog">
+            <div class="flex items-center justify-between border-b border-line-soft px-3 py-2">
+              <h2 class="text-[13px] font-semibold">Backlog</h2>
+              <span class="chip px-1.5 py-0" id="count-backlog">0</span>
+            </div>
+            <div class="min-h-0 flex-1 space-y-2 overflow-y-auto p-2" id="col-backlog"></div>
+          </div>
+          <div class="board-col" data-status="in-progress">
+            <div class="flex items-center justify-between border-b border-line-soft px-3 py-2">
+              <h2 class="text-[13px] font-semibold">In progress</h2>
+              <span class="chip px-1.5 py-0" id="count-in-progress">0</span>
+            </div>
+            <div class="min-h-0 flex-1 space-y-2 overflow-y-auto p-2" id="col-in-progress"></div>
+          </div>
+          <div class="board-col" data-status="done">
+            <div class="flex items-center justify-between border-b border-line-soft px-3 py-2">
+              <h2 class="text-[13px] font-semibold">Done</h2>
+              <span class="chip px-1.5 py-0" id="count-done">0</span>
+            </div>
+            <div class="min-h-0 flex-1 space-y-2 overflow-y-auto p-2" id="col-done"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ---- calendar ---- -->
+      <section id="view-calendar" class="flex min-h-0 flex-1 flex-col" hidden>
+        <div class="flex flex-wrap items-center gap-2 border-b border-line bg-surface px-4 py-2.5">
+          <h1 class="font-serif text-base font-semibold">Calendar</h1>
+          <p class="text-[11px] text-ink-3">What shipped, and what's coming up</p>
+          <label class="label ml-auto flex items-center gap-2">
+            <span>Window</span>
+            <select id="calendar-days" class="field w-auto py-1">
+              <option value="7">7 days</option>
+              <option value="30" selected>30 days</option>
+              <option value="90">90 days</option>
+            </select>
+          </label>
+        </div>
+        <div class="grid min-h-0 flex-1 gap-3 overflow-y-auto p-4 lg:grid-cols-2">
+          <section class="card flex min-h-0 flex-col p-4">
+            <h2 class="label mb-3">Planned &amp; in progress</h2>
+            <div id="calendar-upcoming" class="min-h-0 flex-1 space-y-2 overflow-y-auto"></div>
+          </section>
+          <section class="card flex min-h-0 flex-col p-4">
+            <h2 class="label mb-3">Recent activity</h2>
+            <div id="calendar-activity" class="min-h-0 flex-1 space-y-2 overflow-y-auto"></div>
+          </section>
+        </div>
+      </section>
+
+      <!-- ---- team ---- -->
+      <section id="view-team" class="flex min-h-0 flex-1 flex-col" hidden>
+        <div class="flex items-center gap-2 border-b border-line bg-surface px-4 py-2.5">
+          <h1 class="font-serif text-base font-semibold">Team</h1>
+          <p class="text-[11px] text-ink-3">Eight agents. Everything shown here comes from the live roster.</p>
+        </div>
+        <div id="team-grid" class="grid min-h-0 flex-1 gap-3 overflow-y-auto p-4 sm:grid-cols-2 xl:grid-cols-4"></div>
+      </section>
+
+      <!-- ---- decisions ---- -->
+      <section id="view-decisions" class="flex min-h-0 flex-1 flex-col" hidden>
+        <div class="flex items-center gap-2 border-b border-line bg-surface px-4 py-2.5">
+          <h1 class="font-serif text-base font-semibold">Decisions</h1>
+          <p class="text-[11px] text-ink-3">Agents pause here for your approval. No answer in five minutes counts as no.</p>
+        </div>
+        <div class="grid min-h-0 flex-1 gap-4 overflow-y-auto p-4 lg:grid-cols-2">
+          <section>
+            <h2 class="label mb-2">Waiting on you</h2>
+            <div id="approvals-list" class="space-y-3"></div>
+          </section>
+          <section>
+            <h2 class="label mb-2">Agent alerts</h2>
+            <div id="alerts-list" class="space-y-2"></div>
+          </section>
         </div>
       </section>
 
     </main>
-  </div>
 
-  <aside class="preview-pane" id="preview-pane" hidden>
-    <div class="preview-header" id="preview-drag-handle">
+    <!-- ============ right drawer: agent inspector ============ -->
+    <aside id="drawer" class="w-72 flex-none overflow-y-auto border-l border-line bg-surface p-4" hidden>
+      <div class="flex items-start gap-3">
+        <span class="avatar h-12 w-12" id="drawer-avatar" aria-hidden="true"></span>
+        <div class="min-w-0">
+          <h2 class="font-serif text-base font-semibold" id="drawer-name"></h2>
+          <p class="font-mono text-[11px] text-brand-ink" id="drawer-role"></p>
+        </div>
+        <button class="icon-btn ml-auto" type="button" id="drawer-close" aria-label="Close details">
+          <span class="icon icon-sm i-x" aria-hidden="true"></span>
+        </button>
+      </div>
+      <dl class="mt-4 space-y-4">
+        <div>
+          <dt class="label mb-1">Department</dt>
+          <dd class="text-[13px]" id="drawer-department"></dd>
+        </div>
+        <div>
+          <dt class="label mb-1">Brief</dt>
+          <dd class="text-[13px] leading-relaxed text-ink-2" id="drawer-tagline"></dd>
+        </div>
+        <div>
+          <dt class="label mb-1">Files they own</dt>
+          <dd class="flex flex-wrap gap-1" id="drawer-scope"></dd>
+          <p class="mt-1.5 text-[11px] leading-snug text-ink-3" id="drawer-scope-note"></p>
+        </div>
+        <div>
+          <dt class="label mb-1">Open work</dt>
+          <dd class="space-y-1.5 text-[13px]" id="drawer-tasks"></dd>
+        </div>
+        <div>
+          <dt class="label mb-1">Contact</dt>
+          <dd class="font-mono text-[11px] text-ink-2" id="drawer-email"></dd>
+        </div>
+      </dl>
+    </aside>
+
+  </div>
+</div>
+
+<!-- ============ overlays ============ -->
+<div id="task-overlay" class="overlay" hidden>
+  <div class="card w-full max-w-md p-5" role="dialog" aria-modal="true" aria-labelledby="task-modal-title">
+    <div class="flex items-center justify-between">
+      <h2 class="font-serif text-base font-semibold" id="task-modal-title">New task</h2>
+      <button class="icon-btn" type="button" data-close-overlay="task-overlay" aria-label="Close"><span class="icon icon-sm i-x" aria-hidden="true"></span></button>
+    </div>
+    <form id="task-form" class="mt-4 space-y-3">
       <div>
-        <p class="eyebrow" style="margin:0">Local site</p>
-        <strong>Preview</strong>
+        <label class="label mb-1" for="task-title">Title</label>
+        <input id="task-title" class="field" required maxlength="200" placeholder="What needs doing?">
       </div>
-      <div class="preview-controls">
-        <button type="button" id="preview-refresh" class="icon-btn" title="Refresh" aria-label="Refresh preview">⟳</button>
-        <a href="http://localhost:4321/" target="_blank" rel="noopener" class="icon-btn" title="Open in new tab" aria-label="Open preview in a new tab">↗</a>
-        <button type="button" id="preview-close" class="icon-btn close-btn" title="Close" aria-label="Close preview">✕</button>
+      <div>
+        <label class="label mb-1" for="task-detail">Detail</label>
+        <textarea id="task-detail" class="field resize-none" rows="3" placeholder="Anything the agent needs to know"></textarea>
       </div>
-    </div>
-    <div class="preview-body">
-      <div class="preview-offline" id="preview-offline">
-        <p>The local site preview is not running.</p>
-        <button type="button" id="preview-start-btn">Start preview</button>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="label mb-1" for="task-assignee">Assign to</label>
+          <select id="task-assignee" class="field"></select>
+        </div>
+        <div>
+          <label class="label mb-1" for="task-category">Category</label>
+          <select id="task-category" class="field"></select>
+        </div>
+        <div>
+          <label class="label mb-1" for="task-priority">Priority</label>
+          <select id="task-priority" class="field">
+            <option value="low">Low</option>
+            <option value="normal" selected>Normal</option>
+            <option value="high">High</option>
+          </select>
+        </div>
+        <div>
+          <label class="label mb-1" for="task-due">Due</label>
+          <input id="task-due" class="field" type="date">
+        </div>
       </div>
-      <iframe id="preview-frame" class="preview-frame" title="Local site preview" hidden></iframe>
-    </div>
-  </aside>
-
-  <!-- ---------- task detail / new task modal ---------- -->
-  <div class="task-overlay" id="task-overlay" hidden>
-    <div class="task-panel" id="task-panel">
-      <div class="task-panel-header">
-        <p class="eyebrow" style="margin:0" id="task-panel-eyebrow">Task</p>
-        <button type="button" id="task-panel-close" class="icon-btn close-btn" title="Close" aria-label="Close task panel">✕</button>
+      <p id="task-error" class="text-[12px] text-err" hidden></p>
+      <div class="flex justify-end gap-2 pt-1">
+        <button class="btn btn-quiet" type="button" data-close-overlay="task-overlay">Cancel</button>
+        <button class="btn btn-primary" type="submit">Create task</button>
       </div>
-      <div class="task-panel-body" id="task-panel-body"></div>
-    </div>
+    </form>
   </div>
+</div>
 
-  <!-- ---------- employee profile ---------- -->
-  <div class="task-overlay" id="employee-overlay" hidden>
-    <div class="task-panel" id="employee-panel" role="dialog" aria-modal="true" aria-labelledby="employee-panel-title">
-      <div class="task-panel-header">
-        <p class="eyebrow" style="margin:0" id="employee-panel-title">Agent profile</p>
-        <button type="button" id="employee-panel-close" class="icon-btn close-btn" title="Close" aria-label="Close agent profile">✕</button>
-      </div>
-      <div class="task-panel-body" id="employee-panel-body"></div>
+<div id="profile-overlay" class="overlay" hidden>
+  <div class="card flex max-h-[80vh] w-full max-w-lg flex-col p-5" role="dialog" aria-modal="true" aria-labelledby="profile-title">
+    <div class="flex items-center justify-between">
+      <h2 class="font-serif text-base font-semibold" id="profile-title">Working profile</h2>
+      <button class="icon-btn" type="button" data-close-overlay="profile-overlay" aria-label="Close"><span class="icon icon-sm i-x" aria-hidden="true"></span></button>
     </div>
+    <p class="mt-1 text-[12px] text-ink-3">What the agents have picked up about how you work. Stays on this machine.</p>
+    <div id="profile-body" class="mt-4 min-h-0 flex-1 space-y-3 overflow-y-auto text-[13px]"></div>
   </div>
+</div>
 
-  <div class="profile-overlay" id="profile-overlay" hidden>
-    <div class="profile-panel" role="dialog" aria-modal="true" aria-labelledby="working-profile-title">
-      <div class="profile-header">
-        <p class="eyebrow" style="margin:0" id="working-profile-title">What the team has learned</p>
-        <button type="button" id="profile-close" class="icon-btn close-btn" title="Close" aria-label="Close Jerry's working profile">✕</button>
+<div id="preview-overlay" class="overlay" hidden>
+  <div class="card flex h-[85vh] w-full max-w-5xl flex-col overflow-hidden p-0" role="dialog" aria-modal="true" aria-labelledby="preview-title">
+    <div class="flex items-center gap-2 border-b border-line px-4 py-2">
+      <h2 class="font-serif text-[15px] font-semibold" id="preview-title">Site preview</h2>
+      <span class="chip font-mono" id="preview-url"></span>
+      <button class="btn btn-quiet ml-auto" type="button" id="preview-start">Start dev server</button>
+      <button class="icon-btn" type="button" data-close-overlay="preview-overlay" aria-label="Close"><span class="icon icon-sm i-x" aria-hidden="true"></span></button>
+    </div>
+    <div class="min-h-0 flex-1">
+      <div id="preview-offline" class="grid h-full place-items-center p-6 text-center">
+        <div>
+          <span class="icon icon-lg i-monitor mx-auto mb-2 block text-ink-3" aria-hidden="true"></span>
+          <p class="text-[13px] text-ink-2">The Astro dev server isn't running.</p>
+        </div>
       </div>
-      <div class="profile-body" id="profile-body">
-        <p class="profile-empty" id="profile-empty">Nothing learned yet — this fills in as the team notices real, recurring patterns.</p>
-        <div id="profile-list" class="profile-list"></div>
-      </div>
+      <iframe id="preview-frame" class="h-full w-full border-0" title="Local site preview" hidden></iframe>
     </div>
   </div>
 </div>
-<script type="module" src="/app.js"></script>
+
+<div id="toast" class="pointer-events-none fixed bottom-4 left-1/2 z-[60] -translate-x-1/2" aria-live="polite"></div>
+
+<script src="/app.js" type="module"></script>
 </body>
 </html>

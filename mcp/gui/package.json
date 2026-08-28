@@ -8,6 +8,9 @@
   },
   "scripts": {
     "dev": "tsx server/index.ts",
+    "build:icons": "node scripts/build-icons.mjs",
+    "build:css": "pnpm build:icons && tailwindcss -i styles/app.css -o public/app.css --minify",
+    "watch:css": "pnpm build:icons && tailwindcss -i styles/app.css -o public/app.css --watch",
     "start": "node scripts/ctl.mjs start",
     "stop": "node scripts/ctl.mjs stop",
     "status": "node scripts/ctl.mjs status",
@@ -19,8 +22,11 @@
     "express": "^5.1.0"
   },
   "devDependencies": {
+    "@tailwindcss/cli": "4.3.3",
     "@types/express": "^5.0.0",
     "@types/node": "^22.10.0",
+    "lucide-static": "1.35.0",
+    "tailwindcss": "4.3.3",
     "tsx": "^4.19.0",
     "typescript": "^5.7.0"
   }

@@ -255,41 +255,73 @@ setInterval(() => {
 // ---------- login page ----------
 
 function loginPage(error?: string): string {
+  // Self-contained on purpose. /app.css sits behind the auth gate, so styling this
+  // from the compiled stylesheet would mean either serving it unauthenticated or
+  // shipping an unstyled sign-in page. The tokens below are copied from
+  // styles/app.css and are the only duplicated colours in the project — keep them
+  // in step if the palette moves.
   return `<!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Sign in — Agent Workspace</title>
 <link rel="icon" href="/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,600&family=JetBrains+Mono:wght@400&display=swap">
 <style>
-  :root{color-scheme:light dark}
-  body{margin:0;min-height:100vh;display:grid;place-items:center;background:#f7f5f0;color:#1c2b30;
-       font:16px/1.5 ui-serif,Georgia,serif}
-  @media (prefers-color-scheme:dark){body{background:#12191c;color:#e8e6e1}}
-  form{width:min(360px,90vw);padding:2rem;border:1px solid rgba(128,128,128,.28);border-radius:14px;
-       background:rgba(255,255,255,.55)}
-  @media (prefers-color-scheme:dark){form{background:rgba(255,255,255,.04)}}
-  h1{margin:0 0 .25rem;font-size:1.35rem}
-  p.sub{margin:0 0 1.5rem;font-size:.85rem;opacity:.7;font-family:ui-sans-serif,system-ui,sans-serif}
-  label{display:block;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;
-        font-family:ui-sans-serif,system-ui,sans-serif;opacity:.75;margin-bottom:.35rem}
-  input{width:100%;box-sizing:border-box;padding:.6rem .7rem;margin-bottom:1rem;border-radius:8px;
-        border:1px solid rgba(128,128,128,.4);background:transparent;color:inherit;font-size:1rem}
-  button{width:100%;padding:.65rem;border:0;border-radius:8px;background:#1d5b63;color:#fff;
-         font-size:.95rem;cursor:pointer;font-family:ui-sans-serif,system-ui,sans-serif}
-  .err{margin:0 0 1rem;padding:.55rem .7rem;border-radius:8px;background:rgba(190,60,50,.14);
-       color:#a2342c;font-size:.85rem;font-family:ui-sans-serif,system-ui,sans-serif}
-  @media (prefers-color-scheme:dark){.err{color:#f0a49c}}
+  :root{
+    --paper:#F4F2EB; --surface:#FFFFFF; --line:#E3DFD2; --sunken:#EFEDE4;
+    --ink:#1C1B19; --ink-2:#55534C; --ink-3:#827F75;
+    --brand:#1D6F68; --brand-hover:#155752; --brand-soft:#EAF6F4; --brand-line:#B1E1DC;
+    --err:#A63A2E; --err-soft:#FAEBE8;
+    color-scheme:light;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --paper:#171815; --surface:#1F211D; --line:#333630; --sunken:#131411;
+      --ink:#ECEAE3; --ink-2:#B2AFA4; --ink-3:#86837A;
+      --brand:#46A79B; --brand-hover:#5CBCAF; --brand-soft:#16302C; --brand-line:#2C534D;
+      --err:#E28A7C; --err-soft:#2E1B17;
+      color-scheme:dark;
+    }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;display:grid;place-items:center;padding:1.5rem;
+       background:var(--paper);color:var(--ink);
+       font:15px/1.6 "Inter",ui-sans-serif,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  form{width:min(360px,100%);padding:1.75rem;border:1px solid var(--line);border-radius:1rem;
+       background:var(--surface)}
+  .mark{display:grid;place-items:center;width:2.25rem;height:2.25rem;border-radius:.625rem;
+        background:var(--brand);color:#fff;font-weight:700;font-size:.8rem;margin-bottom:1rem}
+  h1{margin:0;font-family:"Newsreader",Georgia,serif;font-size:1.3rem;font-weight:600}
+  p.sub{margin:.35rem 0 1.5rem;font-size:.8rem;color:var(--ink-3)}
+  label{display:block;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:.625rem;
+        letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);margin-bottom:.35rem}
+  input{width:100%;padding:.5rem .6rem;margin-bottom:1rem;border-radius:.5rem;
+        border:1px solid var(--line);background:var(--surface);color:inherit;font-size:.875rem;
+        font-family:inherit}
+  input:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-soft)}
+  button{width:100%;padding:.55rem;border:0;border-radius:.625rem;background:var(--brand);
+         color:#fff;font-size:.875rem;font-weight:500;font-family:inherit;cursor:pointer}
+  button:hover{background:var(--brand-hover)}
+  .err{margin:0 0 1rem;padding:.5rem .65rem;border-radius:.5rem;background:var(--err-soft);
+       border:1px solid var(--err);color:var(--err);font-size:.8rem}
+  .note{margin:1rem 0 0;padding-top:1rem;border-top:1px solid var(--line);
+        font-family:"JetBrains Mono",ui-monospace,monospace;font-size:.625rem;
+        line-height:1.6;color:var(--ink-3)}
 </style></head>
 <body>
   <form method="POST" action="/login">
+    <div class="mark">JL</div>
     <h1>Agent Workspace</h1>
-    <p class="sub">This workspace can run commands in the repository. Sign in to continue.</p>
+    <p class="sub">This workspace runs commands in the repository. Sign in to continue.</p>
     ${error ? `<p class="err">${error}</p>` : ""}
     <label for="u">User</label>
     <input id="u" name="username" autocomplete="username" autofocus required>
     <label for="p">Password</label>
     <input id="p" name="password" type="password" autocomplete="current-password" required>
     <button type="submit">Sign in</button>
+    <p class="note">Sessions last 12 hours. A server restart signs every device out.</p>
   </form>
 </body></html>`;
 }

@@ -11,6 +11,7 @@ import { appendTranscriptEvent, clearTranscript, readTranscript } from "./transc
 import { routeMessage } from "./router.js";
 import { listChangelogCandidates, publishToChangelog, readChangelog } from "../../server/src/changelog.js";
 import { loadDigestConfig, scheduleDigest, sendDigest, buildDigest } from "./digest.js";
+import { listRoutines, getRoutine } from "../../server/src/routines.js";
 import {
   readProfileDoc,
   setProfileField,
@@ -521,6 +522,34 @@ app.post("/api/changelog/publish", (req: Request, res: Response) => {
   }
   broadcast({ type: "changelog_updated" });
   res.json(result);
+});
+
+// ---------- routines ----------
+// Pre-made tasks for the things worth checking regularly. The date on each comes
+// from a cadence recorded in .remember/SCHEDULE.md or Jerry's Academy paperwork —
+// see routines.ts. Nothing here invents a meeting date.
+
+app.get("/api/routines", (_req: Request, res: Response) => {
+  res.json(listRoutines());
+});
+
+app.post("/api/routines/:id", (req: Request, res: Response) => {
+  const routine = getRoutine(String(req.params.id));
+  if (!routine) {
+    res.status(404).json({ error: "No such routine." });
+    return;
+  }
+  const task = createTask({
+    title: routine.title,
+    detail: routine.detail,
+    category: routine.category,
+    priority: "normal",
+    assignee: routine.assignee && getPersona(routine.assignee) ? routine.assignee : null,
+    createdBy: "jerry",
+    // Undated routines create an undated task rather than guessing a deadline.
+    dueDate: routine.nextDate ?? undefined,
+  });
+  res.status(201).json(task);
 });
 
 // ---------- email digest ----------

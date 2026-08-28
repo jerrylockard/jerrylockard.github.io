@@ -232,7 +232,7 @@ function showView(name) {
     if (btn.dataset.view === name) btn.setAttribute("aria-current", "page");
     else btn.removeAttribute("aria-current");
   }
-  if (name === "tasks") loadBoard();
+  if (name === "tasks") { loadBoard(); loadRoutines(); }
   if (name === "calendar") loadCalendar();
   if (name === "changelog") loadChangelog();
   if (name === "team") renderTeamList();
@@ -692,6 +692,58 @@ function updateRecipients() {
 }
 
 // ---------------------------------------------------------------- board
+
+async function loadRoutines() {
+  try {
+    const { groups, routines } = await api("/api/routines");
+    const host = $("routines");
+    clear(host);
+    for (const group of groups) {
+      const mine = routines.filter((r) => r.group === group.id);
+      if (!mine.length) continue;
+      host.append(
+        el("div", {}, [
+          el("p", { class: "mb-1.5" }, [
+            el("span", { class: "label", text: group.label }),
+            el("span", { class: "ml-2 text-[11px] text-ink-3", text: group.blurb }),
+          ]),
+          el("div", { class: "flex flex-wrap gap-1.5" }, mine.map(routinePill)),
+        ]),
+      );
+    }
+  } catch (err) {
+    console.error("routines load failed", err);
+  }
+}
+
+function routinePill(routine) {
+  // A dormant routine (out of season, or off the end of a published schedule)
+  // stays visible but unclickable, with the reason on it — quietly hiding it
+  // would read as the feature being broken.
+  const dormant = Boolean(routine.dormant);
+  return el("button", {
+    type: "button",
+    class: `chip ${dormant ? "" : "hover:border-brand"}`.trim(),
+    style: dormant ? "opacity:.55;cursor:not-allowed" : "cursor:pointer",
+    disabled: dormant,
+    title: dormant ? routine.dormant : `${routine.title}\n\n${routine.detail}`,
+    onclick: dormant ? undefined : () => addRoutine(routine),
+  }, [
+    icon("plus", "icon-sm"),
+    el("span", { text: routine.pill }),
+    routine.nextLabel ? el("span", { class: "text-ink-3", text: routine.nextLabel }) : null,
+  ]);
+}
+
+async function addRoutine(routine) {
+  try {
+    await api(`/api/routines/${encodeURIComponent(routine.id)}`, { method: "POST" });
+    await Promise.all([loadBoard(), loadRoster()]);
+    toast(routine.nextDate ? `Added — due ${routine.nextLabel}` : "Added to Next");
+  } catch (err) {
+    toast(err.message, "err");
+  }
+}
 
 async function loadBoard() {
   try {

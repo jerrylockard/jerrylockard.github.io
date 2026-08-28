@@ -1,0 +1,177 @@
+{
+  "_source": "Civic cadences and Academy dates come from .remember/SCHEDULE.md and .remember/academy-material/ACADEMY_SCHEDULE.md, both confirmed with Jerry. Nothing here is a guessed date. Upkeep items come from the 2026-08-28 security audit. Edit this file to add your own; the dashboard reads it live.",
+  "groups": [
+    { "id": "civic",   "label": "Covington",        "blurb": "Public meetings worth being in the room for." },
+    { "id": "academy", "label": "Mayor's Academy",  "blurb": "The cohort you're already in." },
+    { "id": "upkeep",  "label": "Keeping it running", "blurb": "Dull, and the reason nothing breaks." },
+    { "id": "you",     "label": "You",              "blurb": "The things that get dropped first." }
+  ],
+  "routines": [
+    {
+      "id": "boc-meeting",
+      "group": "civic",
+      "pill": "Commissioners meeting",
+      "title": "Board of Commissioners meeting",
+      "detail": "6:00 PM at City Hall, 20 W. Pike St. Alternates caucus and legislative weeks. Worth going even on a quiet agenda — being a familiar face is most of it.",
+      "category": "press",
+      "assignee": null,
+      "cadence": { "type": "weekly", "weekday": 2 }
+    },
+    {
+      "id": "boc-agenda",
+      "group": "civic",
+      "pill": "Skim Tuesday's agenda",
+      "title": "Read the Commissioners agenda before the meeting",
+      "detail": "Agendas post ahead of the meeting. Look for public-input items — rezoning, budget, hearings. Ten minutes now is the difference between attending and participating.",
+      "category": "press",
+      "assignee": "scout",
+      "cadence": { "type": "weekly", "weekday": 1 }
+    },
+    {
+      "id": "civic-note",
+      "group": "civic",
+      "pill": "Write up the last meeting",
+      "title": "Draft a Civic Field Note from the last meeting",
+      "detail": "Ryder owns this series and works from get_civic_voice_guide. Fact, attribution and opinion stay separate; never round \"advanced from caucus\" up to \"approved\".",
+      "category": "content",
+      "assignee": "ryder",
+      "cadence": { "type": "none" }
+    },
+    {
+      "id": "planning-commission",
+      "group": "civic",
+      "pill": "Planning Commission",
+      "title": "Kenton County Planning Commission meeting",
+      "detail": "6:15 PM, Kenton County Government Center, 1840 Simon Kenton Way, 2nd floor. Monthly, first Thursday.",
+      "category": "press",
+      "assignee": null,
+      "cadence": { "type": "monthly-nth-weekday", "nth": 1, "weekday": 4 }
+    },
+    {
+      "id": "farmers-market",
+      "group": "civic",
+      "pill": "Farmers Market",
+      "title": "Covington Farmers Market",
+      "detail": "9 AM–1 PM on Washington St between W. 6th and W. Pike. Seasonal — runs to Oct 31. Not work. Good place to be seen and to actually talk to people.",
+      "category": "general",
+      "assignee": null,
+      "cadence": { "type": "weekly", "weekday": 6, "seasonEnd": "2026-10-31" }
+    },
+
+    {
+      "id": "academy-session",
+      "group": "academy",
+      "pill": "Next Academy session",
+      "title": "Mayor's Academy session",
+      "detail": "6:00 PM. Speakers and venue vary by session — see .remember/academy-material/ACADEMY_SCHEDULE.md for the full table.",
+      "category": "general",
+      "assignee": null,
+      "cadence": {
+        "type": "fixed-dates",
+        "dates": ["2026-09-14", "2026-10-05", "2026-11-16", "2027-01-11", "2027-02-08", "2027-03-08", "2027-04-12"]
+      }
+    },
+    {
+      "id": "academy-notes",
+      "group": "academy",
+      "pill": "Write up the session",
+      "title": "Capture notes from the last Academy session",
+      "detail": "Same pattern as ACADEMY_SESSION_1_NOTES.md. Do it while it's fresh — the details that make a good note are gone within a day.",
+      "category": "content",
+      "assignee": "paige",
+      "cadence": { "type": "none" }
+    },
+
+    {
+      "id": "backup-remember",
+      "group": "upkeep",
+      "pill": "Back up .remember/",
+      "title": "Back up .remember/ somewhere that isn't the Pi",
+      "detail": "Journal, task board, sessions and team log all live in one gitignored directory on one USB drive. Encrypted copy, off the box, then actually restore it once. This is the difference between \"kept for life\" and \"kept until the drive dies\".",
+      "category": "infra",
+      "assignee": "devon",
+      "cadence": { "type": "interval", "days": 7 }
+    },
+    {
+      "id": "check-auth",
+      "group": "upkeep",
+      "pill": "Check the dashboard is locked",
+      "title": "Confirm the dashboard still requires a password",
+      "detail": "curl -s http://127.0.0.1:4405/healthz — should say `ok auth=password`. It's on the public internet through the tunnel, so this is the one that matters.",
+      "category": "infra",
+      "assignee": "devon",
+      "cadence": { "type": "interval", "days": 30 }
+    },
+    {
+      "id": "doctor",
+      "group": "upkeep",
+      "pill": "Run the doctor",
+      "title": "Run pnpm mcp:doctor and fix whatever it flags",
+      "detail": "Catches drift before it becomes a broken morning: missing deps, typecheck failures, a dashboard misconfigured for exposure.",
+      "category": "infra",
+      "assignee": "devon",
+      "cadence": { "type": "interval", "days": 30 }
+    },
+    {
+      "id": "gateway-spend",
+      "group": "upkeep",
+      "pill": "Check AI spend",
+      "title": "Check the AI Gateway spend and cap",
+      "detail": "Eight agents bill to one key on an always-on box. A stuck retry loop is an open tab on your card, and the invoice is how you'd find out.",
+      "category": "infra",
+      "assignee": null,
+      "cadence": { "type": "interval", "days": 30 }
+    },
+    {
+      "id": "vercel-plan",
+      "group": "upkeep",
+      "pill": "Cancel Vercel Pro",
+      "title": "Downgrade Vercel to Hobby before the trial converts",
+      "detail": "Hobby is free and covers everything this site does. Pro is $20/user/month. Set this task's due date to your trial end — it converts silently.",
+      "category": "infra",
+      "assignee": null,
+      "cadence": { "type": "none" }
+    },
+    {
+      "id": "rotate-password",
+      "group": "upkeep",
+      "pill": "Rotate the dashboard password",
+      "title": "Rotate DASHBOARD_PASSWORD and the session secret",
+      "detail": "It gates shell access to the repo from the public internet. Rotating on a schedule beats rotating after you need to.",
+      "category": "infra",
+      "assignee": null,
+      "cadence": { "type": "interval", "days": 180 }
+    },
+
+    {
+      "id": "checkin",
+      "group": "you",
+      "pill": "Check in with Ryder",
+      "title": "Daily check-in",
+      "detail": "Say \"check-in\" to Ryder. It's the one conversation that isn't about a task — how the week actually went, what's coming, anything worth writing about later.",
+      "category": "general",
+      "assignee": "ryder",
+      "cadence": { "type": "interval", "days": 1 }
+    },
+    {
+      "id": "appointment",
+      "group": "you",
+      "pill": "An appointment",
+      "title": "Appointment",
+      "detail": "Doctor, dentist, anything with a time on it. Stays on the dashboard — personal appointments never reach the public site.",
+      "category": "general",
+      "assignee": null,
+      "cadence": { "type": "none" }
+    },
+    {
+      "id": "publish-changelog",
+      "group": "you",
+      "pill": "Publish the changelog",
+      "title": "Review finished work and publish CHANGELOG.md",
+      "detail": "Everything you've checked off is waiting in the Changelog tab. Reviewing it is also the easiest way to notice you got more done than it felt like.",
+      "category": "docs",
+      "assignee": "archie",
+      "cadence": { "type": "interval", "days": 14 }
+    }
+  ]
+}

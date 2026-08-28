@@ -1,3 +1,5 @@
+import { join, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 import { createTransport, type Transporter } from "nodemailer";
 import { PERSONAS, getPersona } from "../../agents/src/personas.js";
 import { readTeamUpdates } from "../../server/src/memory.js";
@@ -39,7 +41,22 @@ export interface DigestConfig {
   hour: number;
 }
 
+const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
+
 export function loadDigestConfig(): DigestConfig {
+  // Load .env here rather than assuming someone else already did. security.ts
+  // makes the same call for the same reason, and spells out why: depending on
+  // another module's import order to decide what this process is configured for
+  // is how a feature silently turns itself off. Caught exactly that — invoked
+  // outside the server, this returned enabled:false with valid credentials
+  // sitting in .env, because nothing had loaded the file yet. Shell-set vars
+  // still win; loadEnvFile does not overwrite a populated entry.
+  try {
+    process.loadEnvFile(join(repoRoot, ".env"));
+  } catch {
+    // No .env is a supported setup — the digest just stays off.
+  }
+
   const host = process.env.SMTP_HOST || undefined;
   const user = process.env.SMTP_USER || undefined;
   const pass = process.env.SMTP_PASSWORD || undefined;

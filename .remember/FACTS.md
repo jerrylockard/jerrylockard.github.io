@@ -24,7 +24,7 @@ These are confirmed, locked-in facts. Do not ask Jerry to confirm them again.
 |----------|--------|-----|
 | **GitHub** | `jerrylockard` (no hyphen) | `https://github.com/jerrylockard` |
 | **LinkedIn** | `jerrylockard` (matches GitHub exactly) | `https://www.linkedin.com/in/jerrylockard/` |
-| **Email (published)** | `jerry@lockard.tech` | Confirmed live 2026-08-19 |
+| **Email (published)** | `jerry@lockard.me` | Confirmed 2026-08-28 — IONOS webmail, separate domain from `jerrylockard.me` |
 | **Old email (do not publish)** | `jerrylockard91@gmail.com` | Superseded |
 
 > **Note:** `lockard.tech` apex domain belongs to the separate `lockard-tech` GitHub org — unrelated to this site, then and now.

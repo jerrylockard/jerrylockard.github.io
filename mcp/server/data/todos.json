@@ -11,7 +11,7 @@
   },
   {
     "id": "contact-email",
-    "text": "Contact email is jerry@lockard.tech, confirmed live by Jerry 2026-08-19, wired into footer.astro via data/site.ts.",
+    "text": "Contact email is jerry@lockard.me, confirmed by Jerry 2026-08-28, wired into footer.astro via data/site.ts. IONOS webmail; lockard.me is a separate domain from jerrylockard.me.",
     "status": "done"
   },
   {

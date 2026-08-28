@@ -205,4 +205,4 @@ both WSL and Windows PowerShell.
   LinkedIn exactly. Don't use `jerry-lockard` or the older `jerrylockard91` going forward)
 - LinkedIn: `jerrylockard` — no hyphen, `https://www.linkedin.com/in/jerrylockard/`,
   now matches the GitHub handle exactly
-- Contact email: `jerry@lockard.tech` — confirmed live by Jerry 2026-08-19, published in the footer. `jerrylockard91@gmail.com` was the address before the switch; keep it on file but don't publish it unless Jerry says otherwise
+- Contact email: `jerry@lockard.me` — confirmed by Jerry 2026-08-28, published in the footer. IONOS webmail; `lockard.me` is a **separate domain** from the site's `jerrylockard.me`, which is why `dns/jerrylockard.me.zone` carries no MX. Earlier addresses on file but not for publication: `jerry@lockard.tech` (2026-08-19 → 2026-08-28), `jerrylockard91@gmail.com` before that

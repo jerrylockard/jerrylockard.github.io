@@ -22,9 +22,11 @@
 ;; Deliberately NOT in this file:
 ;;
 ;;   MX      Nothing receives mail at @jerrylockard.me. Published contact is
-;;           jerry@lockard.tech, a separate domain. Adding an MX record with no
-;;           mailbox behind it makes mail bounce in a more confusing way than
-;;           having none. Add one only when a real mail provider exists.
+;;           jerry@lockard.me — a SEPARATE domain, on IONOS webmail. lockard.me's
+;;           MX points at mx00/mx01.ionos.com and its zone is served by IONOS
+;;           nameservers, not Cloudflare, so nothing in this file touches that
+;;           mailbox. An MX here with no mailbox behind it would make mail to
+;;           @jerrylockard.me bounce more confusingly than having none.
 ;;
 ;;   CAA     No CAA record is intentional. An absent CAA means any CA may
 ;;           issue, which is what both Vercel (Let's Encrypt) and Cloudflare
@@ -56,7 +58,7 @@ jerrylockard.me.	300	IN	TXT	"v=spf1 -all"
 *._domainkey.jerrylockard.me.	300	IN	TXT	"v=DKIM1; p="
 
 ;; DMARC set to reject, applied to subdomains as well. No rua= on purpose:
-;; sending reports to an address at another domain (lockard.tech) needs an
-;; authorisation record published over there first, and a broken rua is worse
-;; than none.
+;; sending reports to an address at another domain (lockard.me) needs an
+;; authorisation record published in THAT zone first — at IONOS, not here — and
+;; a broken rua is worse than none.
 _dmarc.jerrylockard.me.	300	IN	TXT	"v=DMARC1; p=reject; sp=reject; adkim=s; aspf=s"

@@ -2,8 +2,8 @@
   "name": "Jerry Lockard",
   "location": "Covington, Kentucky",
   "coordinates": "39.0837° N, 84.5086° W",
-  "contactEmail": "jerry@lockard.tech",
-  "contactEmailNote": "Confirmed live by Jerry directly on 2026-08-19 — jerry@lockard.tech is now the published public contact address, live in footer.astro. jerrylockard91@gmail.com was the address before this switch; keep it on file but don't publish it going forward unless Jerry says otherwise.",
+  "contactEmail": "jerry@lockard.me",
+  "contactEmailNote": "Confirmed by Jerry directly on 2026-08-28 — jerry@lockard.me is the published public contact address, live in footer.astro via src/data/site.ts. Hosted on IONOS webmail (lockard.me MX points at mx00/mx01.ionos.com). Note lockard.me is a SEPARATE domain from the site's jerrylockard.me, so the site's own zone carries no MX by design. Previous addresses, on file but not for publication unless Jerry says otherwise: jerry@lockard.tech (2026-08-19 to 2026-08-28) and jerrylockard91@gmail.com before that.",
   "links": {
     "github": "jerrylockard",
     "linkedin": "jerrylockard"

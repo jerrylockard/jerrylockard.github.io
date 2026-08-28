@@ -17,6 +17,18 @@ pnpm-debug.log*
 .env
 .env.production
 
+# Editor swap and backup files. This matters more than it looks: vim names the
+# swap for `.env` as `..env.swp`, which holds that file's unsaved contents and
+# matches NEITHER the `.env` rule above nor the pre-commit hook's `.env.*`
+# pattern. In a public repo that is a live secret-leak path.
+*.swp
+*.swo
+*.swn
+.*.sw[a-p]
+*~
+*.orig
+*.rej
+
 # mcp gui runtime state (pid/log files)
 .data/
 

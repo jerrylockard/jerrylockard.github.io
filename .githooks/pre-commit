@@ -26,6 +26,11 @@ while IFS= read -r file; do
   case "$file" in
     .env.example) continue ;;
     .env|.env.*) blocked="$blocked$file"$'\n'; continue ;;
+    # Editor swap/backup files. Vim's swap for `.env` is `..env.swp` — it holds
+    # that file's contents and matches neither pattern above, so it needs its own
+    # rule rather than relying on .gitignore (which a `git add -f` walks straight
+    # past). Force-adding one of these is never deliberate.
+    *.swp|*.swo|*.swn|*~|*.orig|*.rej) blocked="$blocked$file"$'\n'; continue ;;
   esac
   case "$file" in
     .remember/*)

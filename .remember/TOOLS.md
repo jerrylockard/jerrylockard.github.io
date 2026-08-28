@@ -66,14 +66,14 @@ would defeat the point (a leaked checker source would leak the real values).
 
 ## Shared task board
 
-Backs the dashboard's Kanban/roster/calendar views — same file (`.remember/tasks.json`) whether
+Backs the dashboard's Tasks/Team/Calendar views — same file (`.remember/tasks.json`) whether
 you're going through the Dashboard or an agent's CLI turn.
 
 | Tool | Signature | Notes |
 |---|---|---|
 | `create_task` | `{ title, detail, category, priority?: "low"\|"normal"\|"high", assignee?: personaId, createdBy: personaId\|"jerry", dueDate?: "YYYY-MM-DD" }` | Starts in `backlog`. `assignee`/`createdBy` are validated against the *current* persona roster (`getPersona(id)`) — renaming an agent's `id` without a migration step would make old tasks reference a persona id that no longer resolves. |
 | `list_tasks` | `{ status?, assignee?, category? }` (all optional filters) | |
-| `get_board` | none | Full board: backlog/in-progress/done columns + current category list — this is what the Dashboard's Kanban view renders directly. |
+| `get_board` | none | Full board: `backlog`, `in-progress`, `on-hold` and `done` columns + the current category list. The Dashboard's Tasks view renders the first three as Now / Next / On hold; `done` is deliberately absent there, because finishing a task moves it into the Changelog view instead. |
 | `get_task` | `{ id }` | Single task including its full activity log. |
 | `update_task_status` | `{ id, status, expectedStatus, by: personaId\|"jerry", note? }` | `expectedStatus` is an optimistic-concurrency check — pass the status you last observed. Moving to `done` is what drives the calendar's "recently completed" view, so a stale status here makes Jerry's activity view wrong. |
 | `assign_task` | `{ id, assignee?: personaId, by }` | Omit `assignee` to unassign. |

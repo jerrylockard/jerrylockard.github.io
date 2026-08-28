@@ -45,10 +45,10 @@ Forestry Board, Code Enforcement Hearing Board.
 ## Why this belongs here and not just in the task board
 
 The shared task board (`TOOLS.md`) is good for discrete work items with a status
-(backlog/in-progress/done). A recurring civic meeting isn't "done" after one occurrence — it's a
-standing commitment that generates new tasks each cycle (attend, write up, follow up on open
-questions). This file is meant to hold the *pattern*; the task board holds the *instances* it
-generates. Once the MCP server exists, this is naturally `get_upcoming_work`'s calendar-adjacent
+(backlog/in-progress/on-hold/done). A recurring civic meeting isn't "done" after one occurrence —
+it's a standing commitment that generates new tasks each cycle (attend, write up, follow up on
+open questions). This file is meant to hold the *pattern*; the task board holds the *instances*
+it generates. The MCP server exists now, so this is `get_upcoming_work`'s calendar-adjacent
 sibling, not a replacement for it.
 
 ## Open questions — updated 2026-08-23

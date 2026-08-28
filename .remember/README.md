@@ -42,7 +42,7 @@ you're deliberately seeding state:
 | `now.md`, `recent.md` | Session continuity — what just happened |
 | `team.jsonl` | Cross-agent status updates |
 | `profile.json` | Behavioral-pattern store (`PROFILE.md` is its human-readable mirror) |
-| `tasks.json` (+`tasks.lock`) | Shared task board, backing the Dashboard's Kanban/calendar views |
+| `tasks.json` (+`tasks.lock`) | Shared task board, backing the Dashboard's Tasks and Calendar views |
 | `sessions.json` | Session continuity between Dashboard and CLI |
 | `archive.md`, `today-*.md` | Hand-maintained weekly log / daily scratch notes |
 | `gui-transcript.jsonl`, `logs/`, `tmp/` | Dashboard runtime artifacts — regenerate at runtime |

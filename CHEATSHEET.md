@@ -21,10 +21,24 @@ pnpm agent list              # see the roster
 pnpm agent <name> "<msg>"    # talk to one agent from any terminal, no Dashboard needed
 ```
 
-The Dashboard opens in the **Workroom**, where Team can route a request automatically or
-you can choose a specialist. The top navigation keeps the workflow to **Workroom**,
-**Work** (Tasks + Activity), and **Team**; requests that require your approval appear as
-**Decisions**. Local preview, Jerry's working profile, and theme are utility controls.
+The Dashboard opens straight into the conversation — chat is the ground state and
+has no tab of its own. Mention someone with `@`, or just describe the work and the
+router picks. The brand button top-left, or anyone in the left rail, returns here.
+
+The nav is four places you visit:
+
+| Tab | What it holds |
+| --- | --- |
+| **Team** | Each agent's role, duties, what files they own, what they are on now, and a Chat button |
+| **Tasks** | Now / Next / On hold. Checking a task off moves it out of here and into Changelog |
+| **Changelog** | Finished work waiting to be published into the repo's `CHANGELOG.md`, guardrail-screened first |
+| **Calendar** | A month grid — due dates, completed work and team updates as dots per day |
+
+Approvals are not a tab. An agent that needs your OK is paused mid-turn and is
+auto-denied after five minutes, so it appears as a bar across the top of the header
+with a live countdown, raises a desktop notification, and is also listed inside
+Tasks. Local preview, your profile, and the theme toggle are utility controls in
+the header.
 
 Agent turns need one env var to actually run (Dashboard and CLI both start fine without
 it — a turn just reports this clearly instead of running, and `pnpm mcp:doctor` flags it
@@ -93,12 +107,56 @@ pnpm --filter mcp-gui check
 
 `pnpm mcp:doctor` runs all three checks as part of its full readiness scan.
 
+## Who does what — four services, no overlap
+
+Four accounts are involved. They are not alternatives to each other, and when
+something breaks this table says where to go.
+
+| Service | What it does | What breaks if it stops |
+| --- | --- | --- |
+| **GitHub** | Stores the code. A push to `main` is what triggers everything else. | Nothing live goes down — you just cannot deploy. |
+| **Vercel** | Builds the Astro site and hosts it. Rebuilds on every push to `main`. | `jerrylockard.me` goes down. |
+| **Cloudflare** | DNS for `jerrylockard.me`, the proxy in front of the site, and the Tunnel publishing the dashboard. | Both the site and the dashboard become unreachable. |
+| **IONOS** | Mail. Holds the `lockard.me` and `lockard.tech` mailboxes, and DNS for those two zones. | Email stops. The site is unaffected. |
+
+**The bit that keeps causing confusion: Cloudflare and Vercel are not competing.**
+Moving the nameservers to Cloudflare changed who *answers DNS questions*, not who
+*hosts the site*. Cloudflare answers and proxies; Vercel is the origin it fetches
+from. The handoff is a single line in `dns/jerrylockard.me.zone`:
+
+```
+jerrylockard.me.  300  IN  A  76.76.21.21      <- that IP is Vercel
+```
+
+That is why a response from `jerrylockard.me` carries both `server: cloudflare`
+and `x-vercel-id`. Both are true.
+
+The Pi is deliberately not in that table. It hosts `dashboard.jerrylockard.me`
+and nothing else. The public site must never depend on a box at home being awake.
+
+### Vercel plan: Hobby (free). Leave it there.
+
+Hobby covers custom domains, automatic HTTPS, 50 domains per project and 100
+deploys a day — everything this site does. Pro is **$20 per user per month** and
+adds nothing needed here. **Do not start the Pro trial**: it converts to paid, and
+the free-first-year-domain offer does not even apply during a trial.
+
+One caveat worth knowing before it matters: Hobby is licensed for non-commercial,
+personal use. A civic and job-search site is personal. If this ever becomes a
+campaign site taking donations, that is the moment to revisit the plan — not
+before.
+
 ## Deploy
 
-Automatic — no manual deploy command. A push to `main` deploys via **Vercel**
-(connected to this GitHub repo, framework auto-detected as Astro) and it's live at
-`jerrylockard.me` within a few minutes. Custom domain configured in the Vercel
-project's Domains settings. Moved off GitHub Pages 2026-08-23.
+Automatic — no manual deploy command. Push to `main`, Vercel rebuilds, live at
+`jerrylockard.me` within a few minutes. The custom domain is configured in the
+Vercel project's Domains settings, not in `public/CNAME` (that file is an inert
+GitHub Pages leftover). Moved off GitHub Pages 2026-08-23.
+
+DNS records for the zone live in `dns/jerrylockard.me.zone`, importable straight
+into Cloudflare. The apex and `www` are currently **proxied** (orange cloud),
+which works because SSL/TLS mode is Full — never set it to Flexible, which forces
+plain HTTP to Vercel and causes a redirect loop.
 
 ## Git — the rules, not just the commands
 
@@ -106,6 +164,14 @@ project's Domains settings. Moved off GitHub Pages 2026-08-23.
 - New commits only — never `--amend`, `--force`, or `git reset --hard`.
 - Every push stops for your explicit OK, no matter how small the change.
 - No new dependencies (`pnpm add` anything) without you approving first.
+
+Pushing from the Pi needs one setting, because the key is not named `id_ed25519`
+and so ssh never offers it by default. Already configured, recorded here in case
+the repo is re-cloned:
+
+```bash
+git config core.sshCommand "ssh -i ~/.ssh/github_key -o IdentitiesOnly=yes"
+```
 
 ## Where things live
 
@@ -117,8 +183,11 @@ project's Domains settings. Moved off GitHub Pages 2026-08-23.
 | Agent rules, roster, commit-signature format | `mcp/AGENTS.md` |
 | Agent personas/system prompts | `mcp/agents/src/personas.ts` |
 | MCP server (content, guardrails, memory, shared tasks/board/calendar) | `mcp/server/` |
-| Dashboard (Team, Board, Calendar, Chat) | `mcp/gui/` |
-| Session memory / team log / shared task board / Jerry's planning docs | `.remember/` (entirely local and gitignored — nothing under it is tracked in this repo) |
+| Dashboard (chat, plus Team / Tasks / Changelog / Calendar) | `mcp/gui/` — UI source in `public/`, styles built from `styles/app.css` via `pnpm --filter mcp-gui build:css` |
+| Session memory / team log / shared task board | `.remember/` runtime files — gitignored, local only, never committed |
+| Jerry's planning docs (`RULES.md`, `FACTS.md`, `GUARDRAILS.md`, …) | `.remember/` too, but these **are** tracked and public — the split is defined in `.remember/.gitignore` |
+| DNS zone for Cloudflare | `dns/jerrylockard.me.zone` |
+| Public changelog, written from finished tasks | `CHANGELOG.md` (created on first publish from the dashboard) |
 
 ## Moving memory between machines
 
@@ -182,18 +251,28 @@ both WSL and Windows PowerShell.
   tunnel — but not all of that plus an Astro build plus Chromium at once.
 - **sshd is publickey-only; password auth is disabled.** `ssh-copy-id` cannot
   work. Install new keys over an already-working key.
-- **Nothing is installed yet** — no node, npm, pnpm, git, jq, cloudflared or
-  claude. Only curl. Setup is real work, not just a clone.
+- **Installed as of 2026-08-28:** node 24, pnpm 11, git, cloudflared, `gh` (logged
+  in as `jerrylockard`), and Claude Code. Playwright's Chromium is downloaded but
+  **cannot run** — it needs system libraries that require `sudo apt-get`
+  (`libatk1.0-0t64`, `libgbm1`, `libxkbcommon0`, …), so nothing on the dashboard
+  has been checked in a real browser yet.
 - **aarch64 changes what transfers.** Never copy `node_modules` (233 MB of
   x86-64 binaries) or `~/.cache/ms-playwright` (656 MB of x86 Chromium) from
   the laptop — reinstall both natively or the first build crashes on esbuild.
 - **Keep the public site on Vercel.** The Pi is the workshop;
   `jerrylockard.me` must never depend on a box at home being awake.
-- **cloudflared has aarch64 builds**, so the tunnel belongs here rather than on
-  the laptop. That is the whole point: always-on means actually reachable.
-- **Always-on means always exposed.** Set `DASHBOARD_PASSWORD` before the
-  tunnel ever starts; the server refuses to boot exposed without it, and
-  `pnpm dashboard:tunnel:doctor` reports what is still missing.
+- **The tunnel is live.** `dashboard.jerrylockard.me` resolves and serves from
+  this Pi through a named Cloudflare Tunnel (`pnpm dashboard:tunnel:status`).
+  Confirmed authenticated from outside on 2026-08-28: `/` redirects to `/login`
+  and `/api/chat` returns 401.
+- **Always-on means always exposed.** The server now refuses to boot without
+  `DASHBOARD_PASSWORD` at all — not only when it detects exposure — because a
+  bind address cannot tell whether a tunnel is pointed at it. `DASHBOARD_ALLOW_NO_AUTH=1`
+  is the deliberate opt-out and never lifts the exposed case.
+- **`curl -s http://127.0.0.1:4405/healthz` answers `ok auth=password` or
+  `ok auth=none`.** That is how you check whether the *running process* has auth,
+  which is a different question from what `.env` says. The tunnel scripts refuse
+  to publish an `auth=none` process.
 
 ## Settled facts (so nobody has to re-ask)
 
@@ -205,4 +284,11 @@ both WSL and Windows PowerShell.
   LinkedIn exactly. Don't use `jerry-lockard` or the older `jerrylockard91` going forward)
 - LinkedIn: `jerrylockard` — no hyphen, `https://www.linkedin.com/in/jerrylockard/`,
   now matches the GitHub handle exactly
+- Hosting split: **Vercel** builds and serves `jerrylockard.me`; **Cloudflare** does
+  DNS, proxying and the dashboard Tunnel; **IONOS** does mail; **GitHub** stores the
+  code and triggers deploys. They are not alternatives — see "Who does what" above
+- Vercel plan: **Hobby (free)**. Do not start the Pro trial; it converts to paid and
+  Pro adds nothing this site uses
+- Dashboard: `dashboard.jerrylockard.me`, served from the Pi over a Cloudflare Tunnel,
+  password-gated. Live since 2026-08-28
 - Contact email: `jerry@lockard.me` — confirmed by Jerry 2026-08-28, published in the footer. IONOS webmail; `lockard.me` is a **separate domain** from the site's `jerrylockard.me`, which is why `dns/jerrylockard.me.zone` carries no MX. Earlier addresses on file but not for publication: `jerry@lockard.tech` (2026-08-19 → 2026-08-28), `jerrylockard91@gmail.com` before that

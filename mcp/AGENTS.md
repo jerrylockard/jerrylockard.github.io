@@ -31,8 +31,10 @@ of all references to their original project before use here — see "Scope" belo
 
 Two ways in, same agents, same rules, same shared session/memory either way:
 
-- **Dashboard**: `pnpm mcp:start`, then open `http://127.0.0.1:4405`. Team roster,
-  shared Kanban board, completed/planned calendar, chat, approvals, and live preview.
+- **Dashboard**: `pnpm mcp:start`, then open `http://127.0.0.1:4405` (or
+  `https://dashboard.jerrylockard.me` through the Cloudflare Tunnel). Chat is the
+  ground state; the nav is Team, Tasks (Now / Next / On hold), Changelog, and a
+  month-grid Calendar. Approvals interrupt in the header rather than living in a tab.
 - **CLI** (works from any terminal, and is what a non-GUI AI tool should use):
   ```bash
   pnpm agent <name> "<message>"

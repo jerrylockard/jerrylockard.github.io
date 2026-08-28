@@ -10,6 +10,7 @@ import { checkPreviewStatus, startPreviewServer, PREVIEW_URL } from "./preview.j
 import { appendTranscriptEvent, clearTranscript, readTranscript } from "./transcript.js";
 import { routeMessage } from "./router.js";
 import { listChangelogCandidates, publishToChangelog, readChangelog } from "../../server/src/changelog.js";
+import { loadDigestConfig, scheduleDigest, sendDigest, buildDigest } from "./digest.js";
 import {
   readProfileDoc,
   setProfileField,
@@ -55,6 +56,11 @@ installSecurity(app, security);
 
 app.use(express.json());
 app.use(express.static(publicDir));
+
+// Email digests. Agents never touch SMTP — see digest.ts for why that boundary
+// sits in the server rather than in a tool.
+const digestConfig = loadDigestConfig();
+scheduleDigest(digestConfig);
 
 type StreamEvent =
   | (ChainEvent & { channel?: string })
@@ -517,6 +523,35 @@ app.post("/api/changelog/publish", (req: Request, res: Response) => {
   res.json(result);
 });
 
+// ---------- email digest ----------
+// No recipient parameter, deliberately. The address comes from DIGEST_TO and
+// nothing a request or an agent sends can redirect it.
+
+app.get("/api/digest", (_req: Request, res: Response) => {
+  const preview = buildDigest(24);
+  res.json({
+    configured: digestConfig.enabled,
+    to: digestConfig.to ?? null,
+    hour: digestConfig.hour,
+    subject: preview.subject,
+    preview: preview.text,
+    hasContent: preview.hasContent,
+  });
+});
+
+app.post("/api/digest/send", async (_req: Request, res: Response) => {
+  try {
+    const result = await sendDigest(digestConfig, { force: true });
+    if (!result.sent) {
+      res.status(422).json({ error: result.reason });
+      return;
+    }
+    res.json(result);
+  } catch (error) {
+    res.status(502).json({ error: error instanceof Error ? error.message : "The mail server refused the message." });
+  }
+});
+
 // ---------- roster + calendar ----------
 // Derived views over the same task store — no separate state, just different slices for the
 // dashboard's Team tab (who's doing what right now) and Calendar tab (what shipped, what's next).
@@ -580,6 +615,11 @@ app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {
 app.listen(security.port, security.host, () => {
   console.log(`mcp-gui listening on http://${security.host}:${security.port}`);
   if (security.publicOrigin) console.log(`  public origin  ${security.publicOrigin}`);
+  console.log(
+    digestConfig.enabled
+      ? `  digest         daily at ${String(digestConfig.hour).padStart(2, "0")}:00 to ${digestConfig.to}`
+      : "  digest         off (set SMTP_HOST/SMTP_USER/SMTP_PASSWORD/DIGEST_TO)",
+  );
   if (security.password) {
     console.log("  auth           password + session cookie");
   } else {

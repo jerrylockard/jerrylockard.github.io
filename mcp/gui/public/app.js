@@ -1698,6 +1698,26 @@ function wireEvents() {
 
   $("home-btn").addEventListener("click", () => showView("chat"));
 
+  $("digest-send").addEventListener("click", async () => {
+    const btn = $("digest-send");
+    const notice = $("digest-notice");
+    btn.disabled = true;
+    notice.hidden = true;
+    const ok = "border:1px solid color-mix(in oklab, var(--c-ok) 40%, transparent);background:var(--c-ok-soft);color:var(--c-ok)";
+    const bad = "border:1px solid color-mix(in oklab, var(--c-err) 40%, transparent);background:var(--c-err-soft);color:var(--c-err)";
+    try {
+      const result = await api("/api/digest/send", { method: "POST" });
+      notice.setAttribute("style", ok);
+      setText(notice, `Sent: ${result.subject}`);
+    } catch (err) {
+      notice.setAttribute("style", bad);
+      setText(notice, err.message);
+    } finally {
+      notice.hidden = false;
+      btn.disabled = false;
+    }
+  });
+
   $("interrupt-all").addEventListener("click", () => showView("tasks"));
 
   $("changelog-publish").addEventListener("click", publishChangelog);

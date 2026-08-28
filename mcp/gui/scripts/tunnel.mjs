@@ -14,9 +14,11 @@
  *   named   dashboard.jerrylockard.me, bound to a tunnel you own. Requires the
  *           jerrylockard.me zone to be on Cloudflare DNS (see `doctor`).
  *
- * Every path that exposes a port refuses to run without DASHBOARD_PASSWORD.
- * The server enforces this too (security.ts assertSafeExposure) — this is the
- * earlier, friendlier copy of the same rule.
+ * Every path that exposes a port checks two separate things before it will run:
+ * that DASHBOARD_PASSWORD is in .env (requirePassword), and that the process
+ * actually listening on the port reports itself authenticated (requireServerAuth).
+ * Those can disagree — .env gains a password while a long-running server keeps
+ * serving without one — and only the second question is the one that matters.
  */
 import { spawn, spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync, openSync } from "node:fs";
@@ -85,9 +87,41 @@ function requireCloudflared() {
   }
 }
 
-function serverUp() {
-  const probe = spawnSync("curl", ["-sS", "-o", "/dev/null", "-m", "4", `${SERVICE}/healthz`], { stdio: "pipe" });
-  return probe.status === 0;
+/**
+ * What the RUNNING server says about itself: "password", "none", or null when
+ * nothing answered.
+ *
+ * requirePassword() below reads .env — but .env is not what is serving traffic.
+ * A dashboard started before the password was added is still running without
+ * auth, and re-reading the file will never reveal that. This asks the process.
+ */
+function serverAuthMode() {
+  const probe = spawnSync("curl", ["-sS", "-m", "4", `${SERVICE}/healthz`], { stdio: "pipe" });
+  if (probe.status !== 0) return null;
+  return probe.stdout.toString().includes("auth=none") ? "none" : "password";
+}
+
+/**
+ * The check that closes the gap between "the config is right" and "the thing
+ * listening on this port is safe to publish". Refuses either way it can fail:
+ * nothing running, or something running without a password.
+ */
+function requireServerAuth(what) {
+  const mode = serverAuthMode();
+  if (mode === null) {
+    die(`The dashboard isn't answering at ${SERVICE}. Start it first:\n\n    pnpm mcp:start\n`);
+  }
+  if (mode === "none") {
+    die(
+      `Refusing to ${what}: the dashboard answering on ${SERVICE} is running WITHOUT\n` +
+        `  authentication, so publishing it would put an unauthenticated shell on the internet.\n\n` +
+        `  DASHBOARD_PASSWORD is set in .env, but this process booted before that and has not\n` +
+        `  re-read the file. Restart it so the password takes effect:\n\n` +
+        `    pnpm mcp:stop && pnpm mcp:start\n\n` +
+        `  Then confirm it took:\n\n` +
+        `    curl -s ${SERVICE}/healthz     # should print: ok auth=password\n`,
+    );
+  }
 }
 
 function readPid() {
@@ -110,7 +144,7 @@ function isAlive(pid) {
 function quick() {
   requireCloudflared();
   requirePassword("open a public tunnel");
-  if (!serverUp()) die(`The dashboard isn't answering at ${SERVICE}. Start it first:\n\n    pnpm mcp:start\n`);
+  requireServerAuth("open a public tunnel");
 
   console.log(`\nOpening a throwaway tunnel to ${SERVICE} …`);
   console.log(`Nothing about your DNS changes. Ctrl-C to close it.\n`);
@@ -207,7 +241,7 @@ function start() {
   requireCloudflared();
   requirePassword("start the public tunnel");
   if (!existsSync(configPath)) die(`No tunnel config. Run \`create\` then \`route\` first.`);
-  if (!serverUp()) die(`The dashboard isn't answering at ${SERVICE}. Start it first:\n\n    pnpm mcp:start\n`);
+  requireServerAuth("start the public tunnel");
 
   const existing = readPid();
   if (existing && isAlive(existing)) {
@@ -244,7 +278,14 @@ function status() {
   const running = pid && isAlive(pid);
   console.log(`\nTunnel   ${running ? `running (pid ${pid})` : "not running"}`);
   console.log(`Hostname ${HOSTNAME}`);
-  console.log(`Origin   ${SERVICE}  ${serverUp() ? "(dashboard up)" : "(dashboard DOWN)"}`);
+  const mode = serverAuthMode();
+  const origin =
+    mode === null
+      ? "(dashboard DOWN)"
+      : mode === "none"
+        ? "(dashboard up, but UNAUTHENTICATED — will refuse to tunnel)"
+        : "(dashboard up, authenticated)";
+  console.log(`Origin   ${SERVICE}  ${origin}`);
   console.log(`Config   ${existsSync(configPath) ? configPath : "not created yet"}\n`);
 }
 
@@ -269,7 +310,19 @@ function doctor() {
     Boolean(process.env.DASHBOARD_SESSION_SECRET),
     process.env.DASHBOARD_SESSION_SECRET ? "set — sessions survive restarts" : "unset — sessions reset on every restart (safe, just annoying)",
   );
-  add("dashboard reachable", serverUp(), serverUp() ? SERVICE : `nothing at ${SERVICE} — run pnpm mcp:start`);
+  // Deliberately checks the running process rather than .env: every other row here
+  // reads configuration, and configuration is exactly what can disagree with what is
+  // actually listening on the port.
+  const liveMode = serverAuthMode();
+  add(
+    "running dashboard is authenticated",
+    liveMode === "password",
+    liveMode === null
+      ? `nothing at ${SERVICE} — run pnpm mcp:start`
+      : liveMode === "none"
+        ? `${SERVICE} is answering with NO auth — restart it: pnpm mcp:stop && pnpm mcp:start`
+        : SERVICE,
+  );
   add("tunnel config written", existsSync(configPath), existsSync(configPath) ? configPath : "run `create`");
 
   // The load-bearing one: cloudflared can only bind a hostname on a zone it controls.

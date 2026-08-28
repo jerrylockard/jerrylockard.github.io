@@ -28,7 +28,7 @@ const API_WINDOW_MS = 60 * 1000;
 const API_MAX_REQUESTS = 600; // generous: the UI polls and streams; this only stops floods.
 
 export interface SecurityConfig {
-  /** Password gate. Absent = localhost-only mode. */
+  /** Password gate. Absent is only legal on loopback, and only with allowNoAuth. */
   password?: string;
   user: string;
   /** Signing key for session cookies. Ephemeral per boot unless pinned via env. */
@@ -39,6 +39,11 @@ export interface SecurityConfig {
   port: number;
   /** True when traffic arrives via cloudflared/a reverse proxy. */
   trustProxy: boolean;
+  /**
+   * Deliberate opt-out for running unauthenticated on loopback while hacking
+   * locally. It can never permit exposure — see assertSafeExposure.
+   */
+  allowNoAuth: boolean;
 }
 
 function envFlag(name: string): boolean {
@@ -68,25 +73,56 @@ export function loadSecurityConfig(): SecurityConfig {
     host,
     port: Number(process.env.PORT ?? 4405),
     trustProxy: envFlag("DASHBOARD_TRUST_PROXY") || Boolean(publicOrigin),
+    allowNoAuth: envFlag("DASHBOARD_ALLOW_NO_AUTH"),
   };
 }
 
 const LOOPBACK = new Set(["127.0.0.1", "::1", "localhost"]);
 
 /**
- * The one rule that makes accidental exposure impossible: if this process is
- * listening anywhere but loopback, or is fronted by a public origin, it must have
- * a password. Refusing to boot is the only safe failure mode — a warning would
- * scroll past and leave an unauthenticated shell on the internet.
+ * Authentication is the default. Running without it is something you have to ask
+ * for by name.
+ *
+ * This used to infer privacy from the bind address: a password was required only
+ * when HOST was non-loopback or DASHBOARD_PUBLIC_ORIGIN was set. Every way of
+ * publishing a loopback port leaves both untouched — `cloudflared tunnel --url
+ * http://127.0.0.1:4405`, `ngrok http 4405`, `tailscale funnel`, `ssh -R`, an
+ * editor's "forward a port" — so the process went on concluding it was private
+ * while serving the internet. A bind address cannot answer "can someone else
+ * reach this", so it is no longer asked.
+ *
+ * Refusing to boot stays the failure mode: a warning scrolls past, and the thing
+ * it would scroll past is an unauthenticated shell.
  */
 export function assertSafeExposure(config: SecurityConfig): void {
+  if (config.password) return;
+
   const exposed = !LOOPBACK.has(config.host) || Boolean(config.publicOrigin);
-  if (exposed && !config.password) {
+
+  // The opt-out below is for loopback hacking, and is deliberately not an escape
+  // hatch from this branch. "I wanted no auth locally" is never a reason to
+  // publish a shell, so an explicitly-exposed process still needs a real password.
+  if (exposed) {
     throw new Error(
       "Refusing to start: the dashboard is set to be reachable off-localhost " +
         `(HOST=${config.host}${config.publicOrigin ? `, DASHBOARD_PUBLIC_ORIGIN=${config.publicOrigin}` : ""}) ` +
         "but DASHBOARD_PASSWORD is not set. This app runs shell commands in the repo — " +
-        "it must never be exposed unauthenticated. Set DASHBOARD_PASSWORD (see .env.example) or unset HOST/DASHBOARD_PUBLIC_ORIGIN.",
+        "it must never be exposed unauthenticated. Set DASHBOARD_PASSWORD (see .env.example) " +
+        "or unset HOST/DASHBOARD_PUBLIC_ORIGIN. DASHBOARD_ALLOW_NO_AUTH does not lift this.",
+    );
+  }
+
+  if (!config.allowNoAuth) {
+    throw new Error(
+      "Refusing to start: DASHBOARD_PASSWORD is not set.\n\n" +
+        "  This app runs shell commands in the repo, and binding to 127.0.0.1 does not mean\n" +
+        "  nobody else can reach it — a tunnel or a forwarded port is invisible from in here.\n" +
+        "  So a password is required by default, not only when exposure is detected.\n\n" +
+        "  Set one (see .env.example):\n" +
+        "    DASHBOARD_PASSWORD=<a long random passphrase>\n\n" +
+        "  Or, to run unauthenticated on loopback on purpose:\n" +
+        "    DASHBOARD_ALLOW_NO_AUTH=1\n\n" +
+        "  Do not use that opt-out on a machine you tunnel from.",
     );
   }
 }
@@ -320,10 +356,16 @@ export function installSecurity(app: Express, config: SecurityConfig): void {
     next();
   });
 
-  // Health check stays open so the tunnel can probe without a credential. It
-  // deliberately reports nothing beyond liveness.
+  // Health check stays open so the tunnel can probe without a credential, and
+  // reports the auth mode plus nothing else — no version, no hostname, no config.
+  //
+  // The mode is the load-bearing part. Whether this process installed auth was
+  // decided from .env at ITS boot, which can be hours before a tunnel script reads
+  // the same file and gets a different answer, the file having gained a password in
+  // between with nothing restarting the server. A probe that only asks "are you
+  // alive" cannot see that gap. One that asks "are you authenticated" can.
   app.get("/healthz", (_req: Request, res: Response) => {
-    res.type("text/plain").send("ok");
+    res.type("text/plain").send(config.password ? "ok auth=password" : "ok auth=none");
   });
 
   if (!config.password) {

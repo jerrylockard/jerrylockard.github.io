@@ -35,8 +35,9 @@ const publicDir = join(__dirname, "..", "public");
 const app = express();
 
 // Auth, rate limiting, security headers, and the access audit log all live in
-// security.ts. assertSafeExposure() is the important call: it refuses to boot if
-// this is configured to listen anywhere but loopback without a password set.
+// security.ts. assertSafeExposure() is the important call: it refuses to boot
+// without a password unless DASHBOARD_ALLOW_NO_AUTH says loopback-unauthenticated
+// is intended — and refuses regardless once anything says this is exposed.
 const security = loadSecurityConfig();
 assertSafeExposure(security);
 installSecurity(app, security);
@@ -479,5 +480,14 @@ app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {
 app.listen(security.port, security.host, () => {
   console.log(`mcp-gui listening on http://${security.host}:${security.port}`);
   if (security.publicOrigin) console.log(`  public origin  ${security.publicOrigin}`);
-  console.log(security.password ? "  auth           password + session cookie" : "  auth           none (loopback only)");
+  if (security.password) {
+    console.log("  auth           password + session cookie");
+  } else {
+    // Only reachable via DASHBOARD_ALLOW_NO_AUTH on loopback (assertSafeExposure
+    // refuses every other route here). Loud on purpose: gui.log is where anyone
+    // debugging a tunnel goes looking, and this is the line they need to find.
+    console.log("  auth           NONE — running unauthenticated (DASHBOARD_ALLOW_NO_AUTH=1)");
+    console.log("  !!             Anyone who can reach this port has a shell in this repo.");
+    console.log("  !!             Do not point a tunnel at this process. Set DASHBOARD_PASSWORD and restart.");
+  }
 });

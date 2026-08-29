@@ -1,0 +1,26 @@
+name: Deploy to Firebase Hosting on merge
+
+# Runs alongside Vercel's own push-triggered deploy during the hosting
+# migration (CHEATSHEET.md) — both stay in sync until DNS actually cuts over
+# to Firebase, at which point Vercel's deploy can be turned off.
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build_and_deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm dlx firebase-tools@15 deploy --only hosting --non-interactive --token "$FIREBASE_TOKEN"
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}

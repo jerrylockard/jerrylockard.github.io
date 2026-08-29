@@ -40,25 +40,26 @@ with a live countdown, raises a desktop notification, and is also listed inside
 Tasks. Local preview, your profile, and the theme toggle are utility controls in
 the header.
 
-Agent turns need one env var to actually run (Dashboard and CLI both start fine without
-it — a turn just reports this clearly instead of running, and `pnpm mcp:doctor` flags it
-non-fatally). Put it in a repo-root `.env` file (gitignored) or your shell profile:
+Agent turns run as `claude -p` subprocesses under this machine's own Claude Code login —
+a subscription, not an API key. Nothing to set in `.env` for this: run `claude login` once
+(interactive) and `pnpm mcp:doctor` confirms it (`claude CLI logged in`).
 
-| Var | Purpose |
-| --- | --- |
-| `AI_GATEWAY_API_KEY` | Required for any agent to respond. One key covers every provider (Anthropic, OpenAI, Google, …) via the Vercel AI Gateway — get one at vercel.com (AI Gateway → API Keys). |
-
-Everything else is optional and inert unless set — local default behavior is unchanged:
+The following env vars are optional and inert unless set — local default behavior is unchanged:
 
 | Var | Default | Purpose |
 | --- | --- | --- |
 | `PORT` | `4405` | Port the dashboard listens on |
 | `HOST` | `127.0.0.1` | Bind address — set to `0.0.0.0` for a non-localhost deploy |
-| `DASHBOARD_PASSWORD` | unset | If set, gates the whole app behind HTTP Basic Auth |
-| `DASHBOARD_USER` | `jerry` | Basic Auth username, only used when a password is set |
+| `DASHBOARD_PASSWORD` | unset | If set, gates the whole app behind a login page + signed session cookie |
+| `DASHBOARD_USER` | `jerry` | Login username, only used when a password is set |
+| `DASHBOARD_LOGIN_SECRET` | unset | Signs one-time login tokens from `pnpm dashboard:login-token` — sign in without ever typing/remembering the password; that session lasts `DASHBOARD_TOKEN_SESSION_DAYS` (default 30) instead of 12h |
+| `DASHBOARD_SESSION_SECRET` | random per boot | Pin this to survive a restart without signing everyone out |
+| `DASHBOARD_PUBLIC_ORIGIN` | unset | Set when served through the Cloudflare Tunnel — enables Secure cookies/HSTS |
 
-Each persona in `mcp/agents/src/personas.ts` can optionally set its own `model` (a Gateway
-model string, e.g. `"openai/gpt-5.5"`) — unset falls back to Claude. See `mcp/AGENTS.md`
+Each persona in `mcp/agents/src/personas.ts` can optionally set its own `model` — passed
+straight through as `claude`'s `--model` flag (e.g. `"opus"`, `"sonnet"`, `"fable"`), since
+agent turns run as `claude -p` subprocesses under this machine's Claude Code login, not a
+metered API key. Unset falls back to Claude Code's own default model. See `mcp/AGENTS.md`
 for details.
 
 Roster: `shepard` (Chief of Staff — Leadership), `desiree` (Design Lead — Product
@@ -109,8 +110,16 @@ pnpm --filter mcp-gui check
 
 ## Who does what — four services, no overlap
 
-Four accounts are involved. They are not alternatives to each other, and when
-something breaks this table says where to go.
+**Migration in progress, as of 2026-08-29 — this section describes the current
+live setup, not the target one.** Jerry has created a Firebase project
+(`jerrylockard-site`) and is setting up Firebase Hosting himself to eventually
+replace Vercel for `jerrylockard.me`. Separately, the app's codebase is being
+wired to Firebase Authentication and Firestore (see `mcp/AGENTS.md` once that
+lands). Until both are confirmed live, treat everything below as accurate —
+don't assume Firebase has taken over hosting just because the project exists.
+
+Four accounts are involved today. They are not alternatives to each other, and
+when something breaks this table says where to go.
 
 | Service | What it does | What breaks if it stops |
 | --- | --- | --- |
@@ -219,7 +228,9 @@ scp .remember/{JOURNAL.md,archive.md,now.md,recent.md,profile.json,sessions.json
 Then create `.env` on the Pi by hand — do not copy it:
 
 ```bash
-ssh lockard-tech 'cd ~/jerrylockard.github.io && printf "AI_GATEWAY_API_KEY=\nDASHBOARD_PASSWORD=\nDASHBOARD_SESSION_SECRET=%s\n" "$(openssl rand -hex 32)" > .env && chmod 600 .env && nano .env'
+ssh lockard-tech 'cd ~/jerrylockard.github.io && printf "DASHBOARD_PASSWORD=\nDASHBOARD_SESSION_SECRET=%s\n" "$(openssl rand -hex 32)" > .env && chmod 600 .env && nano .env'
+# Then, separately (interactive, do it in an actual terminal on the Pi, not over this one-liner):
+#   claude login
 ```
 
 Verify the Pi came up correctly before trusting it:

@@ -2,6 +2,8 @@
 dist/
 # generated types
 .astro/
+# Firebase CLI's local deploy cache (per-machine, not shared)
+.firebase/
 
 # dependencies
 node_modules/
@@ -39,10 +41,14 @@ pnpm-debug.log*
 .idea/
 
 # local Claude Code settings (per-machine, not shared) — except reusable
-# skills, which are project tooling, not machine-local config. Tracked
-# skills are opted in individually below, same pattern as .remember/'s
+# skills, which are project tooling, not machine-local config, and
+# settings.json, which carries the project-wide .env-read deny rule every
+# agent turn (mcp/agents/src/claude-code.ts) depends on — that one's shared
+# config, not machine-local, so it's tracked like the skills below it.
+# Tracked paths are opted in individually below, same pattern as .remember/'s
 # own .gitignore uses for its tracked-vs-runtime split.
 .claude/*
+!.claude/settings.json
 !.claude/skills/
 .claude/skills/*
 !.claude/skills/run-jerrylockard-github-io/

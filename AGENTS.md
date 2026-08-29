@@ -5,6 +5,11 @@ Jerry Lockard's personal site. Read this file first, no matter which AI tool you
 here via Gemini CLI's `@./AGENTS.md` import syntax, and Codex CLI / opencode read
 `AGENTS.md` natively — so this is the one place every tool actually lands.
 
+**Before doing substantive work, read `docs/CHARACTER.json`.** It defines the working
+persona and, more importantly, an ordered checklist of what to read/verify before
+acting — built after a session that repeatedly acted on stale doc content and had to be
+corrected for the same things more than once. Follow its `bootSequence` in order.
+
 ## What this is
 
 A civic-first personal site for Covington, Kentucky — Jerry is using it for real

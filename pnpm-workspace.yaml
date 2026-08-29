@@ -1,12 +1,10 @@
 packages:
   - .
-  - mcp/*
 
 allowBuilds:
-  # Native file watcher used by the Tailwind CLI's --watch mode (watch:css).
+  # @parcel/watcher: Vite's file watcher (astro dev). sharp: Astro's image
+  # optimization (astro:assets). Both native-binary build steps from trusted,
+  # already-relied-on packages.
   '@parcel/watcher': true
   esbuild: true
   sharp: true
-
-minimumReleaseAgeExclude:
-  - lucide-static@1.35.0

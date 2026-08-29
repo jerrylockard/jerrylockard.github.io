@@ -15,7 +15,7 @@ empty placeholder repo was stale — this is the real, live `jerrylockard.github
 with a fully built Astro site (`src/pages/index.astro` composes Nav, Hero,
 Catenary, Work, About, Platform, a recent-writing teaser, and Footer from
 `src/components/`, plus a `/notes` hub with dedicated `/academy-notes`,
-`/civic-notes`, and `/writing` sections) deployed via Vercel to `jerrylockard.me`. Expect real, populated screenshots,
+`/civic-notes`, and `/writing` sections) deployed via Firebase Hosting to `jerrylockard.me`. Expect real, populated screenshots,
 not a blank page — if one comes back blank-ish, that's a real bug to
 investigate, not the expected state.
 
@@ -106,9 +106,9 @@ No test suite exists in this repo yet.
   layout); npm's arborist can't reconcile it and throws. Don't use `npm
   install` here at all — `npm install -g pnpm` (global, doesn't touch this
   `node_modules`) then `pnpm install`/`pnpm add`.
-- **`pnpm add <pkg>` fails with `ERR_PNPM_ADDING_TO_ROOT`.** This is a pnpm
-  workspace (`pnpm-workspace.yaml`: `.` + `mcp/*`). Adding to the root package
-  needs an explicit `-w`: `pnpm add -D <pkg> -w`.
+- **`pnpm add <pkg>` fails with `ERR_PNPM_ADDING_TO_ROOT`.** This is still a pnpm
+  workspace (`pnpm-workspace.yaml`), even with a single `.` package. Adding to
+  the root package needs an explicit `-w`: `pnpm add -D <pkg> -w`.
 - **Chromium fails to launch:
   `error while loading shared libraries: libnspr4.so: cannot open shared object file`.**
   Playwright's Chromium needs system libs (`libnspr4`, `libnss3`,

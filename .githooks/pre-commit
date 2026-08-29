@@ -1,51 +1,31 @@
 #!/usr/bin/env bash
-# Refuses to commit private material into this PUBLIC repository.
+# Refuses to commit secrets or editor-swap files into this PUBLIC repository.
 #
 # GitHub push rulesets would enforce this server-side, but they are org-only —
 # a personal public repo cannot have them (verified 2026-08-26). This hook is
 # the local equivalent: it catches the mistake at the moment it would happen,
 # on every machine that runs `pnpm install`.
-#
-# The allowlist below mirrors .remember/.gitignore. Anything under .remember/
-# that is not a hand-authored planning doc is private runtime memory.
 set -uo pipefail
-
-allowed_remember() {
-  case "$1" in
-    .gitignore|RULES.md|GUARDRAILS.md|FACTS.md|PROFILE.md|MEMORY.md|AGENTS.md) return 0 ;;
-    PERSONAS.md|TOOLS.md|CONFIG.md|STRUCTURE.md|ROLES.md|SCHEDULE.md) return 0 ;;
-    CHANGELOG.md|README.md) return 0 ;;
-    academy-material/*.md) return 0 ;;
-    *) return 1 ;;
-  esac
-}
 
 blocked=""
 while IFS= read -r file; do
   [ -n "$file" ] || continue
   case "$file" in
     .env.example) continue ;;
-    .env|.env.*) blocked="$blocked$file"$'\n'; continue ;;
+    .env|.env.*) blocked="$blocked$file"$'\n' ;;
     # Editor swap/backup files. Vim's swap for `.env` is `..env.swp` — it holds
     # that file's contents and matches neither pattern above, so it needs its own
     # rule rather than relying on .gitignore (which a `git add -f` walks straight
     # past). Force-adding one of these is never deliberate.
-    *.swp|*.swo|*.swn|*~|*.orig|*.rej) blocked="$blocked$file"$'\n'; continue ;;
-  esac
-  case "$file" in
-    .remember/*)
-      allowed_remember "${file#.remember/}" || blocked="$blocked$file"$'\n'
-      ;;
+    *.swp|*.swo|*.swn|*~|*.orig|*.rej) blocked="$blocked$file"$'\n' ;;
   esac
 done < <(git diff --cached --name-only --diff-filter=ACM)
 
 if [ -n "$blocked" ]; then
-  printf '\n\033[1;31mCommit refused — private material staged for a PUBLIC repo.\033[0m\n\n'
+  printf '\n\033[1;31mCommit refused — secret-shaped file staged for a PUBLIC repo.\033[0m\n\n'
   printf '%s' "$blocked" | sed 's/^/    /'
   printf '\n  This repository is public. A commit here is permanent: deleting the file\n'
   printf '  later does not remove it from git history.\n\n'
-  printf '  .remember/ runtime memory moves between machines by scp, not git.\n'
-  printf '  See CHEATSHEET.md "Moving memory between machines".\n\n'
   printf '  Unstage with:  git restore --staged <file>\n\n'
   exit 1
 fi

@@ -10,27 +10,12 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "mcp:start": "pnpm --filter mcp-gui start",
-    "mcp:stop": "pnpm --filter mcp-gui stop",
-    "mcp:status": "pnpm --filter mcp-gui status",
-    "mcp:logs": "pnpm --filter mcp-gui logs",
-    "agent": "pnpm --filter mcp-agents run agent",
-    "gateway-check": "pnpm --filter mcp-agents run gateway-check",
-    "mcp:doctor": "node mcp/gui/scripts/doctor.mjs",
-    "dashboard:tunnel": "node mcp/gui/scripts/tunnel.mjs",
-    "dashboard:tunnel:doctor": "node mcp/gui/scripts/tunnel.mjs doctor",
-    "dashboard:tunnel:quick": "node mcp/gui/scripts/tunnel.mjs quick",
-    "dashboard:tunnel:start": "node mcp/gui/scripts/tunnel.mjs start",
-    "dashboard:tunnel:stop": "node mcp/gui/scripts/tunnel.mjs stop",
-    "dashboard:tunnel:status": "node mcp/gui/scripts/tunnel.mjs status",
     "prepare": "git config core.hooksPath .githooks || true"
   },
   "dependencies": {
-    "@vercel/analytics": "^2.0.1",
     "astro": "^7.2.2"
   },
   "devDependencies": {
-    "playwright": "^1.62.1",
-    "tsx": "^4.23.12"
+    "playwright": "^1.62.1"
   }
 }

@@ -18,95 +18,98 @@ the background. Repo lives at `github.com/jerrylockard/jerrylockard.github.io`
 became `jerrylockard`. `lockard.tech` remains the bare apex domain belonging to the
 separate `lockard-tech` GitHub org — unrelated to this site, then and now.
 
+The actual point of the site (confirmed directly by Jerry, 2026-08-18): working toward
+running for public office — U.S. House of Representatives, eventually the Speaker's
+chair. The site and the Mayor's Academy are the on-ramp, not the destination. See
+`docs/GUARDRAILS.md` before writing anything that touches this or any other
+biographical claim.
+
 ## Current state — read before assuming anything is built
 
 - **The real site is built and live.** `src/pages/index.astro` composes the actual page
   from `src/components/` (Nav, Hero, Catenary, Strands, Work, About, Platform, Writing,
   Footer) inside `src/layouts/layout.astro` — this is no longer the starter scaffold.
-- `mockup.html` at the repo root is the **original design comp** Desiree built the real
-  components from — palette, type system, component patterns, the catenary-divider
+- `mockup.html` at the repo root is the **original design comp** the real components
+  were built from — palette, type system, component patterns, the catenary-divider
   signature motif. Keep it as historical reference; the live source of truth for what's
   actually on the site is `src/components/`, not the mockup.
-- Deploys automatically via **Vercel** (connected to this GitHub repo, framework
-  auto-detected as Astro) — a push to `main` deploys, live at `jerrylockard.me` (custom
-  domain configured in the Vercel project's Domains settings, not `public/CNAME` — that
-  file is a GitHub Pages leftover, harmless but inert now). Moved off GitHub Pages
-  2026-08-23. No manual deploy step.
+- Deploys via **Firebase Hosting** (project `jerrylockard-site`) — a push to `main`
+  triggers `.github/workflows/firebase-hosting-merge.yml`, which builds and deploys.
+  Custom domain configured in the Firebase console, not `public/CNAME` — that file is a
+  GitHub Pages leftover, harmless but inert. Moved off Vercel 2026-08-29 (Vercel before
+  that, GitHub Pages before that — see `docs/FACTS.md` for the full hosting history).
 - The writing feature (`src/content/writing/`, `/writing` index, `/writing/[slug]`,
   homepage teaser, nav link) is fully wired but has **zero posts** — nothing renders
   until a `.md` file lands in `src/content/writing/`.
-- A few open items live in the MCP `list_todos` tool (portrait photo still a placeholder,
-  fonts still loading from Google's CDN instead of self-hosted) — check there for the
-  current list rather than trusting a copy in this file.
-- A full agent system already exists under `mcp/` (see below) and is ready to use.
+- **A custom multi-agent dashboard system that used to live under `mcp/` was retired
+  2026-08-29** — it was consuming time out of proportion to what it delivered. If you
+  see a reference to `mcp/`, `.remember/`, agent personas, or a `dashboard.jerrylockard.me`
+  anywhere (an old commit, a stale doc, external notes), it's historical — none of it
+  exists in this repo anymore. Don't propose rebuilding it; ask Jerry what he actually
+  wants first if the topic comes up.
 
-## Stack — this trips people up, so it's explicit
+## Stack
 
-- **Package manager: pnpm.** This is a pnpm workspace (`pnpm-workspace.yaml`) with 4
-  packages: the root Astro site, `mcp/server`, `mcp/agents`, `mcp/gui`.
-- **Site framework: Astro.** The public site is `.astro` files, built with `astro build`.
-- The `mcp/gui` dashboard (an internal control panel for chatting with the agents) has
-  its own plain `index.html`/`style.css`/`app.js` frontend — that is a separate local
-  tool for *working on* the site, served by a small Express server, not part of the
-  Astro site itself and not what ships publicly. Don't confuse the two.
+- **Package manager: pnpm.**
+- **Site framework: Astro**, built with `astro build`, output is a plain static `dist/`
+  (no server, no adapter).
+- **Hosting: Firebase Hosting**, classic static hosting on the free Spark plan — see
+  `docs/CHEATSHEET.md` for why App Hosting (the other Firebase hosting product) is the
+  wrong one and would force a paid plan.
 
 ## Getting started
 
 ```bash
-pnpm install          # installs all 4 workspace packages
-pnpm mcp:doctor       # verifies the whole system is actually ready (see mcp/gui/scripts/doctor.mjs)
-pnpm dev              # Astro dev server, http://localhost:4321
-pnpm mcp:start        # agent dashboard GUI, http://127.0.0.1:4405 (stop/status/logs variants exist)
-pnpm agent <name> "<message>"   # drive one agent turn from any terminal, no GUI needed
+pnpm install    # installs dependencies
+pnpm dev        # Astro dev server, http://localhost:4321
+pnpm build      # production build → dist/
 ```
 
-See **`CHEATSHEET.md`** for the full command reference and the settled facts (domain,
-GitHub handle, contact email) — go there first if you just need a quick answer. Jerry
-also keeps deeper project facts, rules, guardrails, and Mayor's Academy material in a
-`.remember/` directory. Its hand-authored docs (`RULES.md`, `GUARDRAILS.md`, `FACTS.md`,
-etc. — see `.remember/README.md` for the full list) are tracked in git and public in
-this repo, same as any other file here; only the MCP server's session/runtime state
-under `.remember/` is gitignored and local-only.
+See **`docs/CHEATSHEET.md`** for the full runnable-command reference (build, deploy,
+git, DNS checks). **`docs/FACTS.md`** has settled facts (domain history, handles,
+contact email) and **`docs/GUARDRAILS.md`** has the content rules for anything
+published about Jerry — both go there first, don't re-ask or re-derive them.
+**`docs/research/`** has the Mayor's Academy session material and civic-notes research
+notes used when drafting `src/content/academy-notes/` or `src/content/civic-notes/`
+entries — see `docs/research/README.md`.
 
-## The agent team
-
-Eight agents live under `mcp/` — Shepard (Chief of Staff), Desiree (Design Lead —
-design/frontend), Devon (DevOps Engineer — devops/deploy), Paige (Content Editor —
-copy/editing), Casey (QA & Accessibility Lead), Archie (Documentation & Knowledge Lead —
-keeps this file, `mcp/AGENTS.md`, and `.remember/` accurate as things change), Ryder
-(Communications Director — interviews Jerry directly, watches the whole team, shapes the
-public story toward an eventual campaign announcement), and Scout (Civic Events &
-Schedule Monitor — watches Covington's civic sources and Jerry's calendar directly, not
-repo files). Full rules, roster detail, and the team-communication protocol are in
-**`mcp/AGENTS.md`** — read before doing agent-related work, it's the live source of
-truth and this section is just a summary.
-
-If your tool supports MCP directly (Claude Code does), the site's MCP server is at
-`mcp/server/src/index.ts` (run via `node --import tsx mcp/server/src/index.ts`) and
-exposes identity/education/work/design-token/guardrail/memory/team tools. If your tool
-doesn't support MCP, use `pnpm agent <name> "<message>"` instead — same agents, same
-rules, plain CLI.
-
-## Hard rules — apply regardless of which tool or agent you are
-
-These are load-bearing; `mcp/AGENTS.md` has the full detail, but the short version:
+## Hard rules — apply regardless of which tool you are
 
 - **Scope: lockard-tech only.** No knowledge of, or reference to, any other
   organization or platform Jerry works on. This repo's history represents him
-  professionally for city-government hiring — nothing unrelated gets mixed in.
-- **Content integrity.** Never invent biographical facts. Hard-excluded topics (see
-  `get_guardrails` for the live list): GPA, individual grades/withdrawals, student ID,
-  SSN, home address, legal middle name, Jerry's ex-husband/the marriage/the divorce in
-  any form. Note: "ambition to run for public office" was excluded here until
-  2026-08-18 — Jerry confirmed it's the actual point of the site, so it's now stated
-  explicitly (U.S. House, working toward Speaker) in `about.astro`/`platform.astro`;
-  see `get_guardrails`'s superseded-facts for the full reasoning and the one carve-out
-  (don't name a specific sitting official without asking).
-- **Git: stay on `main`.** No feature branches. New commits only — never `--amend`,
-  `--force`, or `git reset --hard`.
-- **Every push stops for Jerry's explicit confirmation**, regardless of how small.
-- **No new dependencies** without Jerry approving first.
-- `.env` and secrets are never read, logged, or committed.
+  professionally for city-government hiring — nothing unrelated gets mixed in, ever.
+- **Content integrity.** Never invent a biographical fact — every claim traces to
+  something already published on the site, `mockup.html`, or something Jerry says
+  directly. See `docs/GUARDRAILS.md` for the hard-excluded topics (GPA, grades, student
+  ID, SSN, home address, legal middle name, ex-husband/marriage/divorce in any form),
+  the discretionary-care topics, and the placeholder policy (never pass off fake
+  content as real).
+- **Git workflow:**
+  - Stay on `main`. No agent/tool-initiated feature branches — externally-created
+    branches (Dependabot, a GitHub App) or Jerry's own short-lived branches can exist
+    and get merged, but only with his explicit OK.
+  - New commits only — never `--amend`, `--force`, or `git reset --hard`.
+  - One logical change per commit.
+  - **Every push stops for Jerry's explicit confirmation**, regardless of how small or
+    whether the build passed.
+  - Commit signature — end every commit with:
+    ```
+    — Claude, AI Assistant
+    Co-Authored-By: Claude <claude@lockard.tech>
+    ```
+- **Change safety:** `astro build` (or `astro check`) must pass before proposing a
+  commit. No new dependencies (`pnpm add` anything) without Jerry approving first. Any
+  file deletion, or a change to `astro.config.mjs`/`package.json`/CI files, gets
+  flagged for explicit review even with full write access.
+- **Naming:** short names, minimal underscores, prefer no hyphen (one hyphen max when
+  needed). Files: lowercase, no underscores.
+- `.env` and secrets are never read, logged, shown in chat, or committed. (There's
+  currently no `.env` in this repo at all — nothing here needs one.)
+- **Ship, don't simulate.** A turn doesn't count as progress unless something actually
+  changed on disk/in git/in production. Describing what *would* happen is planning, not
+  work — don't report it back as if it shipped. Prefer a small real thing over a large
+  described one. "It's set up" is a claim to verify (build it, run it, screenshot it),
+  not report.
 
 ## Documentation
 

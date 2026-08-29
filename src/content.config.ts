@@ -14,8 +14,8 @@ const writing = defineCollection({
 
 // One entry per public meeting Jerry attends. Richer/more structured than
 // `writing` on purpose — status tracking and topic tags are the point, not
-// free-form reflection. See mcp/server/data/civic-voice-guide.md for the
-// editorial rules (fact vs. attribution vs. opinion, what never gets
+// free-form reflection. See docs/research/civic-notes/CIVIC-VOICE-GUIDE.md for
+// the editorial rules (fact vs. attribution vs. opinion, what never gets
 // published) that every entry in this collection has to follow.
 const civicNotes = defineCollection({
   loader: glob({ pattern: "**/*.md", base: "./src/content/civic-notes" }),

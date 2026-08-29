@@ -4,20 +4,21 @@
 ;; Import: Cloudflare dashboard -> jerrylockard.me -> DNS -> Records ->
 ;;         "Import and Export" -> Import DNS records -> upload this file.
 ;;
-;; AFTER IMPORTING, DO TWO THINGS:
+;; AFTER IMPORTING, DO THIS:
 ;;
-;;   1. Set the apex A record and the www CNAME to DNS only (grey cloud), not
-;;      proxied (orange cloud). Vercel has to complete its own TLS challenge on
-;;      these names, and Cloudflare's proxy intercepts it. You can turn the
-;;      proxy back on later once the certificate is issued, but only with
-;;      SSL/TLS mode set to Full (strict) — "Flexible" forces plain HTTP to
-;;      Vercel and produces an endless redirect loop.
+;;   Set the apex A record to DNS only (grey cloud), not proxied (orange
+;;   cloud). Firebase has to complete its own domain-ownership check and TLS
+;;   certificate issuance on this name, and Cloudflare's proxy intercepts
+;;   that. Leaving it grey-clouded permanently is a perfectly good answer —
+;;   Firebase serves over its own CDN and cert either way. If you do turn the
+;;   proxy back on later, SSL/TLS mode must be Full (strict) — "Flexible"
+;;   forces plain HTTP to Firebase and produces an endless redirect loop.
 ;;
-;;   2. Check the A record value below against Vercel: project -> Settings ->
-;;      Domains -> the jerrylockard.me card. 76.76.21.21 is Vercel's
-;;      general-purpose apex address, but newer projects are issued a different
-;;      one from their anycast pool (216.198.79.1 is another). If the card shows
-;;      something else, the card wins — edit the record after import.
+;; The A record and TXT verification record below are project-specific to
+;; jerrylockard-site — they came directly off the Firebase console (Hosting ->
+;; Add custom domain) on 2026-08-29. If Firebase ever asks for different
+;; values, the console wins — update this file to match, not the other way
+;; around.
 ;;
 ;; Deliberately NOT in this file:
 ;;
@@ -29,24 +30,28 @@
 ;;           @jerrylockard.me bounce more confusingly than having none.
 ;;
 ;;   CAA     No CAA record is intentional. An absent CAA means any CA may
-;;           issue, which is what both Vercel (Let's Encrypt) and Cloudflare
-;;           (Google Trust Services) need. A restrictive CAA is a common cause
-;;           of stuck certificates.
+;;           issue, which is what both Firebase (Google Trust Services) and
+;;           Cloudflare (also Google Trust Services) need. A restrictive CAA
+;;           is a common cause of stuck certificates.
 ;;
-;; Last reviewed: 2026-08-28
+;; Last reviewed: 2026-08-29 — hosting moved from Vercel to Firebase.
 ;; ---------------------------------------------------------------------------
 
 $TTL 300
 
-;; --- the site, on Vercel -------------------------------------------------
+;; --- the site, on Firebase Hosting (project: jerrylockard-site) ----------
 ;; Apex must be an A record: a CNAME cannot coexist with other records at the
 ;; zone root. Cloudflare would flatten one, but the import file has to be valid.
-jerrylockard.me.	300	IN	A	76.76.21.21
+jerrylockard.me.	300	IN	A	199.36.158.100
 
-;; www points at the apex rather than a Vercel hostname, so there is only one
-;; Vercel-specific value in this file to keep correct. Add www.jerrylockard.me
-;; as a domain in the Vercel project too, or Vercel answers that Host with a
-;; 404 — then let Vercel redirect www to the apex.
+;; Firebase's domain-ownership check for this site. Not a one-time proof —
+;; Firebase keeps validating the domain/site association against this record,
+;; so it stays, not just until the cert issues.
+jerrylockard.me.	300	IN	TXT	"hosting-site=jerrylockard-site"
+
+;; www points at the apex. Add www.jerrylockard.me as a custom domain in the
+;; Firebase console too, or it answers that Host with nothing configured —
+;; then let Firebase redirect www to the apex (it offers this during setup).
 www.jerrylockard.me.	300	IN	CNAME	jerrylockard.me.
 
 ;; --- mail: this domain sends and receives nothing ------------------------

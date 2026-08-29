@@ -42,20 +42,20 @@ pnpm-debug.log*
 
 # local Claude Code settings (per-machine, not shared) — except reusable
 # skills, which are project tooling, not machine-local config, and
-# settings.json, which carries the project-wide .env-read deny rule every
-# agent turn (mcp/agents/src/claude-code.ts) depends on — that one's shared
+# settings.json, which carries a project-wide .env-read deny rule that applies
+# regardless of which tool/session is working in this repo — that one's shared
 # config, not machine-local, so it's tracked like the skills below it.
-# Tracked paths are opted in individually below, same pattern as .remember/'s
-# own .gitignore uses for its tracked-vs-runtime split.
 .claude/*
 !.claude/settings.json
 !.claude/skills/
 .claude/skills/*
 !.claude/skills/run-jerrylockard-github-io/
 
-# .remember/ has its OWN .gitignore (a blanket `*`, which wins over anything listed
-# here for that directory) — the tracked/ignored split for planning docs vs runtime
-# memory is defined there, not here. See .remember/.gitignore and .remember/MEMORY.md.
-
 # Playwright MCP tool scratch output (screenshots, page snapshots)
 .playwright-mcp/
+
+# Private working notes explicitly excluded from git by Jerry (2026-08-29) — a
+# one-time, meeting-specific exception to the marriage/divorce exclusion in
+# docs/GUARDRAILS.md. Never remove this line or reference this file from a
+# tracked doc; see the file's own header for the full scope of the exception.
+docs/research/civic-notes/dv-epo-analysis-2026-08-25.md

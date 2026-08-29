@@ -22,6 +22,7 @@ directory — read `RULES.md` and `FACTS.md` first, they're the ones everything 
 | [TOOLS.md](TOOLS.md) | Full MCP server tool reference — real input schemas, the content-safety regex patterns, task-board shape |
 | [CONFIG.md](CONFIG.md) | Tech stack, workspace/package layout, `package.json`/config file contents, env vars, dev environments |
 | [STRUCTURE.md](STRUCTURE.md) | Content model only (writing + civic-notes collections) — visual/component design is deliberately not here yet |
+| [CIVIC-NOTE-TEMPLATE.md](CIVIC-NOTE-TEMPLATE.md) | Copy-paste frontmatter + section skeleton for a new civic-notes entry, modeled on the Aug 18 post |
 | [ROLES.md](ROLES.md) | Maps Jerry's fuller "organize my whole life" vision against the current roster — what's covered, what's a gap |
 | [SCHEDULE.md](SCHEDULE.md) | Standing recurring civic events, board vacancies, how this differs from the task board |
 | [CHANGELOG.md](CHANGELOG.md) | This kit's own history — what changed about the plan and why, newest first |

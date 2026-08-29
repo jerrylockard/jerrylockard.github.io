@@ -2,13 +2,13 @@
 title: "What I heard at Covington's August 18 caucus"
 meetingDate: 2026-08-18
 publishedDate: 2026-08-18
-updatedDate: 2026-08-18
+updatedDate: 2026-08-29
 meetingType: "Board of Commissioners Caucus"
 location: "Covington City Hall, 20 W. Pike St., Covington, Kentucky"
 attendance: "partial"
 recordingCoverage: "Partial — I arrived after the meeting began. Official video not yet published; see Sources and recording below."
-status: "advanced-from-caucus"
-nextActionDate: 2026-08-25
+status: "deferred"
+nextActionDate: 2026-09-08
 topics: ["public-safety technology", "ALPR", "artificial intelligence", "city vehicles", "storm response"]
 summary: "Commissioners discussed vehicle purchases, the Southbank Partners contribution, a proposed 10-year Axon technology package, and the City's storm response."
 officialAgendaUrl: "https://www.covingtonky.gov/Portals/covingtonky/Documents/News/20260818%20Caucus%20Agenda.pdf"
@@ -189,3 +189,9 @@ drone deployment.
 
 - **August 18, 2026** — Initial entry published, based on partial attendance and my own
   recording, cross-checked against the official agenda and packet.
+- **August 29, 2026** — At the August 25 legislative meeting, the Axon item was pulled from the
+  consent agenda after extended public comment and commissioner questions. The mayor's proposed
+  oversight amendment was tabled — not the underlying contract itself — and continued to the
+  **September 8, 2026** legislative meeting for further public input before any vote. Status
+  updated from "advanced from caucus" to "deferred." Full account: [What I heard at Covington's
+  August 25 legislative meeting](/civic-notes/2026-08-25-board-of-commissioners-legislative-meeting).

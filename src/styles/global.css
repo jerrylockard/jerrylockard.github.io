@@ -190,13 +190,8 @@ a {
 /* ---------- hero ---------- */
 
 .hero {
-  padding: 88px 0 8px;
-}
-
-@media (min-width: 861px) {
-  .hero {
-    margin-left: max(32px, calc((100% - var(--page)) / 2 - 64px));
-  }
+  padding-top: 88px;
+  padding-bottom: 8px;
 }
 
 .hero-grid {

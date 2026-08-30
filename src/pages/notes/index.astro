@@ -19,6 +19,12 @@ const writing = (await getCollection("writing", ({ data }) => !data.draft)).sort
 );
 
 const hasAny = academyNotes.length > 0 || civicNotes.length > 0 || writing.length > 0;
+
+// Masthead photo for the page header — the most recent Academy note that has
+// one set (most won't, yet). Deliberately page-level, not shown on the
+// Academy card itself: it isn't from any one session, so pairing it with a
+// specific session's date/title misread as "taken that night."
+const featured = academyNotes.find((entry) => entry.data.image);
 ---
 
 <Layout
@@ -28,13 +34,50 @@ const hasAny = academyNotes.length > 0 || civicNotes.length > 0 || writing.lengt
   <Nav />
   <main id="top">
     <div class="wrap page-header">
-      <p class="eyebrow">Notes</p>
-      <p class="page-lede">
-        Three related threads, kept in one place: what I'm learning in the Mayor's Academy, what I
-        hear at public meetings, and what I write when something's worth putting down on its own.
-        Same voice throughout — first-person, dated, and corrected in the open when I get something
-        wrong.
-      </p>
+      <div class="page-header-text">
+        <p class="eyebrow">Notes</p>
+        <div class="page-lede">
+          <p>
+            Covington is where I chose to plant my roots after finishing my B.A. in Political
+            Science — and where I'm keeping track of what comes next.
+          </p>
+          <p>
+            This is part personal blog, part notebook, and part record of the city I now call
+            home. I write about what I'm learning through the Mayor's Academy, what I hear at
+            public meetings, what deserves more attention, what's working, and what I think we
+            can do better.
+          </p>
+          <p>
+            I want to remember things as they happened — what bothered me, what gave me hope,
+            what raised questions, and what made me think something needed to be brought closer
+            to the front.
+          </p>
+          <p>
+            Sometimes that means highlighting good work. Sometimes it means asking uncomfortable
+            questions or calling out systems that aren't doing enough for the people they're
+            supposed to serve.
+          </p>
+          <p>I'm still learning, and when I get something wrong, I'll correct it openly.</p>
+          <p>
+            This notebook isn't the whole plan. One day, I want to serve at the highest levels of
+            government. I joke about becoming Speaker of the House, but the ambition is real.
+          </p>
+          <p>Everybody starts somewhere.</p>
+          <p>
+            I'm starting here — in Covington, listening, learning, speaking up, and keeping a
+            record of the road from here to there.
+          </p>
+          <p class="page-lede-close">Remember the name.</p>
+        </div>
+      </div>
+      {
+        featured?.data.image && (
+          <figure class="page-header-photo">
+            <img src={featured.data.image} alt={featured.data.imageAlt ?? ""} />
+            {featured.data.imageCaption && <figcaption>{featured.data.imageCaption}</figcaption>}
+          </figure>
+        )
+      }
     </div>
     <Catenary tight />
 
@@ -92,20 +135,65 @@ const hasAny = academyNotes.length > 0 || civicNotes.length > 0 || writing.lengt
 <style>
   .page-header {
     padding-top: 56px;
+    padding-bottom: 20px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .page-header-text {
+    flex: 1 1 300px;
   }
 
   .page-header .eyebrow {
     margin-bottom: 8px;
   }
 
+  .page-header-photo {
+    flex: 0 0 auto;
+    margin: 0;
+    width: 340px;
+    position: sticky;
+    top: calc(var(--nav-h) + 24px);
+  }
+
+  .page-header-photo img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 4 / 5;
+    object-fit: cover;
+    object-position: top center;
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+  }
+
+  .page-header-photo figcaption {
+    margin-top: 8px;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    line-height: 1.4;
+    color: var(--ink-faint);
+  }
+
   .page-lede {
+    max-width: 54ch;
+  }
+
+  .page-lede p {
     font-family: var(--display);
-    font-size: 1.22rem;
+    font-size: 1.05rem;
     font-weight: 400;
-    line-height: 1.5;
-    color: var(--ink-soft);
-    max-width: var(--measure);
-    margin: 0 0 8px;
+    line-height: 1.25;
+    color: var(--ink);
+    margin: 0 0 10px;
+  }
+
+  .page-lede p.page-lede-close {
+    font-style: italic;
+    color: var(--ink);
+    margin-bottom: 0;
   }
 
   .notes-section .eyebrow {

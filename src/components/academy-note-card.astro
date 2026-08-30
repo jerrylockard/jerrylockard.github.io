@@ -3,9 +3,12 @@
 // /academy-notes. Shares the civic-note-card's newspaper DNA (serif title,
 // mono kicker, hairline rule, hover slide-in) but reads as a dispatch from a
 // program with a fixed arc, not a tracked decision — so the kicker is a
-// session count ("Session 1 of 8"), not a status. Shows the session photo
-// full-bleed at the top when one exists (optional field — most sessions
-// won't have one yet) instead of leaving every card pure text.
+// session count ("Session 1 of 8"), not a status.
+//
+// Deliberately text-only — a session photo (when one exists) is a page-level
+// masthead image on /notes instead (see that page), not shown per-card: a
+// photo isn't necessarily from that specific session, and pairing it with
+// one session's date read as "taken that night" when it wasn't.
 import type { CollectionEntry } from "astro:content";
 import { formatMeetingDate } from "../data/civicNotes";
 
@@ -14,31 +17,21 @@ interface Props {
 }
 
 const { entry } = Astro.props;
-const { title, sessionNumber, sessionCount, sessionDate, location, speakers, description, image, imageAlt, imageCaption } = entry.data;
+const { title, sessionNumber, sessionCount, sessionDate, location, speakers, description } = entry.data;
 ---
 
 <a class="academy-card" href={`/academy-notes/${entry.id}`}>
   <div class="academy-card-inner">
-    {
-      image && (
-        <div class="academy-card-photo">
-          <img class="academy-card-image" src={image} alt={imageAlt ?? ""} loading="lazy" />
-          {imageCaption && <p class="academy-card-caption">{imageCaption}</p>}
-        </div>
-      )
-    }
-    <div class="academy-card-body">
-      <div class="academy-card-head">
-        <span class="session-kicker">Session {sessionNumber} of {sessionCount} · Mayor's Academy</span>
-      </div>
-      <h3 class="academy-card-title">{title}</h3>
-      <p class="academy-card-summary">{description}</p>
-      <div class="academy-card-meta">
-        <span>{formatMeetingDate(sessionDate)}</span>
-        <span>{location}</span>
-      </div>
-      <p class="academy-card-byline">Featuring {speakers.join(" & ")}</p>
+    <div class="academy-card-head">
+      <span class="session-kicker">Session {sessionNumber} of {sessionCount} · Mayor's Academy</span>
     </div>
+    <h3 class="academy-card-title">{title}</h3>
+    <p class="academy-card-summary">{description}</p>
+    <div class="academy-card-meta">
+      <span>{formatMeetingDate(sessionDate)}</span>
+      <span>{location}</span>
+    </div>
+    <p class="academy-card-byline">Featuring {speakers.join(" & ")}</p>
   </div>
 </a>
 
@@ -46,6 +39,7 @@ const { title, sessionNumber, sessionCount, sessionDate, location, speakers, des
   .academy-card {
     display: block;
     height: 100%;
+    padding: 20px;
     background: var(--limestone);
     border: 1px solid var(--rule);
     border-radius: 3px;
@@ -60,41 +54,11 @@ const { title, sessionNumber, sessionCount, sessionDate, location, speakers, des
   }
 
   .academy-card-inner {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
     transition: transform 180ms ease;
   }
 
   .academy-card:hover .academy-card-inner {
     transform: translateX(6px);
-  }
-
-  .academy-card-photo {
-    position: relative;
-  }
-
-  .academy-card-image {
-    display: block;
-    width: 100%;
-    aspect-ratio: 4 / 5;
-    object-fit: cover;
-    object-position: top center;
-  }
-
-  .academy-card-caption {
-    margin: 0;
-    padding: 6px 10px;
-    background: var(--paper-veil);
-    font-family: var(--mono);
-    font-size: 10.5px;
-    line-height: 1.4;
-    color: var(--ink-soft);
-    border-top: 1px solid var(--rule);
-  }
-
-  .academy-card-body {
-    padding: 20px;
   }
 
   .academy-card-head {

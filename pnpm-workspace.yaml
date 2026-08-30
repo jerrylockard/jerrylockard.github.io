@@ -5,6 +5,8 @@ allowBuilds:
   # @parcel/watcher: Vite's file watcher (astro dev). sharp: Astro's image
   # optimization (astro:assets). Both native-binary build steps from trusted,
   # already-relied-on packages.
+  '@firebase/util': false
   '@parcel/watcher': true
   esbuild: true
+  protobufjs: false
   sharp: true

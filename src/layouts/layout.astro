@@ -39,6 +39,25 @@ const {
         /* localStorage unavailable — fall back to the default light theme */
       }
     </script>
+    <script>
+      import { initializeApp } from "firebase/app";
+      import { getAnalytics } from "firebase/analytics";
+
+      // Public web config, not a secret — Firebase's access control is
+      // Security Rules + Cloud API-key restrictions, not hiding this.
+      const firebaseConfig = {
+        apiKey: "AIzaSyByCQhoHS-1zq-iUozCJQ48B-dsv-VW0ao",
+        authDomain: "jerrylockard-site.firebaseapp.com",
+        projectId: "jerrylockard-site",
+        storageBucket: "jerrylockard-site.firebasestorage.app",
+        messagingSenderId: "862932796338",
+        appId: "1:862932796338:web:1dd29b0f732fe06cb15aab",
+        measurementId: "G-59P6FFMVMS",
+      };
+
+      const app = initializeApp(firebaseConfig);
+      getAnalytics(app);
+    </script>
   </head>
   <body>
     <slot />

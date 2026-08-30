@@ -28,7 +28,7 @@ Three services only, confirmed 2026-08-30 — **no Cloudflare, no Vercel**:
 | **Firebase** | Hosts the built Astro site and serves `jerrylockard.me`. | `jerrylockard.me` goes down. |
 | **IONOS** | Registrar and DNS for `jerrylockard.me` (moved off Cloudflare 2026-08-30, confirmed at the registry level via RDAP, not just a DNS lookup — those can lag hours on caching). Also mail: holds the `lockard.me` and `lockard.tech` mailboxes. | DNS/email stop. The already-built site keeps serving from Firebase until a change is needed. |
 
-`dns/jerrylockard.me.zone` is the reference copy of the records — manage them directly
+`docs/dns/jerrylockard.me.zone` is the reference copy of the records — manage them directly
 in the IONOS control panel, not via an import tool (that was a Cloudflare-specific
 feature). `jerrylockard.me` sends and receives no mail on purpose — see that file's
 mail-block records (SPF/DKIM/DMARC all set to reject) and remove IONOS's own
@@ -106,7 +106,7 @@ pnpm, Astro 7.x + TypeScript for the site, Firebase Hosting for deployment.
 
 | Thing | Path |
 |-------|------|
-| Original design comp | `mockup.html` (historical — already built out) |
+| Original design comp | `docs/mockup.html` (historical — already built out) |
 | Actual site pages | `src/pages/*.astro` |
 | Site components | `src/components/*.astro` (Nav, Hero, Catenary, Work, About, Platform, Writing, Footer, CivicNoteCard) |
 | Global layout | `src/layouts/layout.astro` |

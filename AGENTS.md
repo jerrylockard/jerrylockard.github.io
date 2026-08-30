@@ -32,16 +32,16 @@ biographical claim.
 ## Current state — read before assuming anything is built
 
 - **The real site is built and live.** `src/pages/index.astro` composes the actual page
-  from `src/components/` (Nav, Hero, Catenary, Strands, Work, About, Platform, Writing,
-  Footer) inside `src/layouts/layout.astro` — this is no longer the starter scaffold.
-- `mockup.html` at the repo root is the **original design comp** the real components
+  from `src/components/` (Nav, Hero, Catenary, Work, About, Platform, Writing, Footer)
+  inside `src/layouts/layout.astro` — this is no longer the starter scaffold.
+- `docs/mockup.html` at the repo root is the **original design comp** the real components
   were built from — palette, type system, component patterns, the catenary-divider
   signature motif. Keep it as historical reference; the live source of truth for what's
   actually on the site is `src/components/`, not the mockup.
 - Deploys via **Firebase Hosting** (project `jerrylockard-site`) — a push to `main`
   triggers `.github/workflows/firebase-hosting-merge.yml`, which builds and deploys.
-  Custom domain configured in the Firebase console, not `public/CNAME` — that file is a
-  GitHub Pages leftover, harmless but inert. Moved off Vercel 2026-08-29 (Vercel before
+  Custom domain configured in the Firebase console, not a repo file — the old GitHub
+  Pages `CNAME` file was retired 2026-08-29. Moved off Vercel 2026-08-29 (Vercel before
   that, GitHub Pages before that — see `docs/FACTS.md` for the full hosting history).
 - The writing feature (`src/content/writing/`, `/writing` index, `/writing/[slug]`,
   homepage teaser, nav link) is fully wired but has **zero posts** — nothing renders
@@ -84,7 +84,7 @@ entries — see `docs/research/README.md`.
   organization or platform Jerry works on. This repo's history represents him
   professionally for city-government hiring — nothing unrelated gets mixed in, ever.
 - **Content integrity.** Never invent a biographical fact — every claim traces to
-  something already published on the site, `mockup.html`, or something Jerry says
+  something already published on the site, `docs/mockup.html`, or something Jerry says
   directly. See `docs/GUARDRAILS.md` for the hard-excluded topics (GPA, grades, student
   ID, SSN, home address, legal middle name, ex-husband/marriage/divorce in any form),
   the discretionary-care topics, and the placeholder policy (never pass off fake

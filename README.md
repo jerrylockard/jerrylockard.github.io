@@ -21,8 +21,9 @@ file is just the quick-start.
 │   │                       # writing, civic-note-card, academy-note-card, footer
 │   ├── content/             # writing, civic-notes, academy-notes markdown collections
 │   └── layouts/             # layout.astro
-├── docs/                   # facts, content guardrails, command cheatsheet, research material
-├── mockup.html             # original design comp (historical reference)
+├── docs/                   # facts, content guardrails, command cheatsheet, research material,
+│   │                       # mockup.html (design comp), dns/ (zone reference)
+├── scripts/                # automation (nightly-digest.mjs)
 ├── firebase.json / .firebaserc   # Firebase Hosting config
 └── package.json
 ```

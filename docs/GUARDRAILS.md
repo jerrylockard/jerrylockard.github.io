@@ -89,7 +89,7 @@ a check that nothing on the hard-excluded list slipped in, including partial men
 
 ### Never Invent Facts
 Every factual claim must trace to ONE of:
-1. **`mockup.html`** — original design comp (historical reference)
+1. **`docs/mockup.html`** — original design comp (historical reference)
 2. **Content already published on the site** (`src/content/`, `src/data/site.ts`)
 3. **Jerry directly in session** — something he says explicitly
 

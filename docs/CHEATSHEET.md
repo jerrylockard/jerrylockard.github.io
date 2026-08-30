@@ -73,7 +73,7 @@ only (never `--amend`/`--force`/`reset --hard`), every push needs Jerry's explic
 
 ## DNS (Cloudflare)
 
-`dns/jerrylockard.me.zone` is the importable reference copy of the zone — Cloudflare
+`docs/dns/jerrylockard.me.zone` is the importable reference copy of the zone — Cloudflare
 dashboard → jerrylockard.me → DNS → Records → Import and Export → Import.
 
 ```bash

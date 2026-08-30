@@ -193,6 +193,12 @@ a {
   padding: 88px 0 8px;
 }
 
+@media (min-width: 861px) {
+  .hero {
+    margin-left: max(32px, calc((100% - var(--page)) / 2 - 64px));
+  }
+}
+
 .hero-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 280px;
@@ -317,7 +323,7 @@ a {
   display: block;
   width: 100%;
   height: 46px;
-  margin: 62px 0 54px;
+  margin: 108px 0 8px;
   overflow: visible;
 }
 

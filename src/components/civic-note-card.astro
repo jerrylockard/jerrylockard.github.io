@@ -26,45 +26,54 @@ const STATUS_TONE: Record<typeof status, "active" | "muted"> = {
 ---
 
 <a class="civic-card" href={`/civic-notes/${entry.id}`}>
-  <div class="civic-card-head">
-    <span class={`status-pill is-${STATUS_TONE[status]}`}>{STATUS_LABELS[status]}</span>
-    <span class="civic-card-date">{formatMeetingDate(meetingDate)}</span>
+  <div class="civic-card-inner">
+    <div class="civic-card-head">
+      <span class={`status-pill is-${STATUS_TONE[status]}`}>{STATUS_LABELS[status]}</span>
+      <span class="civic-card-date">{formatMeetingDate(meetingDate)}</span>
+    </div>
+    <h3 class="civic-card-title">{title}</h3>
+    <p class="civic-card-summary">{summary}</p>
+    <div class="civic-card-meta">
+      <span>{meetingType}</span>
+      <span>{attendance === "full" ? "Attended in full" : "Attended in part"}</span>
+      <span>Updated {formatMeetingDate(updatedDate)}</span>
+    </div>
+    {
+      topics.length > 0 && (
+        <ul class="civic-card-topics">
+          {topics.map((t) => (
+            <li>{t}</li>
+          ))}
+        </ul>
+      )
+    }
   </div>
-  <h3 class="civic-card-title">{title}</h3>
-  <p class="civic-card-summary">{summary}</p>
-  <div class="civic-card-meta">
-    <span>{meetingType}</span>
-    <span>{attendance === "full" ? "Attended in full" : "Attended in part"}</span>
-    <span>Updated {formatMeetingDate(updatedDate)}</span>
-  </div>
-  {
-    topics.length > 0 && (
-      <ul class="civic-card-topics">
-        {topics.map((t) => (
-          <li>{t}</li>
-        ))}
-      </ul>
-    )
-  }
 </a>
 
 <style>
   .civic-card {
     display: block;
-    padding: 22px 0;
-    border-bottom: 1px solid var(--rule);
+    height: 100%;
+    padding: 20px;
+    background: var(--limestone);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    overflow: hidden;
     text-decoration: none;
     color: inherit;
-    transition: padding-left 180ms ease, background-color 180ms ease;
-  }
-
-  .civic-card:first-of-type {
-    border-top: 1px solid var(--rule);
+    transition: border-color 180ms ease;
   }
 
   .civic-card:hover {
-    background: var(--limestone);
-    padding-left: 12px;
+    border-color: var(--accent);
+  }
+
+  .civic-card-inner {
+    transition: transform 180ms ease;
+  }
+
+  .civic-card:hover .civic-card-inner {
+    transform: translateX(6px);
   }
 
   .civic-card-head {
@@ -87,7 +96,7 @@ const STATUS_TONE: Record<typeof status, "active" | "muted"> = {
 
   .status-pill.is-active {
     color: var(--accent-ink);
-    background: var(--limestone);
+    background: var(--paper);
     border-color: var(--accent);
   }
 
@@ -143,7 +152,8 @@ const STATUS_TONE: Record<typeof status, "active" | "muted"> = {
     font-size: 10.5px;
     letter-spacing: 0.03em;
     color: var(--ink-soft);
-    background: var(--limestone);
+    background: var(--paper);
+    border: 1px solid var(--rule-soft);
     border-radius: 3px;
     padding: 3px 8px;
   }

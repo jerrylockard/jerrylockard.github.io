@@ -17,31 +17,40 @@ const formattedDate = date.toLocaleDateString("en-US", { month: "short", day: "n
 ---
 
 <a class="journal-card" href={`/writing/${entry.id}`}>
-  <div class="journal-card-head">
-    <span class="journal-kicker">{tag}</span>
-    <span class="journal-card-date">{formattedDate}</span>
+  <div class="journal-card-inner">
+    <div class="journal-card-head">
+      <span class="journal-kicker">{tag}</span>
+      <span class="journal-card-date">{formattedDate}</span>
+    </div>
+    <h3 class="journal-card-title">{title}</h3>
+    <p class="journal-card-teaser">{description}</p>
   </div>
-  <h3 class="journal-card-title">{title}</h3>
-  <p class="journal-card-teaser">{description}</p>
 </a>
 
 <style>
   .journal-card {
     display: block;
-    padding: 22px 0;
-    border-bottom: 1px solid var(--rule);
+    height: 100%;
+    padding: 20px;
+    background: var(--limestone);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    overflow: hidden;
     text-decoration: none;
     color: inherit;
-    transition: padding-left 180ms ease, background-color 180ms ease;
-  }
-
-  .journal-card:first-of-type {
-    border-top: 1px solid var(--rule);
+    transition: border-color 180ms ease;
   }
 
   .journal-card:hover {
-    background: var(--limestone);
-    padding-left: 12px;
+    border-color: var(--accent);
+  }
+
+  .journal-card-inner {
+    transition: transform 180ms ease;
+  }
+
+  .journal-card:hover .journal-card-inner {
+    transform: translateX(6px);
   }
 
   .journal-card-head {

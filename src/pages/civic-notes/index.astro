@@ -29,7 +29,7 @@ const entries = (await getCollection("civicNotes", ({ data }) => !data.draft)).s
     <Catenary tight />
     {
       entries.length > 0 ? (
-        <div class="wrap observe">
+        <div class="wrap observe notes-grid">
           {entries.map((entry) => (
             <CivicNoteCard entry={entry} />
           ))}
@@ -51,6 +51,13 @@ const entries = (await getCollection("civicNotes", ({ data }) => !data.draft)).s
 
   .page-header .eyebrow {
     margin-bottom: 8px;
+  }
+
+  .notes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+    align-items: stretch;
   }
 
   .page-lede {

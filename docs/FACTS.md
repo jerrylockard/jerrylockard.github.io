@@ -20,21 +20,19 @@ These are confirmed, locked-in facts. Do not ask Jerry to confirm them again.
 
 ## Who does what — no overlap
 
+Three services only, confirmed 2026-08-30 — **no Cloudflare, no Vercel**:
+
 | Service | What it does | What breaks if it stops |
 | --- | --- | --- |
 | **GitHub** | Stores the code. A push to `main` triggers the deploy. | Nothing live goes down — you just can't deploy. |
 | **Firebase** | Hosts the built Astro site and serves `jerrylockard.me`. | `jerrylockard.me` goes down. |
-| **Cloudflare** | DNS for `jerrylockard.me`. | The site becomes unreachable. |
-| **IONOS** | Mail. Holds the `lockard.me` and `lockard.tech` mailboxes, and DNS for those two zones. | Email stops. The site is unaffected. |
+| **IONOS** | Registrar and DNS for `jerrylockard.me` (moved off Cloudflare 2026-08-30, confirmed at the registry level via RDAP, not just a DNS lookup — those can lag hours on caching). Also mail: holds the `lockard.me` and `lockard.tech` mailboxes. | DNS/email stop. The already-built site keeps serving from Firebase until a change is needed. |
 
-**Jerry's stated target: Firebase, GitHub, and IONOS only — no Cloudflare, no Vercel**
-(2026-08-29). Not yet true as of this writing: `jerrylockard.me`'s nameservers still
-point at Cloudflare and the A record is still Cloudflare's proxy IP — the Firebase
-custom-domain DNS cutover was never actually applied, and moving DNS off Cloudflare
-entirely needs a registrar-level nameserver change, not a Cloudflare dashboard edit.
-Where DNS moves to instead (the registrar's own DNS, IONOS, elsewhere) — open,
-pending Jerry's answer. Update the "Who does what" table above once this actually
-happens; don't describe it as done before it is.
+`dns/jerrylockard.me.zone` is the reference copy of the records — manage them directly
+in the IONOS control panel, not via an import tool (that was a Cloudflare-specific
+feature). `jerrylockard.me` sends and receives no mail on purpose — see that file's
+mail-block records (SPF/DKIM/DMARC all set to reject) and remove IONOS's own
+auto-provisioned mail records, which do the opposite by default.
 
 ---
 

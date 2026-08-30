@@ -1,18 +1,18 @@
 ;; ---------------------------------------------------------------------------
-;; jerrylockard.me — DNS zone for Cloudflare
+;; jerrylockard.me — DNS zone, hosted at IONOS
 ;;
-;; Import: Cloudflare dashboard -> jerrylockard.me -> DNS -> Records ->
-;;         "Import and Export" -> Import DNS records -> upload this file.
+;; jerrylockard.me's nameservers moved from Cloudflare to IONOS on 2026-08-30
+;; (confirmed at the registry level, not just a DNS-cache snapshot — Jerry's
+;; own domain, registered through IONOS). Manage records directly in the
+;; IONOS control panel for this domain; this file is the reference copy, not
+;; something IONOS imports automatically the way Cloudflare's import tool did.
 ;;
-;; AFTER IMPORTING, DO THIS:
-;;
-;;   Set the apex A record to DNS only (grey cloud), not proxied (orange
-;;   cloud). Firebase has to complete its own domain-ownership check and TLS
-;;   certificate issuance on this name, and Cloudflare's proxy intercepts
-;;   that. Leaving it grey-clouded permanently is a perfectly good answer —
-;;   Firebase serves over its own CDN and cert either way. If you do turn the
-;;   proxy back on later, SSL/TLS mode must be Full (strict) — "Flexible"
-;;   forces plain HTTP to Firebase and produces an endless redirect loop.
+;; IONOS auto-provisions a mail package (MX, permissive SPF, real DKIM
+;; selectors, autodiscover) for every domain by default. That is the OPPOSITE
+;; of what this file specifies below — remove IONOS's auto-added mail records
+;; entirely and replace them with the reject-everything ones here instead.
+;; Nothing receives mail at @jerrylockard.me on purpose; the published contact
+;; is jerry@lockard.me, a separate domain with its own real mailbox at IONOS.
 ;;
 ;; The A record and TXT verification record below are project-specific to
 ;; jerrylockard-site — they came directly off the Firebase console (Hosting ->
@@ -22,26 +22,18 @@
 ;;
 ;; Deliberately NOT in this file:
 ;;
-;;   MX      Nothing receives mail at @jerrylockard.me. Published contact is
-;;           jerry@lockard.me — a SEPARATE domain, on IONOS webmail. lockard.me's
-;;           MX points at mx00/mx01.ionos.com and its zone is served by IONOS
-;;           nameservers, not Cloudflare, so nothing in this file touches that
-;;           mailbox. An MX here with no mailbox behind it would make mail to
-;;           @jerrylockard.me bounce more confusingly than having none.
-;;
 ;;   CAA     No CAA record is intentional. An absent CAA means any CA may
-;;           issue, which is what both Firebase (Google Trust Services) and
-;;           Cloudflare (also Google Trust Services) need. A restrictive CAA
-;;           is a common cause of stuck certificates.
+;;           issue, which is what Firebase (Google Trust Services) needs.
+;;           A restrictive CAA is a common cause of stuck certificates.
 ;;
-;; Last reviewed: 2026-08-29 — hosting moved from Vercel to Firebase.
+;; Last reviewed: 2026-08-30 — DNS moved from Cloudflare to IONOS.
 ;; ---------------------------------------------------------------------------
 
 $TTL 300
 
 ;; --- the site, on Firebase Hosting (project: jerrylockard-site) ----------
 ;; Apex must be an A record: a CNAME cannot coexist with other records at the
-;; zone root. Cloudflare would flatten one, but the import file has to be valid.
+;; zone root.
 jerrylockard.me.	300	IN	A	199.36.158.100
 
 ;; Firebase's domain-ownership check for this site. Not a one-time proof —

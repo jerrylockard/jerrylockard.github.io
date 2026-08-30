@@ -44,25 +44,31 @@ const hasAny = academyNotes.length > 0 || civicNotes.length > 0 || writing.lengt
       </div>
     )}
 
+    {civicNotes.length > 0 && (
+      <section class="wrap observe notes-section" id="civic">
+        <div class="section-head">
+          <p class="eyebrow">Civic Field Notes</p>
+        </div>
+        <div class="notes-grid">
+          {civicNotes.slice(0, 3).map((entry) => <CivicNoteCard entry={entry} />)}
+        </div>
+        <div class="section-foot">
+          <a class="section-link" href="/civic-notes">All civic notes &nbsp;→</a>
+        </div>
+      </section>
+    )}
+
+    {civicNotes.length > 0 && academyNotes.length > 0 && <Catenary tight />}
+
     {academyNotes.length > 0 && (
       <section class="wrap observe notes-section" id="academy">
         <div class="section-head">
           <p class="eyebrow">Mayor's Academy</p>
           <a class="section-link" href="/academy-notes">All Academy Notes &nbsp;→</a>
         </div>
-        {academyNotes.slice(0, 3).map((entry) => <AcademyNoteCard entry={entry} />)}
-      </section>
-    )}
-
-    {academyNotes.length > 0 && civicNotes.length > 0 && <Catenary tight />}
-
-    {civicNotes.length > 0 && (
-      <section class="wrap observe notes-section" id="civic">
-        <div class="section-head">
-          <p class="eyebrow">Civic Field Notes</p>
-          <a class="section-link" href="/civic-notes">All civic notes &nbsp;→</a>
+        <div class="notes-grid">
+          {academyNotes.slice(0, 3).map((entry) => <AcademyNoteCard entry={entry} />)}
         </div>
-        {civicNotes.slice(0, 3).map((entry) => <CivicNoteCard entry={entry} />)}
       </section>
     )}
 
@@ -74,7 +80,9 @@ const hasAny = academyNotes.length > 0 || civicNotes.length > 0 || writing.lengt
           <p class="eyebrow">Journal</p>
           <a class="section-link" href="/writing">All writing &nbsp;→</a>
         </div>
-        {writing.slice(0, 3).map((entry) => <JournalEntryCard entry={entry} />)}
+        <div class="notes-grid">
+          {writing.slice(0, 3).map((entry) => <JournalEntryCard entry={entry} />)}
+        </div>
       </section>
     )}
   </main>
@@ -102,6 +110,23 @@ const hasAny = academyNotes.length > 0 || civicNotes.length > 0 || writing.lengt
 
   .notes-section .eyebrow {
     margin-bottom: 0;
+  }
+
+  #academy {
+    margin-top: 16px;
+  }
+
+  .notes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+    align-items: stretch;
+  }
+
+  .section-foot {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 20px;
   }
 
   .section-head {

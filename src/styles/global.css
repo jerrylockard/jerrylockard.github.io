@@ -195,7 +195,7 @@ a {
 
 .hero-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 232px;
+  grid-template-columns: minmax(0, 1fr) 280px;
   gap: 48px;
   align-items: end;
 }
@@ -230,7 +230,7 @@ a {
   line-height: 1.34;
   letter-spacing: -0.012em;
   margin: 0 0 26px;
-  max-width: 23ch;
+  max-width: 34ch;
   text-wrap: balance;
 }
 
@@ -240,7 +240,7 @@ a {
 }
 
 .bio {
-  max-width: 54ch;
+  max-width: 58ch;
   color: var(--ink-soft);
   margin: 0 0 34px;
 }
@@ -260,6 +260,7 @@ a {
   letter-spacing: 0.05em;
   color: var(--ink-faint);
   padding: 16px;
+  transform: translateY(-24px);
 }
 
 .portrait img {

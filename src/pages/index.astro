@@ -18,13 +18,15 @@ const recentWriting = (await getCollection("writing", ({ data }) => !data.draft)
 <Layout>
   <Nav />
   <main id="top">
-    <Hero />
-    <Catenary />
-    <Work />
-    <Catenary tight />
+    <div class="hero-screen">
+      <Hero />
+      <Catenary />
+    </div>
     <About />
     <Catenary tight />
     <Platform />
+    <Catenary tight />
+    <Work />
     {
       recentWriting.length > 0 && (
         <>
@@ -36,3 +38,21 @@ const recentWriting = (await getCollection("writing", ({ data }) => !data.draft)
   </main>
   <Footer />
 </Layout>
+
+<style>
+  .hero-screen {
+    min-height: calc(100dvh - var(--nav-h));
+    display: flex;
+    flex-direction: column;
+  }
+
+  .hero-screen :global(.hero) {
+    flex: 1;
+    display: flex;
+    align-items: center;
+  }
+
+  .hero-screen :global(.hero-grid) {
+    width: 100%;
+  }
+</style>

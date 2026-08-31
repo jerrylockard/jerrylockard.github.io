@@ -357,38 +357,105 @@ a {
   color: var(--accent-ink);
 }
 
-/* ---------- signature: catenary divider ---------- */
+/* ---------- signature: the Roebling, drawn ---------- */
+
+/*
+  The divider scales proportionally now instead of being stretched to a fixed
+  46px band — the towers are drawn at the real bridge's proportions and a
+  non-uniform preserveAspectRatio would smear them. Hairlines stay hairlines at
+  any width via non-scaling-stroke, so the drawing reads the same at 1016px as
+  it does on a phone.
+*/
+ /*
+  The wrapper needs a definite width: `.wrap`'s `margin: 0 auto` turns off
+  cross-axis stretch inside the hero's flex column, and with the SVG sized
+  `height: auto` there'd be no intrinsic height left to derive a width from —
+  it would collapse to the 300px default for a replaced element.
+*/
+.span-wrap {
+  width: 100%;
+}
 
 .span-rule {
   display: block;
   width: 100%;
-  height: 46px;
-  margin: 108px 0 8px;
+  height: auto;
+  margin: 72px 0 0;
   overflow: visible;
 }
 
-.span-rule .cable,
-.span-rule .deck,
-.span-rule .hanger,
-.span-rule .tower {
+/* The between-sections variant sits smaller and centred, so it reads as a rule. */
+.span-rule--tight {
+  width: 74%;
+  max-width: 760px;
+  margin: 60px auto 54px;
+}
+
+.span-rule path {
   fill: none;
-  stroke: var(--rule);
+  stroke: var(--ink-faint);
   stroke-width: 1;
+  stroke-linecap: round;
+  stroke-linejoin: round;
   vector-effect: non-scaling-stroke;
 }
 
-.span-rule .cable,
-.span-rule .tower {
+/* Ironwork — the blue-green the palette is named for. */
+.span-rule .sr-cable {
   stroke: var(--accent);
-  opacity: 0.55;
+  stroke-width: 1.2;
+  opacity: 0.7;
 }
 
-.span-rule .hanger {
+.span-rule .sr-stay {
+  stroke: var(--accent);
+  stroke-width: 0.7;
+  opacity: 0.42;
+}
+
+.span-rule .sr-hanger {
+  stroke-width: 0.7;
+  opacity: 0.34;
+}
+
+/* Limestone. */
+.span-rule .sr-stone,
+.span-rule .sr-arch {
+  stroke: var(--accent);
+  opacity: 0.62;
+}
+
+.span-rule .sr-course {
+  stroke: var(--accent);
+  stroke-width: 0.6;
+  opacity: 0.3;
+}
+
+.span-rule .sr-flag {
+  stroke: var(--accent);
+  stroke-width: 0.8;
   opacity: 0.5;
 }
 
-.span-rule--tight {
-  margin: 46px 0 42px;
+/* Deck: chords carry the line, the lattice is texture behind them. */
+.span-rule .sr-chord {
+  opacity: 0.5;
+}
+
+.span-rule .sr-lattice {
+  stroke-width: 0.6;
+  opacity: 0.26;
+}
+
+/* Covington and the Ohio sit furthest back. */
+.span-rule .sr-skyline {
+  stroke-width: 0.75;
+  opacity: 0.3;
+}
+
+.span-rule .sr-river {
+  stroke-width: 0.6;
+  opacity: 0.22;
 }
 
 /* ---------- sections ---------- */
@@ -604,7 +671,7 @@ a {
   }
 }
 
-.span-rule .cable {
+.span-rule .sr-cable {
   stroke-dasharray: 1400;
   stroke-dashoffset: 1400;
   animation: draw 1400ms cubic-bezier(0.4, 0, 0.2, 1) 240ms forwards;
@@ -640,7 +707,7 @@ a {
     opacity: 1;
     transform: none;
   }
-  .span-rule .cable {
+  .span-rule .sr-cable {
     stroke-dasharray: none;
     stroke-dashoffset: 0;
     animation: none;
@@ -693,6 +760,20 @@ a {
 @media (max-width: 620px) {
   :root {
     --nav-h: auto;
+  }
+  /*
+    On a phone the divider is ~120px wide per tower — the lattice, stone
+    courses, skyline and river stop being detail and start being grey mush.
+    Drop them and let the cable, stays and towers carry it.
+  */
+  .span-rule .sr-lattice,
+  .span-rule .sr-course,
+  .span-rule .sr-skyline,
+  .span-rule .sr-river {
+    display: none;
+  }
+  .span-rule--tight {
+    width: 100%;
   }
   .nav-inner {
     flex-direction: column;

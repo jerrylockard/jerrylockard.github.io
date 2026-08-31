@@ -1,153 +1,170 @@
 ---
-// Roebling Suspension Bridge — architectural elevation linework.
-// Procedural geometry keeps the illustration crisp, responsive and lightweight.
+// Roebling Suspension Bridge — hand-drawn architectural elevation.
+// The geometry is intentionally clean underneath a subtle ink-sketch treatment:
+// doubled construction lines, irregular stone courses, and a very light
+// displacement make it feel illustrated rather than like a pictogram.
 interface Props { tight?: boolean; }
 const { tight = false } = Astro.props;
 
-const W = 1200;
-const TOWERS = [250, 950];
-const FLAG_TOP_Y = 2;
-const FINIAL_TOP_Y = 10;
-const SADDLE_Y = 20;
-const CORNICE_Y = 32;
-const STAY_ORIGIN_Y = 30;
-const ARCH_APEX_Y = 52;
-const ARCH_SPRING_Y = 78;
-const DECK_TOP = 88;
-const DECK_BOT = 102;
-const SOFFIT_Y = 105;
-const BANK_Y = 136;
-const WATER_Y = 143;
-const VIEW_H = tight ? 118 : 168;
-const PIER_FOOT = tight ? 116 : WATER_Y;
-const SHAFT_HW_TOP = 13.5;
-const SHAFT_HW_BASE = 17;
-const PIER_HW_TOP = 19;
-const PIER_HW_FOOT = tight ? 21 : 24;
-const ARCH_HW = 9.5;
+const W = 1400;
+const H = tight ? 155 : 225;
+const LEFT = 270;
+const RIGHT = 1130;
+const DECK = 138;
+const DECK_LOW = 148;
+const WATER = 188;
+const BANK = 176;
+const TOWER_TOP = 31;
+const ARCH_TOP = 74;
+const ARCH_SPRING = 104;
+const PIER_BOTTOM = 188;
 
-const shaftHW = (y: number) => SHAFT_HW_TOP + ((SHAFT_HW_BASE - SHAFT_HW_TOP) * (y - CORNICE_Y)) / (SOFFIT_Y - CORNICE_Y);
-const CX = [250, 483, 717, 950];
-const CY = [SADDLE_Y, 97, 97, SADDLE_Y];
 const bez = (p: number[], t: number) => {
   const u = 1 - t;
-  return u * u * u * p[0] + 3 * u * u * t * p[1] + 3 * u * t * t * p[2] + t * t * t * p[3];
+  return u ** 3 * p[0] + 3 * u * u * t * p[1] + 3 * u * t * t * p[2] + t ** 3 * p[3];
 };
 const cableY = (x: number) => {
-  let lo = 0, hi = 1;
-  for (let i = 0; i < 32; i += 1) {
-    const m = (lo + hi) / 2;
-    if (bez(CX, m) < x) lo = m; else hi = m;
+  const span = RIGHT - LEFT;
+  const t = (x - LEFT) / span;
+  return bez([TOWER_TOP, 77, 77, TOWER_TOP], t);
+};
+const outerCableY = (x: number) => x < LEFT
+  ? TOWER_TOP + ((LEFT - x) / LEFT) * (DECK - TOWER_TOP - 8)
+  : TOWER_TOP + ((x - RIGHT) / (W - RIGHT)) * (DECK - TOWER_TOP - 8);
+
+let suspenders = "";
+if (!tight) {
+  for (let x = LEFT + 30; x < RIGHT; x += 30) {
+    suspenders += `M${x},${cableY(x).toFixed(1)}V${DECK}`;
   }
-  return bez(CY, (lo + hi) / 2);
-};
-const CABLE = `M${CX[0]},${CY[0]} C${CX[1]},${CY[1]} ${CX[2]},${CY[2]} ${CX[3]},${CY[3]}`;
-const CABLE_SECONDARY = `M${CX[0]},${CY[0] + 2.3} C${CX[1]},${CY[1] + 2.1} ${CX[2]},${CY[2] + 2.1} ${CX[3]},${CY[3] + 2.3}`;
-
-const BACKSTAY_EDGE_Y = 112;
-const BACKSTAYS = `M${TOWERS[0]},${SADDLE_Y}L0,${BACKSTAY_EDGE_Y}M${TOWERS[1]},${SADDLE_Y}L${W},${BACKSTAY_EDGE_Y}`;
-const backstayY = (x: number) => {
-  const t = x < TOWERS[0] ? (TOWERS[0] - x) / TOWERS[0] : (x - TOWERS[1]) / (W - TOWERS[1]);
-  return SADDLE_Y + (BACKSTAY_EDGE_Y - SADDLE_Y) * t;
-};
-
-const HANGER_STEP = tight ? 56 : 28;
-let hangers = "";
-for (let x = TOWERS[0] + HANGER_STEP; x <= TOWERS[1] - HANGER_STEP; x += HANGER_STEP) hangers += `M${x},${cableY(x).toFixed(1)}V${DECK_TOP}`;
-for (let d = HANGER_STEP + 20; d < TOWERS[0]; d += HANGER_STEP + 12) {
-  for (const x of [TOWERS[0] - d, TOWERS[1] + d]) {
-    const y = backstayY(x);
-    if (y < DECK_TOP - 6) hangers += `M${x},${y.toFixed(1)}V${DECK_TOP}`;
+} else {
+  for (let x = LEFT + 55; x < RIGHT; x += 55) {
+    suspenders += `M${x},${cableY(x).toFixed(1)}V${DECK}`;
   }
 }
 
 let stays = "";
-for (const t of TOWERS) for (const d of [50, 92, 138, 188]) for (const s of [-1, 1]) {
-  const x = t + s * d;
-  if (x >= 4 && x <= W - 4) stays += `M${t},${STAY_ORIGIN_Y}L${x},${DECK_TOP}`;
+for (const t of [LEFT, RIGHT]) {
+  for (const d of [52, 96, 142, 192, 244]) {
+    const x = t === LEFT ? t + d : t - d;
+    if (x > 10 && x < W - 10) stays += `M${t},${TOWER_TOP + 10}L${x},${DECK}`;
+  }
 }
 
-const BAY = tight ? 48 : 36;
-const inTower = (x: number) => TOWERS.some((t) => Math.abs(x - t) < 25);
-let lattice = "";
-let posts = "";
-for (let x = 0; x + BAY <= W; x += BAY) if (!inTower(x + BAY / 2)) lattice += `M${x},${DECK_TOP}L${x + BAY},${DECK_BOT}M${x},${DECK_BOT}L${x + BAY},${DECK_TOP}`;
-for (let x = 0; x <= W; x += BAY) if (!inTower(x)) posts += `M${x},${DECK_TOP}V${DECK_BOT}`;
+let truss = "";
+const step = tight ? 50 : 34;
+for (let x = 0; x < W; x += step) {
+  const next = Math.min(W, x + step);
+  if (Math.abs((x + next) / 2 - LEFT) > 46 && Math.abs((x + next) / 2 - RIGHT) > 46) {
+    truss += `M${x},${DECK}L${next},${DECK_LOW}M${x},${DECK_LOW}L${next},${DECK}`;
+  }
+}
+
+let verticals = "";
+for (let x = 0; x <= W; x += step) {
+  if (Math.abs(x - LEFT) > 46 && Math.abs(x - RIGHT) > 46) verticals += `M${x},${DECK}V${DECK_LOW}`;
+}
 
 let towers = "";
 let arches = "";
-let courses = "";
-let caps = "";
-let masonryJoints = "";
-let towerOpenings = "";
-for (const t of TOWERS) {
-  towers += `M${t - SHAFT_HW_TOP},${CORNICE_Y}L${t - SHAFT_HW_BASE},${SOFFIT_Y}L${t - PIER_HW_TOP},${SOFFIT_Y}L${t - PIER_HW_FOOT},${PIER_FOOT}H${t + PIER_HW_FOOT}L${t + PIER_HW_TOP},${SOFFIT_Y}L${t + SHAFT_HW_BASE},${SOFFIT_Y}L${t + SHAFT_HW_TOP},${CORNICE_Y}Z`;
-  arches += `M${t - ARCH_HW},${DECK_BOT}V${ARCH_SPRING_Y}Q${t - ARCH_HW},${ARCH_SPRING_Y - 17} ${t},${ARCH_APEX_Y}Q${t + ARCH_HW},${ARCH_SPRING_Y - 17} ${t + ARCH_HW},${ARCH_SPRING_Y}V${DECK_BOT}`;
-  towerOpenings += `M${t - ARCH_HW + 2.2},${DECK_BOT}V${ARCH_SPRING_Y + 1}Q${t - ARCH_HW + 2.2},${ARCH_SPRING_Y - 13} ${t},${ARCH_APEX_Y + 4}Q${t + ARCH_HW - 2.2},${ARCH_SPRING_Y - 13} ${t + ARCH_HW - 2.2},${ARCH_SPRING_Y + 1}V${DECK_BOT}`;
-  caps += `M${t - SHAFT_HW_TOP - 3},${CORNICE_Y}V${CORNICE_Y - 6}H${t + SHAFT_HW_TOP + 3}V${CORNICE_Y}M${t - SHAFT_HW_TOP - 3},${CORNICE_Y - 6}L${t - SHAFT_HW_TOP + .5},${SADDLE_Y}H${t + SHAFT_HW_TOP - .5}L${t + SHAFT_HW_TOP + 3},${CORNICE_Y - 6}`;
-  for (const s of [-1, 1]) {
-    const fx = t + s * 9.5;
-    caps += `M${fx - 2},${SADDLE_Y}V${FINIAL_TOP_Y + 2}L${fx},${FINIAL_TOP_Y}L${fx + 2},${FINIAL_TOP_Y + 2}V${SADDLE_Y}`;
+let stone = "";
+let towerDetails = "";
+for (const t of [LEFT, RIGHT]) {
+  // Twin masonry shafts with battered bases and a broad cornice.
+  towers += `M${t - 27},${TOWER_TOP + 12}L${t - 30},${DECK_LOW}L${t - 43},${PIER_BOTTOM}H${t + 43}L${t + 30},${DECK_LOW}L${t + 27},${TOWER_TOP + 12}Z`;
+  towers += `M${t - 9},${TOWER_TOP + 12}V${DECK_LOW}M${t + 9},${TOWER_TOP + 12}V${DECK_LOW}`;
+  // Two-centred masonry portal, with a second lighter line for depth.
+  arches += `M${t - 18},${DECK_LOW}V${ARCH_SPRING}Q${t - 18},${ARCH_TOP} ${t},${ARCH_TOP}Q${t + 18},${ARCH_TOP} ${t + 18},${ARCH_SPRING}V${DECK_LOW}`;
+  arches += `M${t - 14},${DECK_LOW}V${ARCH_SPRING + 4}Q${t - 14},${ARCH_TOP + 7} ${t},${ARCH_TOP + 7}Q${t + 14},${ARCH_TOP + 7} ${t + 14},${ARCH_SPRING + 4}V${DECK_LOW}`;
+  // Irregular courses rather than perfectly repeated computer lines.
+  for (const y of [45, 55, 66, 79, 92, 108, 122]) {
+    const half = 27 - Math.max(0, y - 45) * 0.015;
+    stone += `M${t - half},${y}H${t + half}`;
   }
-  for (const y of [38, 45]) courses += `M${t - shaftHW(y)},${y}H${t + shaftHW(y)}`;
-  courses += `M${t - shaftHW(82)},82H${t - ARCH_HW}M${t + ARCH_HW},82H${t + shaftHW(82)}`;
-  if (!tight) for (const y of [113, 122, 131]) {
-    const hw = PIER_HW_TOP + ((PIER_HW_FOOT - PIER_HW_TOP) * (y - SOFFIT_Y)) / (PIER_FOOT - SOFFIT_Y);
-    courses += `M${t - hw},${y}H${t + hw}`;
+  // Short staggered joints give the limestone a hand-drafted texture.
+  for (const y of [49, 60, 73, 86, 99, 114, 128]) {
+    const half = 25;
+    const offset = (y % 2) * 8;
+    towerDetails += `M${t - half + offset},${y}V${y + 5}M${t + half - offset},${y}V${y + 5}`;
   }
-  for (const y of [56, 70]) masonryJoints += `M${t - shaftHW(y) + 3},${y}V${y + 4}M${t + shaftHW(y) - 3},${y}V${y + 4}`;
+  // Cornice, cap, finials and flag mast.
+  towers += `M${t - 34},${TOWER_TOP + 12}H${t + 34}M${t - 31},${TOWER_TOP + 7}H${t + 31}M${t - 22},${TOWER_TOP + 7}L${t - 19},${TOWER_TOP}H${t - 7}L${t - 4},${TOWER_TOP + 7}M${t + 4},${TOWER_TOP + 7}L${t + 7},${TOWER_TOP}H${t + 19}L${t + 22},${TOWER_TOP + 7}`;
+  towers += `M${t},${TOWER_TOP}V${tight ? TOWER_TOP - 7 : 2}`;
+  if (!tight) towers += `M${t},6L${t + 14},10L${t},14`;
 }
 
-const ROAD_RAIL = `M0,84H${W}M0,86H${W}`;
-let roadPosts = "";
-for (let x = 0; x <= W; x += tight ? 48 : 30) roadPosts += `M${x},84V88`;
-const anchorages = tight ? "" : `M18,112V119H48V112M1152,112V119H1182V112`;
-let flags = "";
-if (!tight) for (const t of TOWERS) flags += `M${t},${FINIAL_TOP_Y + 2}V${FLAG_TOP_Y}L${t + 9},${FLAG_TOP_Y + 3}L${t},${FLAG_TOP_Y + 6}`;
+const CABLE = `M0,${DECK - 9}C${LEFT - 92},${DECK - 28} ${LEFT - 45},${TOWER_TOP + 16} ${LEFT},${TOWER_TOP}C${LEFT + 220},${DECK - 56} ${RIGHT - 220},${DECK - 56} ${RIGHT},${TOWER_TOP}C${RIGHT + 45},${TOWER_TOP + 16} ${RIGHT + 92},${DECK - 28} ${W},${DECK - 9}`;
+const CABLE_2 = `M0,${DECK - 5}C${LEFT - 92},${DECK - 24} ${LEFT - 45},${TOWER_TOP + 20} ${LEFT},${TOWER_TOP + 4}C${LEFT + 220},${DECK - 52} ${RIGHT - 220},${DECK - 52} ${RIGHT},${TOWER_TOP + 4}C${RIGHT + 45},${TOWER_TOP + 20} ${RIGHT + 92},${DECK - 24} ${W},${DECK - 5}`;
+const BACKSTAYS = `M${LEFT},${TOWER_TOP}L72,${DECK - 7}M${RIGHT},${TOWER_TOP}L${W - 72},${DECK - 7}`;
+const DECK_LINES = `M0,${DECK}H${W}M0,${DECK_LOW}H${W}M0,${DECK_LOW + 4}H${W}`;
+const PIERS = `M${LEFT - 43},${DECK_LOW}L${LEFT - 36},${PIER_BOTTOM}M${LEFT + 43},${DECK_LOW}L${LEFT + 36},${PIER_BOTTOM}M${RIGHT - 43},${DECK_LOW}L${RIGHT - 36},${PIER_BOTTOM}M${RIGHT + 43},${DECK_LOW}L${RIGHT + 36},${PIER_BOTTOM}`;
 
-const SKYLINE: Array<[number, number, number, boolean]> = [
-  [80,42,14,false],[126,28,20,false],[158,34,12,false],[196,20,30,true],[220,40,16,false],[264,30,23,false],
-  [298,36,13,false],[338,26,19,false],[368,50,26,false],[422,24,14,false],[450,34,21,false],[488,22,17,false],
-  [514,44,25,false],[562,30,12,false],[596,52,22,false],[652,26,18,false],[682,36,14,false],[722,28,20,false],
-  [756,20,33,true],[780,44,16,false],[828,30,24,false],[862,38,13,false],[904,26,28,false],[934,42,15,false],
-  [980,30,21,false],[1014,36,25,false],[1054,28,13,false],[1086,44,19,false],
+const skylineParts = [
+  [35, 31, 16], [78, 26, 22], [118, 42, 13], [165, 30, 27], [210, 44, 18], [330, 32, 21],
+  [374, 46, 14], [430, 29, 26], [474, 39, 17], [526, 30, 22], [574, 47, 14], [626, 34, 25],
+  [684, 43, 16], [733, 31, 21], [782, 44, 14], [835, 29, 25], [880, 46, 16], [934, 32, 23],
+  [1000, 42, 15], [1052, 31, 22], [1096, 46, 14], [1194, 34, 21], [1240, 44, 16], [1292, 36, 24], [1340, 40, 14],
 ];
 let skyline = "";
-if (!tight) for (const [x,w,h,spire] of SKYLINE) skyline += spire
-  ? `M${x},${BANK_Y}V${BANK_Y-h*.55}L${x+w/2},${BANK_Y-h}L${x+w},${BANK_Y-h*.55}V${BANK_Y}`
-  : `M${x},${BANK_Y}V${BANK_Y-h}H${x+w}V${BANK_Y}`;
-const RIVER = tight ? "" : `M0,${BANK_Y}H${W}M0,${WATER_Y}H${W}M96,150H352M404,150H628M690,150H902M958,150H1148M52,156H268M330,156H520M600,156H812M884,156H1092M170,161H430M498,161H700M772,161H1010`;
-const svgClass = tight ? "span-rule span-rule--tight" : "span-rule";
+if (!tight) {
+  for (const [x, w, h] of skylineParts) skyline += `M${x},${BANK}V${BANK - h}H${x + w}V${BANK}`;
+  skyline += `M184,${BANK}V${BANK - 38}L199,${BANK - 55}L214,${BANK - 38}V${BANK}M1168,${BANK}V${BANK - 33}L1182,${BANK - 51}L1196,${BANK - 33}V${BANK}`;
+}
+const RIVER = tight ? "" : `M0,${BANK}H${W}M0,${WATER}H${W}M40,198H310M365,198H600M665,198H910M970,198H1250M120,208H420M520,208H770M880,208H1170`;
+const cls = tight ? "span-rule span-rule--tight" : "span-rule";
 ---
 
 <div class="wrap span-wrap">
-  <svg class={svgClass} viewBox={`0 0 ${W} ${VIEW_H}`} aria-hidden="true" focusable="false">
+  <svg class={cls} viewBox={`0 0 ${W} ${H}`} aria-hidden="true" focusable="false">
+    <defs>
+      <filter id="ink-wobble" x="-3%" y="-6%" width="106%" height="112%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.018 0.12" numOctaves="2" seed="17" result="noise" />
+        <feDisplacementMap in="SourceGraphic" in2="noise" scale="0.85" xChannelSelector="R" yChannelSelector="G" />
+      </filter>
+    </defs>
+
     {!tight && <path class="sr-river" d={RIVER} />}
     {!tight && <path class="sr-skyline" d={skyline} />}
-    {!tight && <path class="sr-anchor" d={anchorages} />}
-    <path class="sr-stone" d={towers}></path>
-    <path class="sr-course" d={courses}></path>
-    <path class="sr-joint" d={masonryJoints}></path>
-    <path class="sr-arch" d={arches}></path>
-    <path class="sr-opening" d={towerOpenings}></path>
-    <path class="sr-stone" d={caps}></path>
-    {!tight && <path class="sr-flag" d={flags} />}
-    <path class="sr-cable sr-cable-main" d={CABLE}></path>
-    <path class="sr-cable sr-cable-secondary" d={CABLE_SECONDARY}></path>
-    <path class="sr-cable" d={BACKSTAYS}></path>
-    <path class="sr-stay" d={stays}></path>
-    <path class="sr-hanger" d={hangers}></path>
-    <path class="sr-road" d={ROAD_RAIL}></path>
-    <path class="sr-road-post" d={roadPosts}></path>
-    <path class="sr-lattice" d={lattice}></path>
-    <path class="sr-lattice" d={posts}></path>
-    <path class="sr-chord" d={`M0,${DECK_TOP}H${W}M0,${DECK_BOT}H${W}M0,${SOFFIT_Y}H${W}`}></path>
+    <g filter="url(#ink-wobble)">
+      <path class="sr-pier" d={PIERS} />
+      <path class="sr-stone" d={towers} />
+      <path class="sr-arch" d={arches} />
+      <path class="sr-stone-detail" d={stone} />
+      <path class="sr-joint" d={towerDetails} />
+      <path class="sr-cable" d={CABLE} />
+      <path class="sr-cable-secondary" d={CABLE_2} />
+      <path class="sr-stay" d={BACKSTAYS} />
+      <path class="sr-stay" d={stays} />
+      <path class="sr-hanger" d={suspenders} />
+      <path class="sr-deck" d={DECK_LINES} />
+      <path class="sr-truss" d={truss} />
+      <path class="sr-post" d={verticals} />
+    </g>
+
+    <!-- A second, lighter pass is the visual trick that makes the ink feel hand-set. -->
+    <g class="sr-ghost" transform="translate(0.7 0.35)">
+      <path d={CABLE_2} />
+      <path d={DECK_LINES} />
+      <path d={truss} />
+      <path d={suspenders} />
+    </g>
   </svg>
 </div>
 
 <style>
   .span-rule {
+    display: block;
+    width: 100%;
+    height: auto;
+    margin: 42px 0 18px;
+    overflow: visible;
     shape-rendering: geometricPrecision;
+  }
+
+  .span-rule--tight {
+    width: 78%;
+    max-width: 920px;
+    margin: 58px auto 48px;
   }
 
   .span-rule path {
@@ -158,105 +175,97 @@ const svgClass = tight ? "span-rule span-rule--tight" : "span-rule";
     vector-effect: non-scaling-stroke;
   }
 
-  /* Drafting hierarchy: structure first, construction lines second, context last. */
   .span-rule .sr-stone,
-  .span-rule .sr-arch {
-    stroke: var(--accent-ink);
+  .span-rule .sr-arch,
+  .span-rule .sr-pier {
+    stroke: var(--ink);
     stroke-width: 1.15;
-    opacity: 0.78;
+    opacity: 0.72;
   }
 
-  .span-rule .sr-opening {
-    stroke: var(--accent-ink);
-    stroke-width: 0.55;
-    opacity: 0.36;
+  .span-rule .sr-arch {
+    stroke-width: 1.35;
   }
 
-  .span-rule .sr-course,
+  .span-rule .sr-stone-detail,
   .span-rule .sr-joint {
-    stroke: var(--accent-ink);
-    stroke-width: 0.5;
-    opacity: 0.26;
-  }
-
-  .span-rule .sr-cable-main {
-    stroke: var(--accent);
-    stroke-width: 1.45;
-    opacity: 0.86;
-  }
-
-  .span-rule .sr-cable-secondary {
-    stroke: var(--accent);
-    stroke-width: 0.55;
-    opacity: 0.34;
-  }
-
-  .span-rule .sr-cable:not(.sr-cable-main):not(.sr-cable-secondary) {
-    stroke: var(--accent);
-    stroke-width: 0.85;
-    opacity: 0.44;
-  }
-
-  .span-rule .sr-stay {
-    stroke: var(--accent);
-    stroke-width: 0.55;
-    opacity: 0.30;
-  }
-
-  .span-rule .sr-hanger {
-    stroke-width: 0.6;
-    opacity: 0.30;
-  }
-
-  .span-rule .sr-road,
-  .span-rule .sr-chord {
-    stroke-width: 0.8;
-    opacity: 0.48;
-  }
-
-  .span-rule .sr-road-post {
-    stroke-width: 0.45;
-    opacity: 0.24;
-  }
-
-  .span-rule .sr-lattice {
+    stroke: var(--ink-soft);
     stroke-width: 0.48;
-    opacity: 0.22;
-  }
-
-  .span-rule .sr-flag,
-  .span-rule .sr-anchor {
-    stroke: var(--accent);
-    stroke-width: 0.65;
     opacity: 0.42;
   }
 
+  .span-rule .sr-cable {
+    stroke: var(--ink);
+    stroke-width: 1.05;
+    opacity: 0.68;
+  }
+
+  .span-rule .sr-cable-secondary {
+    stroke: var(--ink-soft);
+    stroke-width: 0.48;
+    opacity: 0.42;
+  }
+
+  .span-rule .sr-stay {
+    stroke: var(--ink-soft);
+    stroke-width: 0.48;
+    opacity: 0.38;
+  }
+
+  .span-rule .sr-hanger {
+    stroke: var(--ink-soft);
+    stroke-width: 0.48;
+    opacity: 0.34;
+  }
+
+  .span-rule .sr-deck {
+    stroke: var(--ink);
+    stroke-width: 0.8;
+    opacity: 0.64;
+  }
+
+  .span-rule .sr-truss {
+    stroke: var(--ink-soft);
+    stroke-width: 0.48;
+    opacity: 0.46;
+  }
+
+  .span-rule .sr-post {
+    stroke: var(--ink-soft);
+    stroke-width: 0.42;
+    opacity: 0.32;
+  }
+
   .span-rule .sr-skyline {
-    stroke-width: 0.55;
-    opacity: 0.22;
+    stroke: var(--ink-faint);
+    stroke-width: 0.5;
+    opacity: 0.25;
   }
 
   .span-rule .sr-river {
+    stroke: var(--ink-faint);
     stroke-width: 0.45;
-    opacity: 0.18;
+    opacity: 0.20;
   }
 
-  @media (max-width: 620px) {
+  .span-rule .sr-ghost path {
+    stroke: var(--ink-faint);
+    stroke-width: 0.42;
+    opacity: 0.17;
+  }
+
+  @media (max-width: 700px) {
     .span-rule:not(.span-rule--tight) {
-      margin-top: 48px;
+      margin-top: 34px;
+      margin-bottom: 6px;
     }
 
     .span-rule .sr-skyline,
     .span-rule .sr-river,
-    .span-rule .sr-lattice,
-    .span-rule .sr-course,
+    .span-rule .sr-stone-detail,
     .span-rule .sr-joint,
-    .span-rule .sr-road-post {
-      opacity: 0.12;
-    }
-
-    .span-rule .sr-stay {
-      opacity: 0.22;
+    .span-rule .sr-ghost {
+      display: none;
     }
   }
 </style>

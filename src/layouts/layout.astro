@@ -40,28 +40,71 @@ const {
       }
     </script>
     <script>
-      import { initializeApp } from "firebase/app";
       import { getAnalytics } from "firebase/analytics";
+      import { app } from "../lib/firebase-app";
 
-      // Public web config, not a secret — Firebase's access control is
-      // Security Rules + Cloud API-key restrictions, not hiding this.
-      const firebaseConfig = {
-        apiKey: "AIzaSyByCQhoHS-1zq-iUozCJQ48B-dsv-VW0ao",
-        authDomain: "jerrylockard-site.firebaseapp.com",
-        projectId: "jerrylockard-site",
-        storageBucket: "jerrylockard-site.firebasestorage.app",
-        messagingSenderId: "862932796338",
-        appId: "1:862932796338:web:1dd29b0f732fe06cb15aab",
-        measurementId: "G-59P6FFMVMS",
-      };
-
-      const app = initializeApp(firebaseConfig);
       getAnalytics(app);
     </script>
   </head>
   <body>
     <slot />
     <script>
+      import { getRemoteConfig, fetchAndActivate, getValue } from "firebase/remote-config";
+      import { app } from "../lib/firebase-app";
+
+      const rc = getRemoteConfig(app);
+      rc.settings.minimumFetchIntervalMillis = 3600000;
+      rc.defaultConfig = {
+        banner_enabled: false,
+        banner_text: "",
+        banner_link: "",
+        banner_link_label: "Learn more →",
+      };
+
+      const banner = document.getElementById("announcement");
+      const bannerText = document.getElementById("announcement-text");
+      const bannerLink = document.getElementById("announcement-link") as HTMLAnchorElement | null;
+      const bannerDismiss = document.getElementById("announcement-dismiss");
+
+      fetchAndActivate(rc)
+        .then(() => {
+          const enabled = getValue(rc, "banner_enabled").asBoolean();
+          const text = getValue(rc, "banner_text").asString();
+          if (!enabled || !text || !banner || !bannerText) return;
+
+          const dismissedKey = "dismissedAnnouncement";
+          let dismissed = "";
+          try {
+            dismissed = localStorage.getItem(dismissedKey) ?? "";
+          } catch (err) {
+            /* localStorage unavailable — banner just shows every visit */
+          }
+          if (dismissed === text) return;
+
+          bannerText.textContent = text;
+
+          const link = getValue(rc, "banner_link").asString();
+          if (link && bannerLink) {
+            bannerLink.href = link;
+            bannerLink.textContent = getValue(rc, "banner_link_label").asString();
+            bannerLink.hidden = false;
+          }
+
+          banner.hidden = false;
+
+          bannerDismiss?.addEventListener("click", () => {
+            banner.hidden = true;
+            try {
+              localStorage.setItem(dismissedKey, text);
+            } catch (err) {
+              /* localStorage unavailable — dismissal just won't persist */
+            }
+          });
+        })
+        .catch(() => {
+          /* fetch failed (offline, blocked, etc.) — banner stays hidden */
+        });
+
       const root = document.documentElement;
       const btn = document.getElementById("theme-btn");
 

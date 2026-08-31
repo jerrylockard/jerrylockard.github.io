@@ -1,0 +1,32 @@
+{
+  "parameters": {
+    "banner_enabled": {
+      "defaultValue": {
+        "value": "false"
+      },
+      "valueType": "BOOLEAN",
+      "description": "Show/hide the site-wide announcement banner below the nav. Flip to true and set banner_text to publish a message with no code change or redeploy."
+    },
+    "banner_text": {
+      "defaultValue": {
+        "value": ""
+      },
+      "valueType": "STRING",
+      "description": "Announcement banner message text, e.g. \"Board of Commissioners meets tonight, 6pm.\" Only shown when banner_enabled is true."
+    },
+    "banner_link": {
+      "defaultValue": {
+        "value": ""
+      },
+      "valueType": "STRING",
+      "description": "Optional URL for the banner's link (e.g. a civic-notes post or an external event page). Leave empty to show the banner with text only."
+    },
+    "banner_link_label": {
+      "defaultValue": {
+        "value": "Learn more →"
+      },
+      "valueType": "STRING",
+      "description": "Link text shown when banner_link is set."
+    }
+  }
+}

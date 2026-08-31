@@ -1,44 +1,26 @@
 ---
-// The signature divider: the Roebling Suspension Bridge drawn as a hairline
-// elevation of the real thing rather than a pictogram of one — limestone
-// towers with their lancet portals and corner finials, the fan of Roebling's
-// inclined stays, the lattice of the stiffening truss, the Covington bank
-// behind it and the Ohio underneath.
-//
-// Proportions follow the real bridge: a 700u main span standing in for the
-// 1,057 ft between towers, towers ~152u above the water against the real
-// 230 ft, deck ~66u above it against the real 100 ft, cable sag 1/12 of the
-// span. Everything is generated as a handful of concatenated path strings
-// rather than hundreds of elements, because this renders five times on the
-// homepage alone.
-//
-// `tight` is the quiet variant between interior sections: same bridge, cropped
-// above the waterline, with the skyline, river and flags dropped and the
-// lattice/hanger density halved so it reads as a rule, not an illustration.
-interface Props {
-  tight?: boolean;
-}
-
+// Roebling Suspension Bridge — architectural elevation linework.
+// The geometry stays procedural so the drawing remains crisp, responsive and
+// lightweight. Visual hierarchy is intentionally restrained: masonry carries
+// the strongest contour, ironwork sits one step lighter, and the city/river
+// recede into drafting-line texture.
+interface Props { tight?: boolean; }
 const { tight = false } = Astro.props;
 
-/* ---------- elevation geometry, in viewBox units ---------- */
-
 const W = 1200;
-const TOWERS = [250, 950]; // tower centres — 700u main span, 250u approaches
-
+const TOWERS = [250, 950];
 const FLAG_TOP_Y = 2;
 const FINIAL_TOP_Y = 10;
-const SADDLE_Y = 20; // cable saddle: top of the tower
-const CORNICE_Y = 32; // top of the masonry shaft
+const SADDLE_Y = 20;
+const CORNICE_Y = 32;
 const STAY_ORIGIN_Y = 30;
 const ARCH_APEX_Y = 52;
 const ARCH_SPRING_Y = 78;
-const DECK_TOP = 88; // top chord of the stiffening truss
-const DECK_BOT = 102; // bottom chord
-const SOFFIT_Y = 105; // underside of the deck
-const BANK_Y = 136; // Covington levee
+const DECK_TOP = 88;
+const DECK_BOT = 102;
+const SOFFIT_Y = 105;
+const BANK_Y = 136;
 const WATER_Y = 143;
-
 const VIEW_H = tight ? 118 : 168;
 const PIER_FOOT = tight ? 116 : WATER_Y;
 
@@ -48,57 +30,38 @@ const PIER_HW_TOP = 19;
 const PIER_HW_FOOT = tight ? 21 : 24;
 const ARCH_HW = 9.5;
 
-// Half-width of the tapering masonry shaft at a given height.
 const shaftHW = (y: number) =>
   SHAFT_HW_TOP + ((SHAFT_HW_BASE - SHAFT_HW_TOP) * (y - CORNICE_Y)) / (SOFFIT_Y - CORNICE_Y);
 
-/* ---------- main cable ---------- */
-
-// Cubic Bézier tuned so the on-curve midspan lands at y=78 — a sag of 58u over
-// 700u, the real bridge's ~1/12. Hangers are solved back onto this same curve
-// instead of being hand-placed, so they actually touch it.
 const CX = [250, 483, 717, 950];
 const CY = [SADDLE_Y, 97, 97, SADDLE_Y];
-
 const bez = (p: number[], t: number) => {
   const u = 1 - t;
   return u * u * u * p[0] + 3 * u * u * t * p[1] + 3 * u * t * t * p[2] + t * t * t * p[3];
 };
-
 const cableY = (x: number) => {
-  let lo = 0;
-  let hi = 1;
+  let lo = 0, hi = 1;
   for (let i = 0; i < 32; i += 1) {
     const m = (lo + hi) / 2;
-    if (bez(CX, m) < x) lo = m;
-    else hi = m;
+    if (bez(CX, m) < x) lo = m; else hi = m;
   }
   return bez(CY, (lo + hi) / 2);
 };
-
 const CABLE = `M${CX[0]},${CY[0]} C${CX[1]},${CY[1]} ${CX[2]},${CY[2]} ${CX[3]},${CY[3]}`;
+const CABLE_SECONDARY = `M${CX[0]},${CY[0] + 2.3} C${CX[1]},${CY[1] + 2.1} ${CX[2]},${CY[2] + 2.1} ${CX[3]},${CY[3] + 2.3}`;
 
-// Backstays run straight off each tower and dive past the deck on their way to
-// anchorages beyond the frame. They have to visibly cross the deck rather than
-// converge onto it — otherwise the approach spans read as though they sag.
 const BACKSTAY_EDGE_Y = 112;
-const BACKSTAYS =
-  `M${TOWERS[0]},${SADDLE_Y}L0,${BACKSTAY_EDGE_Y}` +
-  `M${TOWERS[1]},${SADDLE_Y}L${W},${BACKSTAY_EDGE_Y}`;
-
+const BACKSTAYS = `M${TOWERS[0]},${SADDLE_Y}L0,${BACKSTAY_EDGE_Y}M${TOWERS[1]},${SADDLE_Y}L${W},${BACKSTAY_EDGE_Y}`;
 const backstayY = (x: number) => {
   const t = x < TOWERS[0] ? (TOWERS[0] - x) / TOWERS[0] : (x - TOWERS[1]) / (W - TOWERS[1]);
   return SADDLE_Y + (BACKSTAY_EDGE_Y - SADDLE_Y) * t;
 };
-
-/* ---------- suspenders ---------- */
 
 const HANGER_STEP = tight ? 56 : 28;
 let hangers = "";
 for (let x = TOWERS[0] + HANGER_STEP; x <= TOWERS[1] - HANGER_STEP; x += HANGER_STEP) {
   hangers += `M${x},${cableY(x).toFixed(1)}V${DECK_TOP}`;
 }
-// Side spans get suspenders too, hung off the backstays.
 for (let d = HANGER_STEP + 20; d < TOWERS[0]; d += HANGER_STEP + 12) {
   for (const x of [TOWERS[0] - d, TOWERS[1] + d]) {
     const y = backstayY(x);
@@ -106,144 +69,119 @@ for (let d = HANGER_STEP + 20; d < TOWERS[0]; d += HANGER_STEP + 12) {
   }
 }
 
-/* ---------- Roebling's inclined stays ---------- */
-
 let stays = "";
 for (const t of TOWERS) {
   for (const d of [50, 92, 138, 188]) {
     for (const s of [-1, 1]) {
       const x = t + s * d;
-      if (x < 4 || x > W - 4) continue;
-      stays += `M${t},${STAY_ORIGIN_Y}L${x},${DECK_TOP}`;
+      if (x >= 4 && x <= W - 4) stays += `M${t},${STAY_ORIGIN_Y}L${x},${DECK_TOP}`;
     }
   }
 }
 
-/* ---------- stiffening truss ---------- */
-
-const BAY = tight ? 40 : 30;
-const inTower = (x: number) => TOWERS.some((t) => Math.abs(x - t) < 22);
-
+const BAY = tight ? 48 : 36;
+const inTower = (x: number) => TOWERS.some((t) => Math.abs(x - t) < 25);
 let lattice = "";
-for (let x = 0; x + BAY <= W; x += BAY) {
-  if (inTower(x + BAY / 2)) continue;
-  lattice += `M${x},${DECK_TOP}L${x + BAY},${DECK_BOT}M${x},${DECK_BOT}L${x + BAY},${DECK_TOP}`;
-}
 let posts = "";
-for (let x = 0; x <= W; x += BAY) {
-  if (inTower(x)) continue;
-  posts += `M${x},${DECK_TOP}V${DECK_BOT}`;
+for (let x = 0; x + BAY <= W; x += BAY) {
+  if (!inTower(x + BAY / 2)) {
+    lattice += `M${x},${DECK_TOP}L${x + BAY},${DECK_BOT}M${x},${DECK_BOT}L${x + BAY},${DECK_TOP}`;
+  }
 }
-
-/* ---------- towers ---------- */
+for (let x = 0; x <= W; x += BAY) {
+  if (!inTower(x)) posts += `M${x},${DECK_TOP}V${DECK_BOT}`;
+}
 
 let towers = "";
 let arches = "";
 let courses = "";
 let caps = "";
+let masonryJoints = "";
+let towerOpenings = "";
 for (const t of TOWERS) {
-  // Masonry shaft, battered, continuing below the deck as the river pier.
-  towers +=
-    `M${t - SHAFT_HW_TOP},${CORNICE_Y}L${t - SHAFT_HW_BASE},${SOFFIT_Y}` +
-    `L${t - PIER_HW_TOP},${SOFFIT_Y}L${t - PIER_HW_FOOT},${PIER_FOOT}` +
-    `H${t + PIER_HW_FOOT}L${t + PIER_HW_TOP},${SOFFIT_Y}` +
-    `L${t + SHAFT_HW_BASE},${SOFFIT_Y}L${t + SHAFT_HW_TOP},${CORNICE_Y}Z`;
+  towers += `M${t - SHAFT_HW_TOP},${CORNICE_Y}L${t - SHAFT_HW_BASE},${SOFFIT_Y}L${t - PIER_HW_TOP},${SOFFIT_Y}L${t - PIER_HW_FOOT},${PIER_FOOT}H${t + PIER_HW_FOOT}L${t + PIER_HW_TOP},${SOFFIT_Y}L${t + SHAFT_HW_BASE},${SOFFIT_Y}L${t + SHAFT_HW_TOP},${CORNICE_Y}Z`;
 
-  // Cornice, parapet and the two corner finials the cable passes between.
-  caps +=
-    `M${t - SHAFT_HW_TOP - 3},${CORNICE_Y}V${CORNICE_Y - 6}H${t + SHAFT_HW_TOP + 3}V${CORNICE_Y}` +
-    `M${t - SHAFT_HW_TOP - 3},${CORNICE_Y - 6}L${t - SHAFT_HW_TOP + 0.5},${SADDLE_Y}` +
-    `H${t + SHAFT_HW_TOP - 0.5}L${t + SHAFT_HW_TOP + 3},${CORNICE_Y - 6}`;
+  // A recessed portal: outer arch plus a smaller inner reveal gives the tower
+  // the depth of masonry instead of the appearance of a single SVG glyph.
+  arches += `M${t - ARCH_HW},${DECK_BOT}V${ARCH_SPRING_Y}Q${t - ARCH_HW},${ARCH_SPRING_Y - 17} ${t},${ARCH_APEX_Y}Q${t + ARCH_HW},${ARCH_SPRING_Y - 17} ${t + ARCH_HW},${ARCH_SPRING_Y}V${DECK_BOT}`;
+  towerOpenings += `M${t - ARCH_HW + 2.2},${DECK_BOT}V${ARCH_SPRING_Y + 1}Q${t - ARCH_HW + 2.2},${ARCH_SPRING_Y - 13} ${t},${ARCH_APEX_Y + 4}Q${t + ARCH_HW - 2.2},${ARCH_SPRING_Y - 13} ${t + ARCH_HW - 2.2},${ARCH_SPRING_Y + 1}V${DECK_BOT}`;
+
+  caps += `M${t - SHAFT_HW_TOP - 3},${CORNICE_Y}V${CORNICE_Y - 6}H${t + SHAFT_HW_TOP + 3}V${CORNICE_Y}`;
+  caps += `M${t - SHAFT_HW_TOP - 3},${CORNICE_Y - 6}L${t - SHAFT_HW_TOP + .5},${SADDLE_Y}H${t + SHAFT_HW_TOP - .5}L${t + SHAFT_HW_TOP + 3},${CORNICE_Y - 6}`;
   for (const s of [-1, 1]) {
     const fx = t + s * 9.5;
     caps += `M${fx - 2},${SADDLE_Y}V${FINIAL_TOP_Y + 2}L${fx},${FINIAL_TOP_Y}L${fx + 2},${FINIAL_TOP_Y + 2}V${SADDLE_Y}`;
   }
 
-  // Lancet portal — two-centred, springing at the roadway, the deck runs through.
-  arches +=
-    `M${t - ARCH_HW},${DECK_BOT}V${ARCH_SPRING_Y}` +
-    `Q${t - ARCH_HW},${ARCH_SPRING_Y - 17} ${t},${ARCH_APEX_Y}` +
-    `Q${t + ARCH_HW},${ARCH_SPRING_Y - 17} ${t + ARCH_HW},${ARCH_SPRING_Y}` +
-    `V${DECK_BOT}`;
-
-  // Stone courses: full width above the portal's apex, flanking it below.
   for (const y of [38, 45]) courses += `M${t - shaftHW(y)},${y}H${t + shaftHW(y)}`;
   courses += `M${t - shaftHW(82)},82H${t - ARCH_HW}M${t + ARCH_HW},82H${t + shaftHW(82)}`;
-  if (!tight) {
-    for (const y of [113, 122, 131]) {
-      const hw = PIER_HW_TOP + ((PIER_HW_FOOT - PIER_HW_TOP) * (y - SOFFIT_Y)) / (PIER_FOOT - SOFFIT_Y);
-      courses += `M${t - hw},${y}H${t + hw}`;
-    }
+  if (!tight) for (const y of [113, 122, 131]) {
+    const hw = PIER_HW_TOP + ((PIER_HW_FOOT - PIER_HW_TOP) * (y - SOFFIT_Y)) / (PIER_FOOT - SOFFIT_Y);
+    courses += `M${t - hw},${y}H${t + hw}`;
   }
+  // Short vertical joints are deliberately sparse, like an elevation drawing.
+  for (const y of [56, 70]) {
+    masonryJoints += `M${t - shaftHW(y) + 3},${y}V${y + 4}M${t + shaftHW(y) - 3},${y}V${y + 4}`;
+  }
+}
+
+// Roadway rail and under-deck framing are kept straight and fine so the eye
+// reads the bridge structure before the decorative texture.
+const ROAD_RAIL = `M0,84H${W}M0,86H${W}`;
+let roadPosts = "";
+for (let x = 0; x <= W; x += tight ? 48 : 30) roadPosts += `M${x},84V88`;
+
+let anchorages = "";
+if (!tight) {
+  anchorages = `M18,112V119H48V112M1152,112V119H1182V112`;
 }
 
 let flags = "";
-if (!tight) {
-  for (const t of TOWERS) {
-    flags += `M${t},${FINIAL_TOP_Y + 2}V${FLAG_TOP_Y}L${t + 9},${FLAG_TOP_Y + 3}L${t},${FLAG_TOP_Y + 6}`;
-  }
+if (!tight) for (const t of TOWERS) {
+  flags += `M${t},${FINIAL_TOP_Y + 2}V${FLAG_TOP_Y}L${t + 9},${FLAG_TOP_Y + 3}L${t},${FLAG_TOP_Y + 6}`;
 }
 
-/* ---------- Covington behind, the Ohio below ---------- */
-
-// Massing only, no named building and no lettering — a riverfront skyline, not
-// a claim about a specific block of it.
 const SKYLINE: Array<[number, number, number, boolean]> = [
-  [80, 42, 14, false], [126, 28, 20, false], [158, 34, 12, false],
-  [196, 20, 30, true], [220, 40, 16, false], [264, 30, 23, false],
-  [298, 36, 13, false], [338, 26, 19, false], [368, 50, 26, false],
-  [422, 24, 14, false], [450, 34, 21, false], [488, 22, 17, false],
-  [514, 44, 25, false], [562, 30, 12, false], [596, 52, 22, false],
-  [652, 26, 18, false], [682, 36, 14, false], [722, 28, 20, false],
-  [756, 20, 33, true], [780, 44, 16, false], [828, 30, 24, false],
-  [862, 38, 13, false], [904, 26, 28, false], [934, 42, 15, false],
-  [980, 30, 21, false], [1014, 36, 25, false], [1054, 28, 13, false],
-  [1086, 44, 19, false],
+  [80,42,14,false],[126,28,20,false],[158,34,12,false],[196,20,30,true],[220,40,16,false],
+  [264,30,23,false],[298,36,13,false],[338,26,19,false],[368,50,26,false],[422,24,14,false],
+  [450,34,21,false],[488,22,17,false],[514,44,25,false],[562,30,12,false],[596,52,22,false],
+  [652,26,18,false],[682,36,14,false],[722,28,20,false],[756,20,33,true],[780,44,16,false],
+  [828,30,24,false],[862,38,13,false],[904,26,28,false],[934,42,15,false],[980,30,21,false],
+  [1014,36,25,false],[1054,28,13,false],[1086,44,19,false],
 ];
-
 let skyline = "";
-if (!tight) {
-  for (const [x, w, h, spire] of SKYLINE) {
-    if (spire) {
-      skyline += `M${x},${BANK_Y}V${BANK_Y - h * 0.55}L${x + w / 2},${BANK_Y - h}L${x + w},${BANK_Y - h * 0.55}V${BANK_Y}`;
-    } else {
-      skyline += `M${x},${BANK_Y}V${BANK_Y - h}H${x + w}V${BANK_Y}`;
-    }
-  }
+if (!tight) for (const [x,w,h,spire] of SKYLINE) {
+  skyline += spire
+    ? `M${x},${BANK_Y}V${BANK_Y-h*.55}L${x+w/2},${BANK_Y-h}L${x+w},${BANK_Y-h*.55}V${BANK_Y}`
+    : `M${x},${BANK_Y}V${BANK_Y-h}H${x+w}V${BANK_Y}`;
 }
 
-const RIVER = tight
-  ? ""
-  : `M0,${BANK_Y}H${W}` +
-    `M0,${WATER_Y}H${W}` +
-    `M96,150H352M404,150H628M690,150H902M958,150H1148` +
-    `M52,156H268M330,156H520M600,156H812M884,156H1092` +
-    `M170,161H430M498,161H700M772,161H1010`;
-
+const RIVER = tight ? "" : `M0,${BANK_Y}H${W}M0,${WATER_Y}H${W}M96,150H352M404,150H628M690,150H902M958,150H1148M52,156H268M330,156H520M600,156H812M884,156H1092M170,161H430M498,161H700M772,161H1010`;
 const svgClass = tight ? "span-rule span-rule--tight" : "span-rule";
 ---
 
 <div class="wrap span-wrap">
-  <svg
-    class={svgClass}
-    viewBox={`0 0 ${W} ${VIEW_H}`}
-    aria-hidden="true"
-    focusable="false"
-  >
+  <svg class={svgClass} viewBox={`0 0 ${W} ${VIEW_H}`} aria-hidden="true" focusable="false">
     {!tight && <path class="sr-river" d={RIVER} />}
     {!tight && <path class="sr-skyline" d={skyline} />}
+    {!tight && <path class="sr-anchor" d={anchorages} />}
 
     <path class="sr-stone" d={towers}></path>
     <path class="sr-course" d={courses}></path>
+    <path class="sr-joint" d={masonryJoints}></path>
     <path class="sr-arch" d={arches}></path>
+    <path class="sr-opening" d={towerOpenings}></path>
     <path class="sr-stone" d={caps}></path>
     {!tight && <path class="sr-flag" d={flags} />}
 
-    <path class="sr-cable" d={CABLE}></path>
+    <path class="sr-cable sr-cable-main" d={CABLE}></path>
+    <path class="sr-cable sr-cable-secondary" d={CABLE_SECONDARY}></path>
     <path class="sr-cable" d={BACKSTAYS}></path>
     <path class="sr-stay" d={stays}></path>
     <path class="sr-hanger" d={hangers}></path>
 
+    <path class="sr-road" d={ROAD_RAIL}></path>
+    <path class="sr-road-post" d={roadPosts}></path>
     <path class="sr-lattice" d={lattice}></path>
     <path class="sr-lattice" d={posts}></path>
     <path class="sr-chord" d={`M0,${DECK_TOP}H${W}M0,${DECK_BOT}H${W}M0,${SOFFIT_Y}H${W}`}></path>

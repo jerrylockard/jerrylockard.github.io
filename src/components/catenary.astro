@@ -1,21 +1,39 @@
 ---
-// The signature: a suspension cable rendered as a hairline SVG between
-// sections. `tight` selects the shorter, sparser variant used between
-// interior sections vs. the fuller one right under the hero.
+// The signature: a suspension-bridge silhouette rendered as a hairline SVG
+// between sections — a nod to the Roebling Suspension Bridge connecting
+// Covington to Cincinnati. `tight` selects the sparser variant (fewer
+// suspenders) used between interior sections vs. the fuller one under the
+// hero; the deck/towers/cable are identical either way, only the hanger
+// density changes.
 interface Props {
   tight?: boolean;
 }
 
 const { tight = false } = Astro.props;
 
-const HANGERS_FULL = [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100].map((x, i) => ({
+// Towers sit inset from the full-width deck so a bit of "approach road"
+// shows past each pylon, same way the real bridge's deck runs past its
+// towers to the anchorages.
+const TOWER_X = [220, 980];
+const TOWER_TOP_Y = 8;
+const TOWER_LEG_HALF_WIDTH = 7;
+const TOWER_CROSSBEAM_Y = 13;
+
+// Cable sags from each tower top to a real on-curve low point of y=37 at
+// the midpoint (quadratic Béziers peak at 0.25*(P0+P2) + 0.5*P1, so the
+// control point is pushed well past the visible sag to land there).
+const CABLE_PATH = `M${TOWER_X[0]},${TOWER_TOP_Y} Q600,66 ${TOWER_X[1]},${TOWER_TOP_Y}`;
+
+// Suspender x/y pairs hand-picked to sit on that same cable curve —
+// mirrors the old wavy divider's own hand-picked hanger arrays.
+const HANGERS_FULL = [300, 375, 450, 525, 600, 675, 750, 825, 900].map((x, i) => ({
   x,
-  y: [13, 21, 28, 33, 36, 37, 36, 33, 28, 21, 13][i],
+  y: [19, 27, 32, 36, 37, 36, 32, 27, 19][i],
 }));
 
-const HANGERS_TIGHT = [150, 350, 600, 850, 1050].map((x, i) => ({
+const HANGERS_TIGHT = [380, 490, 600, 710, 820].map((x, i) => ({
   x,
-  y: [17, 31, 37, 31, 17][i],
+  y: [27, 35, 37, 35, 27][i],
 }));
 
 const hangers = tight ? HANGERS_TIGHT : HANGERS_FULL;
@@ -24,10 +42,23 @@ const svgClass = tight ? "span-rule span-rule--tight" : "span-rule";
 
 <div class="wrap">
   <svg class={svgClass} viewBox="0 0 1200 46" preserveAspectRatio="none" aria-hidden="true" focusable="false">
-    <path class="cable" d="M0,2 Q600,72 1200,2"></path>
     <line class="deck" x1="0" y1="42" x2="1200" y2="42"></line>
-    <line class="tower" x1="2" y1="2" x2="2" y2="42"></line>
-    <line class="tower" x1="1198" y1="2" x2="1198" y2="42"></line>
+    {
+      TOWER_X.map((tx) => (
+        <>
+          <line class="tower" x1={tx - TOWER_LEG_HALF_WIDTH} y1="42" x2={tx - TOWER_LEG_HALF_WIDTH} y2={TOWER_TOP_Y} />
+          <line class="tower" x1={tx + TOWER_LEG_HALF_WIDTH} y1="42" x2={tx + TOWER_LEG_HALF_WIDTH} y2={TOWER_TOP_Y} />
+          <line
+            class="tower"
+            x1={tx - TOWER_LEG_HALF_WIDTH}
+            y1={TOWER_CROSSBEAM_Y}
+            x2={tx + TOWER_LEG_HALF_WIDTH}
+            y2={TOWER_CROSSBEAM_Y}
+          />
+        </>
+      ))
+    }
+    <path class="cable" d={CABLE_PATH}></path>
     {hangers.map((h) => <line class="hanger" x1={h.x} y1={h.y} x2={h.x} y2="42" />)}
   </svg>
 </div>

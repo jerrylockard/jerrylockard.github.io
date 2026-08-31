@@ -40,17 +40,14 @@ const recentWriting = (await getCollection("writing", ({ data }) => !data.draft)
 </Layout>
 
 <style>
+  /* The hero and bridge together form the opening composition; don't force
+     the hero to fill the viewport, which pushes the separator away from the portrait. */
   .hero-screen {
-    min-height: calc(100dvh - var(--nav-h));
-    display: flex;
-    flex-direction: column;
+    width: 100%;
   }
 
   .hero-screen :global(.hero) {
-    flex: 1;
     width: 100%;
-    display: flex;
-    align-items: center;
   }
 
   .hero-screen :global(.hero-grid) {

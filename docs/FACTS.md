@@ -11,7 +11,7 @@ These are confirmed, locked-in facts. Do not ask Jerry to confirm them again.
 | **Live site domain** | `jerrylockard.me` | 2026-08-21 |
 | **Previous domain** | `jerry.lockard.me` (2026-08-20 → 2026-08-21) | Historical |
 | **Original domain** | `jerry.lockard.tech` (2026-08-16 → 2026-08-20) | Historical |
-| **Repository** | `jerrylockard/jerrylockard.github.io` | 2026-08-17 |
+| **Repository** | `jerrylockard/jerrylockard.me` (renamed from `jerrylockard.github.io`) | 2026-08-31 |
 | **Deploy trigger** | Push to `main` → GitHub Actions builds and deploys to **Firebase Hosting** (project `jerrylockard-site`) → `jerrylockard.me` | Automatic |
 | **Custom domain HTTPS** | Managed by Firebase via Hosting → custom domains, not GitHub | Current |
 | **Hosting history** | GitHub Pages until 2026-08-23, then Vercel, then Firebase Hosting as of 2026-08-29 | Historical |

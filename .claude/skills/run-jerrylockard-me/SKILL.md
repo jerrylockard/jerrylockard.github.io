@@ -1,17 +1,18 @@
 ---
-name: run-jerrylockard-github-io
-description: Build, run, and drive the jerrylockard.github.io Astro site — start the dev server, screenshot pages with headless Chromium, check console errors. Use when asked to run, start, build, or screenshot this site, or verify a change renders.
+name: run-jerrylockard-me
+description: Build, run, and drive the jerrylockard.me Astro site — start the dev server, screenshot pages with headless Chromium, check console errors. Use when asked to run, start, build, or screenshot this site, or verify a change renders.
 ---
 
 This is an Astro static site. "Running" it means starting the dev server, then
-driving a headless Chromium against it via `.claude/skills/run-jerrylockard-github-io/driver.mjs`
+driving a headless Chromium against it via `.claude/skills/run-jerrylockard-me/driver.mjs`
 (Playwright) — there's no `chromium-cli` on this host, so the driver is a small
 custom script instead of the usual heredoc.
 
-All paths below are relative to the repo root (`/home/jerry/jerrylockard.github.io/`).
+All paths below are relative to the repo root (`/home/jerry/jerrylockard.me/`).
 
 **Current state (corrected 2026-08-24):** the note above describing this as an
-empty placeholder repo was stale — this is the real, live `jerrylockard.github.io`,
+empty placeholder repo was stale — this is the real, live `jerrylockard.me`
+(GitHub repo renamed from `jerrylockard.github.io` on 2026-08-31),
 with a fully built Astro site (`src/pages/index.astro` composes Nav, Hero,
 Catenary, Work, About, Platform, a recent-writing teaser, and Footer from
 `src/components/`, plus a `/notes` hub with dedicated `/academy-notes`,
@@ -61,7 +62,7 @@ drive it:
 (nohup ./node_modules/.bin/astro dev --port 4321 > /tmp/astro-dev.log 2>&1 &)
 timeout 30 bash -c 'until curl -sf http://localhost:4321 >/dev/null; do sleep 1; done'
 
-node .claude/skills/run-jerrylockard-github-io/driver.mjs / /tmp/screenshot.png
+node .claude/skills/run-jerrylockard-me/driver.mjs / /tmp/screenshot.png
 ```
 
 Stop the server by killing whatever's listening on the port (`astro dev`
@@ -82,7 +83,7 @@ CONSOLE_ERRORS: none | <joined error messages>
 
 Exit code is `1` if any console/page error fired — check it, not just the
 screenshot. Both args are optional (`path` defaults to `/`, output defaults to
-`/tmp/jerrylockard-github-io-screenshot.png`). Override the base URL with
+`/tmp/jerrylockard-me-screenshot.png`). Override the base URL with
 `DEV_SERVER_URL` if you started the server on a different port.
 
 ## Run (human path)

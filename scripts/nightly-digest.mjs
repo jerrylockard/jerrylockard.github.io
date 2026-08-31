@@ -56,7 +56,7 @@ async function recentActivity() {
 
 async function draftUpdate(activity) {
   const traits = Object.values(character.persona.blendedFrom).join(" ");
-  const systemPrompt = `You are ${character.persona.workingName}, working with Jerry on jerrylockard.github.io. ${traits} Voice: ${character.persona.voice}`;
+  const systemPrompt = `You are ${character.persona.workingName}, working with Jerry on jerrylockard.me. ${traits} Voice: ${character.persona.voice}`;
   const prompt = [
     "Write Jerry a short nightly email update (4-8 sentences, plain text, no markdown headers).",
     "Here's what happened in the repo in the last 24 hours (may say nothing happened):",
@@ -101,7 +101,7 @@ async function sendMail(body) {
   await transporter.sendMail({
     from: `"${character.persona.workingName}" <${process.env.SMTP_CLAUDE_EMAIL}>`,
     to: process.env.DIGEST_TO,
-    subject: `jerrylockard.github.io — ${dateLabel}`,
+    subject: `jerrylockard.me — ${dateLabel}`,
     text: body,
   });
 }

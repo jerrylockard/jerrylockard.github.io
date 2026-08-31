@@ -4,6 +4,16 @@ Real history, dated, newest first. Not derived from `git log` — a curated reco
 decisions and why, for context git commit messages don't carry. Check this for project
 history instead of re-asking Jerry to re-explain something already settled here.
 
+## 2026-08-31 — GitHub repo renamed jerrylockard.github.io → jerrylockard.me
+
+The GitHub repo itself (not just the site domain) was renamed from
+`jerrylockard/jerrylockard.github.io` to `jerrylockard/jerrylockard.me`, matching the
+live domain. GitHub redirects the old name automatically, but `origin`'s remote URL,
+`package.json`'s `name`, and prose references across `README.md`, `AGENTS.md`,
+`docs/FACTS.md`, the `run-jerrylockard-github-io` skill (renamed
+`run-jerrylockard-me`), and `scripts/nightly-digest.mjs` were updated to match.
+Entries below predating this keep the old name — that's what was true then.
+
 ## 2026-08-29 — mcp/\* agent-dashboard system retired; hosting migrated to Firebase
 
 The custom multi-agent dashboard system (`mcp/server`, `mcp/agents`, `mcp/gui` — eight

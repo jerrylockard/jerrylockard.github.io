@@ -1,4 +1,4 @@
-# jerrylockard.github.io
+# jerrylockard.me
 
 Jerry Lockard's personal site — civic-first, built for real job-seeking in
 Covington, Kentucky city/public-sector work via the Mayor's Academy. Community,

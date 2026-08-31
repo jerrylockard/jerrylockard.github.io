@@ -2,7 +2,7 @@
 // Drives the Astro dev server with headless Chromium: navigate, screenshot, report console errors.
 // Usage: node driver.mjs [path] [screenshot-out]
 //   path           default "/"
-//   screenshot-out default /tmp/jerrylockard-github-io-screenshot.png
+//   screenshot-out default /tmp/jerrylockard-me-screenshot.png
 //
 // Assumes the dev server is already running (see SKILL.md "Run (agent path)").
 // Self-heals the missing-shared-library problem (libnspr4/libnss3/libasound2)
@@ -33,7 +33,7 @@ ensureLibs();
 process.env.LD_LIBRARY_PATH = `${LIB_PATH}:${process.env.LD_LIBRARY_PATH ?? ''}`;
 
 const path = process.argv[2] ?? '/';
-const outPath = process.argv[3] ?? '/tmp/jerrylockard-github-io-screenshot.png';
+const outPath = process.argv[3] ?? '/tmp/jerrylockard-me-screenshot.png';
 const base = process.env.DEV_SERVER_URL ?? 'http://localhost:4321';
 
 const browser = await chromium.launch({ args: ['--no-sandbox'] });

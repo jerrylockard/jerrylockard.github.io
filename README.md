@@ -50,7 +50,7 @@ email).
 ## Deploy
 
 Automatic — no manual deploy step. A push to `main` builds and deploys to **Firebase
-Hosting** (project `jerrylockard-site`) via `.github/workflows/firebase-hosting-merge.yml`,
+Hosting** (project `jerrylockard-website`) via `.github/workflows/firebase-hosting-merge.yml`,
 live at `jerrylockard.me` (custom domain configured in the Firebase console). Moved off
 Vercel 2026-08-29, off GitHub Pages 2026-08-23.
 

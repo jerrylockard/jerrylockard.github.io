@@ -46,7 +46,7 @@ firebase projects:list                # confirm project access
 firebase deploy --only hosting --json # deploy with machine-readable output
 ```
 
-Project is `jerrylockard-site`, on the Firebase Spark (free) plan — classic Hosting,
+Project is `jerrylockard-website`, on the Firebase Spark (free) plan — classic Hosting,
 not App Hosting (App Hosting forces a paid Blaze plan; this site is a static build and
 doesn't need it).
 

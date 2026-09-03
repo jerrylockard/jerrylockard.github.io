@@ -4,6 +4,24 @@ Real history, dated, newest first. Not derived from `git log` — a curated reco
 decisions and why, for context git commit messages don't carry. Check this for project
 history instead of re-asking Jerry to re-explain something already settled here.
 
+## 2026-08-31 — Firebase project switched jerrylockard-site → jerrylockard-website
+
+Hosting project switched from `jerrylockard-site` to `jerrylockard-website` at Jerry's
+request, adding Firebase Analytics to the client SDK config (`src/lib/firebase-app.ts`)
+at the same time. Updated: `.firebaserc`, `firebase.json` (`hosting.site`), both
+`.github/workflows/firebase-hosting-*.yml` (`projectId` and the service-account secret
+name, now `FIREBASE_SERVICE_ACCOUNT_JERRYLOCKARD_WEBSITE`), and prose references in
+`README.md`, `AGENTS.md`, `docs/CHEATSHEET.md`, `docs/FACTS.md`, and
+`docs/dns/jerrylockard.me.zone`.
+
+**Not done as part of this change, and required before the next merge deploys
+cleanly:** the custom domain (`jerrylockard.me` + `www`) needs to be re-added under
+`jerrylockard-website` in the Firebase console, the DNS TXT verification value
+confirmed against whatever that console issues (the zone file's value is carried over
+from the old project and unverified), and a new
+`FIREBASE_SERVICE_ACCOUNT_JERRYLOCKARD_WEBSITE` secret added in the GitHub repo
+settings — the old service-account secret has no access to the new project.
+
 ## 2026-08-31 — GitHub repo renamed jerrylockard.github.io → jerrylockard.me
 
 The GitHub repo itself (not just the site domain) was renamed from

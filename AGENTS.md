@@ -38,7 +38,7 @@ biographical claim.
   were built from — palette, type system, component patterns, the catenary-divider
   signature motif. Keep it as historical reference; the live source of truth for what's
   actually on the site is `src/components/`, not the mockup.
-- Deploys via **Firebase Hosting** (project `jerrylockard-site`) — a push to `main`
+- Deploys via **Firebase Hosting** (project `jerrylockard-website`) — a push to `main`
   triggers `.github/workflows/firebase-hosting-merge.yml`, which builds and deploys.
   Custom domain configured in the Firebase console, not a repo file — the old GitHub
   Pages `CNAME` file was retired 2026-08-29. Moved off Vercel 2026-08-29 (Vercel before

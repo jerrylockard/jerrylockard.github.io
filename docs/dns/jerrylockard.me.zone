@@ -15,10 +15,13 @@
 ;; is jerry@lockard.me, a separate domain with its own real mailbox at IONOS.
 ;;
 ;; The A record and TXT verification record below are project-specific to
-;; jerrylockard-site — they came directly off the Firebase console (Hosting ->
-;; Add custom domain) on 2026-08-29. If Firebase ever asks for different
-;; values, the console wins — update this file to match, not the other way
-;; around.
+;; jerrylockard-website — hosting moved here from jerrylockard-site on
+;; 2026-08-31. The TXT value below is NOT YET CONFIRMED against the Firebase
+;; console for jerrylockard-website — re-add jerrylockard.me as a custom
+;; domain under that project (Hosting -> Add custom domain) and copy whatever
+;; TXT value it actually issues before relying on this file. If Firebase ever
+;; asks for different values, the console wins — update this file to match,
+;; not the other way around.
 ;;
 ;; Deliberately NOT in this file:
 ;;
@@ -31,7 +34,7 @@
 
 $TTL 300
 
-;; --- the site, on Firebase Hosting (project: jerrylockard-site) ----------
+;; --- the site, on Firebase Hosting (project: jerrylockard-website) -------
 ;; Apex must be an A record: a CNAME cannot coexist with other records at the
 ;; zone root.
 jerrylockard.me.	300	IN	A	199.36.158.100
@@ -39,7 +42,7 @@ jerrylockard.me.	300	IN	A	199.36.158.100
 ;; Firebase's domain-ownership check for this site. Not a one-time proof —
 ;; Firebase keeps validating the domain/site association against this record,
 ;; so it stays, not just until the cert issues.
-jerrylockard.me.	300	IN	TXT	"hosting-site=jerrylockard-site"
+jerrylockard.me.	300	IN	TXT	"hosting-site=jerrylockard-website"
 
 ;; www points at the apex. Add www.jerrylockard.me as a custom domain in the
 ;; Firebase console too, or it answers that Host with nothing configured —

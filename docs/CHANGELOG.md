@@ -4,6 +4,38 @@ Real history, dated, newest first. Not derived from `git log` — a curated reco
 decisions and why, for context git commit messages don't carry. Check this for project
 history instead of re-asking Jerry to re-explain something already settled here.
 
+## 2026-09-05 — CI deploy fixed: FIREBASE_TOKEN stopgap around a blocked service-account key
+
+The 2026-08-31 project rename left CI broken: `firebase-hosting-merge.yml` referenced
+`FIREBASE_SERVICE_ACCOUNT_JERRYLOCKARD_WEBSITE`, which never got created, so every
+push to `main` since then failed at deploy (confirmed via `gh run list` — see
+`docs/CHARACTER.json`'s 2026-09-02 log entry). The live site kept serving a stale
+build from before the rename the whole time; the custom domain itself was fine
+(Firebase's custom-domain mapping survived the rename correctly, contrary to what was
+assumed needed re-checking).
+
+Tried the standard fix (`firebase init hosting:github` to mint a new service account
+and secret) and hit a second, more interesting problem: **Google Workspace org policy
+`iam.disableServiceAccountKeyCreation` blocks creating a JSON key for this project's
+GitHub Actions service account at all** — inherited when `jerrylockard-website` moved
+under the `lockard.me` Workspace account. Not a bug, a real security policy; not
+something to override without knowing why a Workspace admin set it.
+
+Resolution: switched `firebase-hosting-merge.yml` to deploy via the CLI directly,
+authenticated with the `FIREBASE_TOKEN` secret (already present, unused, from
+2026-08-29) instead of `FirebaseExtended/action-hosting-deploy@v0` +
+`firebaseServiceAccount`. `FIREBASE_TOKEN` auth doesn't create a key, so it doesn't
+hit the org policy. This is a stopgap — Google is moving away from `firebase
+login:ci` tokens — not a permanent fix.
+
+**Not done as part of this, flagged for a future session:** Workload Identity
+Federation is the actual modern replacement (GitHub Actions authenticates to GCP via
+OIDC token exchange, no long-lived secret at all, and doesn't hit the key-creation
+policy either) — bigger setup (identity pool + provider + IAM binding), worth doing
+deliberately rather than rushed. The orphaned `FIREBASE_SERVICE_ACCOUNT_JERRYLOCKARD_SITE`
+secret (old project name, unused since the 2026-08-31 rename) can be removed once the
+new path has proven itself over a few real deploys.
+
 ## 2026-08-31 — Firebase project switched jerrylockard-site → jerrylockard-website
 
 Hosting project switched from `jerrylockard-site` to `jerrylockard-website` at Jerry's

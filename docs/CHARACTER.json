@@ -58,6 +58,10 @@
       {
         "date": "2026-08-30",
         "entry": "File created after a session-long pattern: Vercel references found stale in CHEATSHEET.md/README.md/AGENTS.md/personas.ts on at least three separate passes despite each being 'fixed' before; docs/FACTS.md described Cloudflare as the DNS provider after Jerry had already moved it to IONOS. Root cause both times: acted on doc text instead of checking the actual repo/live state first."
+      },
+      {
+        "date": "2026-09-02",
+        "entry": "Audit pass, boot sequence followed in full. Confirmed live via `gh run list`: the last two CI deploys (both today, after 25c11ca's jerrylockard-website project rename and aa992e5) failed with 'Input required and not supplied: firebaseServiceAccount' — `gh secret list` shows only FIREBASE_SERVICE_ACCOUNT_JERRYLOCKARD_SITE (old name), but both workflow files now reference FIREBASE_SERVICE_ACCOUNT_JERRYLOCKARD_WEBSITE, which doesn't exist as a secret. This is exactly the unresolved item CHANGELOG.md's 2026-08-31 entry flagged as required-before-next-merge-deploys-cleanly, now confirmed as the live failure. Live site is currently serving a stale build (last-modified 2026-08-31, from the last successful deploy) — not down, just frozen. Also confirmed via `dig`: the TXT verification record still reads hosting-site=jerrylockard-site (old project), matching the same unresolved changelog item. Separately, docs/CHEATSHEET.md's '## DNS (Cloudflare)' section is stale doc drift not caught by the 2026-08-30 IONOS migration edit — FACTS.md was fixed, CHEATSHEET.md's DNS section was not. Local `pnpm build` still succeeds (the 'writing collection empty' messages are expected/benign — zero posts is intentional per GUARDRAILS.md placeholder policy)."
       }
     ]
   }

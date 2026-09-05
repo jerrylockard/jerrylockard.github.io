@@ -31,24 +31,30 @@ astro check                  # type-check the site without a full build
 
 ## Deploy (Firebase Hosting)
 
-Automatic on push to `main` via `.github/workflows/firebase-hosting-merge.yml`. To
-deploy manually instead:
+Automatic on push to `main` via `.github/workflows/firebase-hosting-merge.yml`
+(deploys with the `FIREBASE_TOKEN` secret, not a service-account key — see
+`docs/CHANGELOG.md`'s 2026-09-05 entry for why). To deploy manually instead:
 
 ```bash
 pnpm build
-firebase deploy --only hosting
+npx firebase-tools@latest deploy --only hosting --project jerrylockard-website
 ```
 
+`firebase-tools` isn't installed globally on this host — `npx firebase-tools@latest`
+resolves it from cache without needing a global install or sudo.
+
 ```bash
-firebase login                       # first-time auth (opens a browser)
-firebase login --no-localhost        # headless variant — for SSH sessions
-firebase projects:list                # confirm project access
-firebase deploy --only hosting --json # deploy with machine-readable output
+npx firebase-tools@latest login                       # first-time auth (opens a browser)
+npx firebase-tools@latest login --no-localhost        # headless variant — for SSH sessions
+npx firebase-tools@latest projects:list                # confirm project access
+npx firebase-tools@latest deploy --only hosting --project jerrylockard-website --json # machine-readable output
 ```
 
 Project is `jerrylockard-website`, on the Firebase Spark (free) plan — classic Hosting,
 not App Hosting (App Hosting forces a paid Blaze plan; this site is a static build and
-doesn't need it).
+doesn't need it). This project lives under the `lockard.me` Google Workspace account,
+which enforces `iam.disableServiceAccountKeyCreation` — no service-account JSON key
+can be minted for it, which is why CI uses `FIREBASE_TOKEN` instead.
 
 ## GitHub Actions (CI deploy)
 
@@ -56,7 +62,7 @@ doesn't need it).
 gh run list --workflow=firebase-hosting-merge.yml --limit 5   # recent runs
 gh run watch <run-id> --exit-status                            # watch one live
 gh run view <run-id> --log                                      # full log of a run
-gh secret list                                                   # confirm FIREBASE_SERVICE_ACCOUNT_* is set
+gh secret list                                                   # confirm FIREBASE_TOKEN is set
 ```
 
 ## Git
@@ -71,10 +77,12 @@ git push origin main
 Rules (full detail in `AGENTS.md`): stay on `main`, no feature branches, new commits
 only (never `--amend`/`--force`/`reset --hard`), every push needs Jerry's explicit OK.
 
-## DNS (Cloudflare)
+## DNS (IONOS)
 
-`docs/dns/jerrylockard.me.zone` is the importable reference copy of the zone — Cloudflare
-dashboard → jerrylockard.me → DNS → Records → Import and Export → Import.
+`docs/dns/jerrylockard.me.zone` is the reference copy of the records — manage them
+directly in the IONOS control panel, not via an import tool (that was a
+Cloudflare-specific feature, and DNS moved off Cloudflare to IONOS 2026-08-30; see
+`docs/FACTS.md`).
 
 ```bash
 dig +short A jerrylockard.me           # what the apex currently resolves to
@@ -84,8 +92,6 @@ curl -sI https://jerrylockard.me       # confirm HTTPS/headers on the live site
 
 If Firebase's custom-domain setup ever asks for different records than what's in the
 zone file, the Firebase console wins — update the zone file to match, not the reverse.
-Keep the apex **DNS only (grey cloud)** in Cloudflare, not proxied — Firebase issues and
-validates its own certificate, and Cloudflare's proxy breaks that.
 
 ## Firebase CLI housekeeping
 
